@@ -1,1 +1,2 @@
 # seu_wotagei_competition
+AI写的，专用于东南大学异度沸腾动漫社WOTA艺团团内WOTA艺赛事
