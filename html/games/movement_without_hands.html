@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>体态传技 - Y.Stage</title>
+    <link rel="stylesheet" href="../../css/games/movement_without_hands.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>体态传技</h1>
+        <p class="subtitle">不用手来传达技的信息</p>
+      </header>
+
+      <main>
+        <section id="game-area">
+          <div id="trick-display" class="trick-container">
+            <h2>当前技能</h2>
+            <div id="current-trick" class="current-trick">等待抽取...</div>
+            <div
+              id="hidden-trick-placeholder"
+              class="hidden-placeholder hidden"
+            >
+              游戏进行中，技能已隐藏
+            </div>
+          </div>
+
+          <div id="timer-container">
+            <div id="timer-display" class="timer">00:00</div>
+            <div class="timer-label">计时</div>
+          </div>
+
+          <div id="controls" class="button-container">
+            <button id="draw-trick-btn" class="game-btn glow-btn action-btn">
+              抽取技能
+            </button>
+            <button id="start-btn" class="game-btn glow-btn primary-btn">
+              开始游戏
+            </button>
+            <button id="end-btn" class="game-btn glow-btn danger-btn" disabled>
+              结束游戏
+            </button>
+            <button id="reset-btn" class="game-btn glow-btn warning-btn">
+              重置
+            </button>
+          </div>
+        </section>
+
+        <section id="result-screen" class="hidden">
+          <h2>游戏结束</h2>
+          <p>技的传递已结束: <span id="result-trick"></span></p>
+          <p>用时: <span id="result-time"></span></p>
+          <div class="button-container">
+            <button id="try-again-btn" class="game-btn glow-btn">
+              再来一次
+            </button>
+            <button id="back-to-menu-btn" class="game-btn glow-btn">
+              返回菜单
+            </button>
+          </div>
+        </section>
+      </main>
+
+      <div class="navigation">
+        <button id="settings-btn" class="nav-btn glow-btn small">
+          技能设置
+        </button>
+        <button id="records-btn" class="nav-btn glow-btn small">
+          查看记录
+        </button>
+        <button id="back-btn" class="nav-btn glow-btn small">返回</button>
+        <button id="home-btn" class="nav-btn glow-btn small">主页</button>
+      </div>
+
+      <footer>
+        <p>&copy; 2025 Y.Stage X 开发团队</p>
+      </footer>
+    </div>
+
+    <!-- 加载JavaScript文件 -->
+    <script src="../../js/games/movement_without_hands_data.js"></script>
+    <script src="../../js/games/movement_without_hands_core.js"></script>
+    <script src="../../js/games/movement_without_hands_ui.js"></script>
+    <script src="../../js/games/movement_without_hands_record.js"></script>
+  </body>
+</html>

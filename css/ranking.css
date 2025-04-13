@@ -1,0 +1,314 @@
+body {
+  font-family: Arial, sans-serif;
+  background-image: url("../resource/images/bg_index.jpg");
+  background-color: black;
+  background-size: cover;
+  color: #fff;
+  margin: 0;
+  padding: 0;
+}
+
+header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: rgba(0, 0, 0, 0.8);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header-buttons {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+h1 {
+  text-align: center;
+  margin: 10px 0;
+}
+
+main {
+  display: flex;
+  flex-direction: row; /* 改为水平布局 */
+  padding: 20px;
+  justify-content: center;
+  gap: 20px;
+}
+
+section {
+  background-color: rgba(0, 0, 0, 0.8);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 0; /* 移除底部外边距 */
+}
+
+#playersSection {
+  flex-basis: 25%; /* 缩小选手列表区域宽度 */
+  max-width: 250px; /* 限制最大宽度 */
+}
+
+#rankingSection {
+  flex-basis: 65%; /* 扩大排名区域宽度 */
+}
+
+h2 {
+  text-align: center;
+  margin-top: 0;
+}
+
+button {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: #333;
+  color: white;
+  border: 2px solid #007bff;
+  border-radius: 5px;
+  transition: background-color 0.3s, transform 0.3s;
+}
+
+button:hover {
+  background-color: #007bff;
+  transform: scale(1.05);
+}
+
+button:active {
+  transform: scale(0.95);
+}
+
+#playersList {
+  list-style-type: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column; /* 修改为纵向排列 */
+  align-items: center;
+  gap: 8px;
+}
+
+#playersList li {
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 8px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.3s;
+  font-size: 14px;
+  width: 80%; /* 控制选手名称宽度 */
+  text-align: center;
+}
+
+#playersList li:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.02);
+}
+
+#rankingContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rank-position {
+  display: flex;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  border-radius: 5px;
+  min-height: 40px;
+  margin-bottom: 20px;
+  transition: all 0.3s;
+}
+
+.rank-gold {
+  background-color: rgba(255, 215, 0, 0.3);
+  border: 2px solid #ffd700;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+}
+
+.rank-silver {
+  background-color: rgba(192, 192, 192, 0.3);
+  border: 2px solid #c0c0c0;
+  box-shadow: 0 0 15px rgba(192, 192, 192, 0.5);
+}
+
+.rank-bronze {
+  background-color: rgba(205, 127, 50, 0.3);
+  border: 2px solid #cd7f32;
+  box-shadow: 0 0 15px rgba(205, 127, 50, 0.5);
+}
+
+/* 4、5名样式 */
+.rank-position[data-rank="4"],
+.rank-position[data-rank="5"] {
+  background-color: rgba(150, 150, 150, 0.2);
+  border: 2px solid #555;
+  box-shadow: 0 0 10px rgba(150, 150, 150, 0.3);
+}
+
+.rank-number {
+  font-size: 24px;
+  font-weight: bold;
+  margin-right: 20px;
+  min-width: 30px;
+  text-align: center;
+}
+
+.rank-player {
+  flex-grow: 1;
+  padding: 10px;
+  border-radius: 5px;
+  min-height: 20px;
+  cursor: pointer;
+}
+
+.rank-award {
+  flex-basis: 30%;
+  padding: 10px;
+  border-radius: 5px;
+  min-height: 20px;
+  opacity: 0;
+  transition: opacity 0.5s ease-in;
+}
+
+.award-container {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 5px;
+  padding: 10px;
+  animation: glow 2s infinite alternate;
+}
+
+.award-name {
+  font-weight: bold;
+  margin-bottom: 5px;
+  font-size: 16px;
+}
+
+.award-description {
+  font-size: 13px;
+  color: #ddd;
+}
+
+.rank-gold .award-container {
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.rank-silver .award-container {
+  box-shadow: 0 0 10px rgba(192, 192, 192, 0.5);
+}
+
+.rank-bronze .award-container {
+  box-shadow: 0 0 10px rgba(205, 127, 50, 0.5);
+}
+
+.rank-gold .award-name {
+  color: #ffd700;
+}
+
+.rank-silver .award-name {
+  color: #c0c0c0;
+}
+
+.rank-bronze .award-name {
+  color: #cd7f32;
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+  }
+  to {
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+  }
+}
+
+.player-item {
+  background-color: #007bff;
+  color: white;
+  padding: 15px;
+  border-radius: 5px;
+  text-align: center;
+  animation: appear 0.8s ease-out;
+  font-weight: bold;
+  font-size: 22px; /* 增加字体大小 */
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+}
+
+.rank-gold .player-item {
+  background-color: #ffd700;
+  color: #333;
+  font-size: 26px; /* 冠军名字更大 */
+}
+
+.rank-silver .player-item {
+  background-color: #c0c0c0;
+  color: #333;
+  font-size: 24px; /* 亚军名字稍大 */
+}
+
+.rank-bronze .player-item {
+  background-color: #cd7f32;
+  color: #333;
+  font-size: 22px; /* 季军名字保持一致 */
+}
+
+@keyframes appear {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes firework {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7), 0 0 0 0 rgba(0, 123, 255, 0.7);
+  }
+  30% {
+    box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.5),
+      0 0 20px 5px rgba(0, 123, 255, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 50px 15px rgba(255, 255, 255, 0),
+      0 0 80px 30px rgba(0, 123, 255, 0);
+  }
+}
+
+/* 全屏烟花效果 */
+.firework-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.firework {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  animation: explode 1s ease-out forwards;
+}
+
+@keyframes explode {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 0 20px 10px currentColor;
+  }
+  100% {
+    transform: scale(30);
+    opacity: 0;
+    box-shadow: 0 0 0 0 currentColor;
+  }
+}

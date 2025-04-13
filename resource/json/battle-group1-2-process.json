@@ -1,0 +1,119 @@
+{
+  "currentRound": 1,
+  "currentBracket": "final",
+  "currentMatchIndex": 0,
+  "currentWinner": "0j",
+  "players": [
+    {
+      "name": "0j",
+      "wins": 0,
+      "losses": 0
+    },
+    {
+      "name": "雨音",
+      "wins": 0,
+      "losses": 0
+    },
+    {
+      "name": "无声",
+      "wins": 0,
+      "losses": 0
+    },
+    {
+      "name": "由佳莉",
+      "wins": 0,
+      "losses": 0
+    }
+  ],
+  "playerStats": {
+    "雨音": {
+      "wins": 0,
+      "losses": 2
+    },
+    "由佳莉": {
+      "wins": 2,
+      "losses": 2
+    },
+    "0j": {
+      "wins": 3,
+      "losses": 0
+    },
+    "无声": {
+      "wins": 1,
+      "losses": 2
+    }
+  },
+  "matches": [],
+  "bracket": {
+    "winner": [
+      {
+        "round": 1,
+        "matches": [
+          {
+            "player1": "0j",
+            "player2": "雨音",
+            "winner": "0j",
+            "loser": "雨音"
+          },
+          {
+            "player1": "无声",
+            "player2": "由佳莉",
+            "winner": "无声",
+            "loser": "由佳莉"
+          }
+        ]
+      },
+      {
+        "round": 2,
+        "matches": [
+          {
+            "player1": "0j",
+            "player2": "无声",
+            "winner": "0j",
+            "loser": "无声"
+          }
+        ]
+      }
+    ],
+    "loser": [
+      {
+        "round": 1,
+        "matches": [
+          {
+            "player1": "雨音",
+            "player2": "由佳莉",
+            "winner": "由佳莉",
+            "loser": "雨音"
+          }
+        ]
+      },
+      {
+        "round": 2,
+        "matches": [
+          {
+            "player1": "由佳莉",
+            "player2": "无声",
+            "winner": "由佳莉",
+            "loser": "无声"
+          }
+        ]
+      }
+    ],
+    "final": [
+      {
+        "round": 1,
+        "matches": [
+          {
+            "player1": "0j",
+            "player2": "由佳莉",
+            "winner": "0j",
+            "loser": "由佳莉",
+            "isFinal": true
+          }
+        ]
+      }
+    ]
+  },
+  "chapter": 2,
+  "lastUpdate": "2025-04-13T04:56:05.897Z"
+}

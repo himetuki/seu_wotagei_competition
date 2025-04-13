@@ -1,0 +1,892 @@
+/* 体态传技游戏样式 */
+
+body {
+  background-color: #121212;
+  color: #f0f0f0;
+  font-family: "Arial", sans-serif;
+  background-image: url("../../resource/images/bg_index.jpg");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+h1 {
+  font-size: 3rem;
+  margin-bottom: 0;
+  color: #f8f8ff; /* 增亮标题色 */
+  text-shadow: 0 0 15px rgba(130, 130, 255, 0.9); /* 增强发光效果 */
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: #aaa;
+  margin-top: 5px;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#game-area {
+  width: 100%;
+  max-width: 800px;
+  background-color: rgba(30, 30, 40, 0.7);
+  border-radius: 15px;
+  padding: 30px;
+  box-shadow: 0 0 20px rgba(100, 100, 255, 0.3);
+  margin-bottom: 30px;
+  backdrop-filter: blur(5px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+}
+
+.trick-container {
+  text-align: center;
+  width: 100%;
+}
+
+.current-trick {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin: 20px 0;
+  padding: 15px;
+  background-color: rgba(60, 60, 90, 0.6); /* 稍微调亮背景 */
+  border-radius: 10px;
+  color: #ffff90; /* 更亮的黄色 */
+  text-shadow: 0 0 18px rgba(255, 255, 128, 0.8); /* 增强发光效果 */
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 150, 0.3); /* 添加细微边框 */
+}
+
+.hidden-placeholder {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 20px 0;
+  padding: 25px;
+  background-color: rgba(80, 40, 100, 0.6); /* 紫色背景 */
+  border-radius: 10px;
+  color: #e0e0ff; /* 浅紫色文字 */
+  text-shadow: 0 0 12px rgba(180, 160, 255, 0.7);
+  animation: pulse 2s infinite;
+  border: 1px solid rgba(180, 160, 255, 0.3);
+}
+
+#timer-container {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.timer {
+  font-size: 3.5rem;
+  font-family: "Courier New", monospace;
+  background-color: rgba(40, 40, 60, 0.8);
+  padding: 15px 30px;
+  border-radius: 10px;
+  color: #90ff90; /* 更亮的绿色 */
+  text-shadow: 0 0 15px rgba(128, 255, 128, 0.8); /* 增强发光效果 */
+  display: inline-block;
+  min-width: 200px;
+  border: 1px solid rgba(128, 255, 128, 0.3); /* 添加细微边框 */
+}
+
+.timer-label {
+  margin-top: 10px;
+  font-size: 1.2rem;
+  color: #aaa;
+}
+
+.button-container {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 20px 0;
+}
+
+/* 按钮基础样式 - 更圆润的矩形设计 */
+.game-btn,
+.nav-btn,
+.settings-btn {
+  background-color: rgba(60, 60, 100, 0.7);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  font-size: 1.1rem;
+  border-radius: 12px; /* 增加圆角 */
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.glow-btn {
+  box-shadow: 0 0 10px rgba(120, 120, 255, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.glow-btn:hover {
+  background-color: rgba(80, 80, 150, 0.8);
+  box-shadow: 0 0 15px rgba(150, 150, 255, 0.7);
+  transform: translateY(-2px);
+}
+
+.glow-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 0 5px rgba(100, 100, 255, 0.6);
+}
+
+.glow-btn:before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  background: linear-gradient(
+    45deg,
+    rgba(110, 142, 251, 0.3),
+    rgba(167, 119, 227, 0.3)
+  );
+  border-radius: 12px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.glow-btn:hover:before {
+  opacity: 1;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* 按钮类型样式 */
+.primary-btn,
+.primary {
+  background-color: rgba(40, 120, 220, 0.7); /* 更鲜艳的蓝色 */
+}
+
+.primary-btn:hover,
+.primary:hover {
+  background-color: rgba(60, 140, 255, 0.8); /* 更亮的蓝色 */
+}
+
+.danger-btn {
+  background-color: rgba(220, 50, 50, 0.7); /* 更鲜艳的红色 */
+}
+
+.danger-btn:hover:not(:disabled) {
+  background-color: rgba(255, 70, 70, 0.8); /* 更亮的红色 */
+}
+
+.warning-btn {
+  background-color: rgba(220, 160, 40, 0.7); /* 更鲜艳的黄色 */
+}
+
+.warning-btn:hover {
+  background-color: rgba(255, 180, 50, 0.8); /* 更亮的黄色 */
+}
+
+.action-btn {
+  background-color: rgba(130, 70, 220, 0.7); /* 更鲜艳的紫色 */
+}
+
+.action-btn:hover {
+  background-color: rgba(150, 90, 255, 0.8); /* 更亮的紫色 */
+}
+
+.navigation {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 30px;
+  padding: 15px;
+  background-color: rgba(40, 40, 60, 0.4);
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+}
+
+.nav-btn {
+  background-color: rgba(50, 50, 70, 0.7);
+  font-size: 1rem;
+  padding: 8px 20px;
+}
+
+.nav-btn.small {
+  font-size: 0.9rem;
+  padding: 8px 15px;
+}
+
+#back-btn,
+#home-btn {
+  min-width: 120px;
+  padding: 12px 15px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+#back-btn:hover,
+#home-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+#result-screen {
+  text-align: center;
+  background-color: rgba(30, 30, 40, 0.8);
+  padding: 30px;
+  border-radius: 15px;
+  width: 100%;
+  max-width: 600px;
+  box-shadow: 0 0 20px rgba(100, 100, 255, 0.4);
+}
+
+#result-screen h2 {
+  font-size: 2rem;
+  margin-bottom: 20px;
+  color: #e0e0ff;
+}
+
+#result-screen p {
+  font-size: 1.2rem;
+  margin: 15px 0;
+}
+
+#result-trick,
+#result-time {
+  font-weight: bold;
+  color: #ffff80;
+  text-shadow: 0 0 5px rgba(255, 255, 128, 0.5);
+}
+
+.hidden {
+  display: none !important;
+}
+
+footer {
+  text-align: center;
+  margin-top: 30px;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+/* 动画效果 */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.pulse {
+  animation: pulse 1.5s infinite;
+}
+
+/* 自定义对话框样式 */
+.dialog-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.custom-dialog {
+  background-color: #222;
+  border-radius: 12px;
+  padding: 20px;
+  width: 80%;
+  max-width: 400px;
+  box-shadow: 0 0 25px rgba(100, 100, 255, 0.5),
+    0 0 15px rgba(70, 130, 240, 0.3);
+  border: 1px solid rgba(80, 120, 255, 0.4);
+  transform: scale(0.9);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.custom-dialog.show {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.custom-dialog p {
+  color: #eee;
+  font-size: 18px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.dialog-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.dialog-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 30px;
+  font-size: 16px;
+  cursor: pointer;
+  min-width: 100px;
+  transition: all 0.2s ease;
+}
+
+.confirm-btn {
+  background: linear-gradient(135deg, #4a8cff, #2d63c8);
+  color: white;
+}
+
+.confirm-btn:hover {
+  background: linear-gradient(135deg, #5a9cff, #3d73d8);
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(74, 140, 255, 0.4);
+}
+
+.cancel-btn {
+  background: linear-gradient(135deg, #555, #333);
+  color: white;
+}
+
+.cancel-btn:hover {
+  background: linear-gradient(135deg, #666, #444);
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 768px) {
+  h1 {
+    font-size: 2.2rem;
+  }
+
+  .current-trick {
+    font-size: 2rem;
+  }
+
+  .timer {
+    font-size: 2.5rem;
+  }
+
+  .game-btn {
+    padding: 10px 20px;
+    font-size: 1rem;
+  }
+
+  #game-area {
+    padding: 20px;
+  }
+
+  .data-container {
+    flex-direction: column;
+  }
+
+  .navigation {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+}
+
+.btn-click-effect {
+  animation: btn-pulse 0.3s ease-out;
+}
+
+@keyframes btn-pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.hover-glow {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.hover-glow:after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.3) 0%,
+    transparent 60%
+  );
+  opacity: 0;
+  transform: scale(0);
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+}
+
+.hover-glow:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.hover-glow:hover:after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.pulse-effect {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(74, 140, 255, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(74, 140, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(74, 140, 255, 0);
+  }
+}
+
+/* 保存中状态动画 */
+@keyframes saving-pulse {
+  0% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.7;
+  }
+}
+
+#save-record-btn:disabled {
+  animation: saving-pulse 1.5s infinite;
+}
+
+/* 保存成功和失败状态样式 */
+.save-success {
+  background-color: #28a745 !important;
+  color: white !important;
+}
+
+.save-error {
+  background-color: #dc3545 !important;
+  color: white !important;
+}
+
+/* 保存结果的Toast提示 */
+.save-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 20px;
+  border-radius: 5px;
+  color: white;
+  font-weight: bold;
+  z-index: 10000;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  animation: fadeInDown 0.3s ease forwards;
+}
+
+.save-toast.success {
+  background-color: #28a745;
+}
+
+.save-toast.error {
+  background-color: #dc3545;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* 结果按钮样式 */
+.result-buttons {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  gap: 15px;
+}
+
+.action-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  background-color: #3a3f58;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+  background-color: #4a5070;
+  transform: translateY(-2px);
+}
+
+.action-btn.primary {
+  background-color: #4e7cff;
+}
+
+.action-btn.primary:hover {
+  background-color: #5a89ff;
+}
+
+/* 禁用状态的按钮样式 */
+.primary-btn:disabled,
+.secondary-btn:disabled,
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #5a6178;
+}
+
+.primary-btn:disabled:hover,
+.secondary-btn:disabled:hover,
+.action-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* 记录表单样式 */
+.record-form {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  background-color: #2a2e3f;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  padding: 25px;
+  width: 90%;
+  max-width: 400px;
+  z-index: 1000;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.record-form.visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.record-form h3 {
+  margin-top: 0;
+  color: #ffffff;
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #ccd0ff;
+  font-size: 16px;
+}
+
+.form-group input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #454b6b;
+  border-radius: 5px;
+  background-color: #3a3f58;
+  color: white;
+  font-size: 16px;
+}
+
+.radio-group {
+  display: flex;
+  gap: 20px;
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.radio-group input[type="radio"] {
+  margin-right: 8px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 25px;
+}
+
+.primary-btn,
+.secondary-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.primary-btn {
+  background-color: #4e7cff;
+  color: white;
+}
+
+.secondary-btn {
+  background-color: #3a3f58;
+  color: white;
+}
+
+.primary-btn:hover,
+.secondary-btn:hover {
+  transform: translateY(-2px);
+}
+
+/* 保存反馈消息容器样式 */
+.record-feedback {
+  margin: 15px 0 !important;
+  padding: 12px 15px !important;
+  border-radius: 5px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  font-weight: bold !important;
+  font-size: 1rem !important;
+  text-align: center !important;
+  pointer-events: none !important;
+}
+
+/* 成功反馈样式 */
+.record-feedback.success {
+  background-color: rgba(40, 167, 69, 0.9) !important;
+  color: white !important;
+  border-left: 4px solid #28a745 !important;
+}
+
+/* 错误反馈样式 */
+.record-feedback.error {
+  background-color: rgba(220, 53, 69, 0.9) !important;
+  color: white !important;
+  border-left: 4px solid #dc3545 !important;
+}
+
+/* 保存按钮成功样式 */
+.save-success {
+  background-color: #28a745 !important;
+  border-color: #218838 !important;
+}
+
+/* 保存按钮错误样式 */
+.save-error {
+  background-color: #dc3545 !important;
+  border-color: #c82333 !important;
+}
+
+/* 技能揭示样式 */
+.trick-reveal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.reveal-content {
+  background-color: #2a2e3f;
+  border-radius: 10px;
+  padding: 30px;
+  text-align: center;
+  animation: pop-in 0.5s ease-out forwards;
+  max-width: 90%;
+  width: 350px;
+}
+
+.reveal-content h3 {
+  margin-top: 0;
+  color: #ffffff;
+}
+
+.trick-name {
+  font-size: 32px;
+  font-weight: bold;
+  color: #4e7cff;
+  margin: 30px 0;
+  text-shadow: 0 0 10px rgba(78, 124, 255, 0.5);
+}
+
+@keyframes pop-in {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 模态弹窗样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.modal-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-form {
+  background-color: #2a2e3f;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  padding: 25px;
+  width: 90%;
+  max-width: 400px;
+  transform: scale(0.9);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.modal-form.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* 技能揭示样式 */
+.centered-modal {
+  position: relative;
+  margin: auto;
+  z-index: 1001;
+}
+
+.trick-reveal {
+  background-color: transparent;
+}
+
+.reveal-content {
+  background-color: #2a2e3f;
+  border-radius: 10px;
+  padding: 30px;
+  text-align: center;
+  width: 100%;
+  max-width: 350px;
+}
+
+.trick-name {
+  font-size: 32px;
+  font-weight: bold;
+  color: #4e7cff;
+  margin: 30px 0;
+  text-shadow: 0 0 10px rgba(78, 124, 255, 0.5);
+}
+
+/* 结果模态框样式 */
+.result-modal {
+  text-align: center;
+}
+
+.result-modal h2 {
+  color: #ffffff;
+  margin-bottom: 20px;
+  font-size: 24px;
+}
+
+.result-modal .time-result {
+  font-size: 20px;
+  color: #ccd0ff;
+  margin-bottom: 25px;
+}
+
+.result-modal .time-result span {
+  font-weight: bold;
+  color: #4e7cff;
+  font-size: 24px;
+}

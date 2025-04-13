@@ -1,0 +1,38 @@
+{
+  "players": [
+    {
+      "name": "银华"
+    },
+    {
+      "name": "春春"
+    },
+    {
+      "name": "自由男孩"
+    },
+    {
+      "name": "修女"
+    },
+    {
+      "name": "橘桑"
+    },
+    {
+      "name": "元孝"
+    },
+    {
+      "name": "班庐"
+    },
+    {
+      "name": "斜化直"
+    },
+    {
+      "name": "希腊奶"
+    },
+    {
+      "name": "普洱猹"
+    }
+  ],
+  "currentIndex": 0,
+  "currentTrick": "",
+  "currentMusic": "",
+  "crossedTricks": []
+}

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Y.Stage 3 - 设置</title>
+    <link rel="stylesheet" href="../css/setting.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Y.Stage 3 设置中心</h1>
+        <p class="subtitle">管理选手、技能和奖励数据</p>
+      </header>
+
+      <nav class="tab-nav">
+        <button class="tab-btn active" data-tab="players">选手管理</button>
+        <button class="tab-btn" data-tab="tricks">技能管理</button>
+        <button class="tab-btn" data-tab="awards">奖励管理</button>
+        <button class="tab-btn" data-tab="musics">音乐导入</button>
+      </nav>
+
+      <main>
+        <!-- 选手管理面板 -->
+        <section id="players-panel" class="tab-panel active">
+          <div class="section-header">
+            <h2>选手管理</h2>
+            <select id="player-file-select">
+              <option value="player1">加组选手 (player1.json)</option>
+              <option value="player2">内组选手 (player2.json)</option>
+            </select>
+          </div>
+
+          <div class="data-container reversed">
+            <!-- 编辑区域移到右侧上方 -->
+            <div class="data-editor">
+              <h3>选手编辑</h3>
+              <form id="player-form">
+                <div class="form-group">
+                  <label for="player-name">选手名称:</label>
+                  <input type="text" id="player-name" required />
+                </div>
+                <div class="form-buttons">
+                  <button type="submit">添加选手</button>
+                  <button type="button" id="cancel-player-edit">取消</button>
+                </div>
+              </form>
+              
+              <!-- 批量导入功能 -->
+              <div class="import-section" id="drop-area">
+                <div class="import-header">
+                  <label for="import-players-file" class="import-label">
+                    <span class="import-icon">📄</span>
+                    以TXT文件批量导入选手
+                  </label>
+                  <input type="file" id="import-players-file" accept=".txt" style="display: none;" />
+                </div>
+                <div class="drop-zone">
+                  <p class="drop-message">拖放TXT文件到这里</p>
+                  <p class="import-hint">每行一个选手名称</p>
+                </div>
+                <!-- 添加导入模式选择 -->
+                <div class="import-mode">
+                  <p class="mode-title">导入模式：</p>
+                  <div class="radio-group">
+                    <label class="radio-label">
+                      <input type="radio" name="import-mode" value="append" checked>
+                      <span class="radio-text">添加到现有列表</span>
+                    </label>
+                    <label class="radio-label">
+                      <input type="radio" name="import-mode" value="replace">
+                      <span class="radio-text">替换现有列表</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 选手列表移到右侧 -->
+            <div class="data-list">
+              <h3>当前选手列表</h3>
+              <ul id="player-list"></ul>
+              
+              <!-- 将保存按钮移到选手列表下方 -->
+              <div class="action-buttons">
+                <button id="save-players-btn" class="primary-action-btn">保存更改</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 技能管理面板 -->
+        <section id="tricks-panel" class="tab-panel">
+          <div class="section-header">
+            <h2>技能管理</h2>
+            <select id="trick-file-select">
+              <option value="tricks">加组技能 (tricks.json)</option>
+              <option value="tricks_for_group2">
+                内组技能 (tricks_for_group2.json)
+              </option>
+            </select>
+          </div>
+
+          <div class="data-container">
+            <div class="data-list">
+              <h3>当前技能列表</h3>
+              <ul id="trick-list"></ul>
+              <div class="batch-actions">
+                <button id="save-tricks-btn" class="primary-action-btn">保存更改</button>
+              </div>
+            </div>
+
+            <div class="data-editor">
+              <h3>技能编辑</h3>
+              <form id="trick-form">
+                <div class="form-group">
+                  <label for="trick-name">技能名称:</label>
+                  <input type="text" id="trick-name" required />
+                </div>
+                <div class="form-buttons">
+                  <button type="submit">添加技能</button>
+                  <button type="button" id="cancel-trick-edit">取消</button>
+                </div>
+              </form>
+              
+              <!-- 批量导入功能 -->
+              <div class="import-section" id="trick-drop-area">
+                <div class="import-header">
+                  <label for="import-tricks-file" class="import-label">
+                    <span class="import-icon">📄</span>
+                    以TXT文件批量导入技能
+                  </label>
+                  <input type="file" id="import-tricks-file" accept=".txt" style="display: none;" />
+                </div>
+                <div class="drop-zone">
+                  <p class="drop-message">拖放TXT文件到这里</p>
+                  <p class="import-hint">每行一个技能名称</p>
+                </div>
+                <!-- 添加导入模式选择 -->
+                <div class="import-mode">
+                  <p class="mode-title">导入模式：</p>
+                  <div class="radio-group">
+                    <label class="radio-label">
+                      <input type="radio" name="trick-import-mode" value="append" checked>
+                      <span class="radio-text">添加到现有列表</span>
+                    </label>
+                    <label class="radio-label">
+                      <input type="radio" name="trick-import-mode" value="replace">
+                      <span class="radio-text">替换现有列表</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 奖励管理面板 -->
+        <section id="awards-panel" class="tab-panel">
+          <div class="section-header">
+            <h2>一年内组奖励管理</h2>
+          </div>
+
+          <div class="data-container">
+            <div class="data-list">
+              <h3>当前奖励列表</h3>
+              <ul id="award-list"></ul>
+              <div class="batch-actions">
+                <button id="add-award-btn">添加奖励</button>
+                <button id="save-awards-btn">保存更改</button>
+              </div>
+            </div>
+
+            <div class="data-editor">
+              <h3>一年内组奖励编辑</h3>
+              <form id="award-form">
+                <div class="form-group">
+                  <label for="award-rank">排名:</label>
+                  <input
+                    type="number"
+                    id="award-rank"
+                    min="1"
+                    max="5"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="award-name">奖励名称:</label>
+                  <input type="text" id="award-name" required />
+                </div>
+                <div class="form-group">
+                  <label for="award-description">奖励描述:</label>
+                  <textarea id="award-description" rows="3" required></textarea>
+                </div>
+                <div class="form-buttons">
+                  <button type="submit">保存</button>
+                  <button type="button" id="cancel-award-edit">取消</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- 音乐导入面板 -->
+        <section id="musics-panel" class="tab-panel">
+          <div class="section-header">
+            <h2>音乐导入管理</h2>
+          </div>
+          <div class="music-import-intro">
+            <p>在此页面可以批量导入音乐文件到不同组别。更详细的导入功能请使用专用页面：</p>
+            <button id="goto-music-import-btn" class="special-btn" onclick="window.location.href='musics_settings.html'">
+              进入音乐导入页面
+            </button>
+          </div>
+        </section>
+      </main>
+
+      <div id="status-message"></div>
+
+      <div class="navigation">
+        <button id="home-btn">返回主页</button>
+      </div>
+    </div>
+
+    <!-- 模块化导入JS文件 -->
+    <script src="../js/set-core.js"></script>
+    <script src="../js/set-players.js"></script>
+    <script src="../js/set-tricks.js"></script>
+    <script src="../js/set-awards.js"></script>
+    <script src="../js/set-ui.js"></script>
+  </body>
+</html>
+</html>

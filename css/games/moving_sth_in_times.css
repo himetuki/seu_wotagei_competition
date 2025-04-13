@@ -1,0 +1,622 @@
+/* 通用样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+
+:root {
+  --primary-color: #3498db;
+  --primary-hover: #2980b9;
+  --success-color: #2ecc71;
+  --success-hover: #27ae60;
+  --warning-color: #e74c3c;
+  --warning-hover: #c0392b;
+  --background-dark: #121212;
+  --card-dark: #1e1e1e;
+  --text-light: #f5f5f5;
+  --text-secondary: #aaaaaa;
+  --border-color: #333333;
+  --glow-color: rgba(52, 152, 219, 0.5);
+  --stick-color-1: #8b4513;
+  --stick-color-2: #a0522d;
+  --stick-color-3: #cd853f;
+}
+
+body {
+  background-color: var(--background-dark);
+  color: var(--text-light);
+  line-height: 1.6;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.background-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("../../resource/images/bg_index.jpg");
+  background-size: cover;
+  background-position: center;
+  opacity: 0.1;
+  z-index: -1;
+  filter: blur(3px);
+}
+
+/* 浮动化棒容器样式增强 */
+.floating-sticks-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 900; /* 高z-index但低于模态框 */
+  pointer-events: none; /* 防止化棒捕获鼠标事件 */
+}
+
+/* 浮动化棒样式 */
+.floating-stick {
+  position: absolute;
+  width: 15px;
+  height: 120px;
+  background: linear-gradient(
+    to bottom,
+    var(--stick-color-1),
+    var(--stick-color-2),
+    var(--stick-color-3)
+  );
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  pointer-events: none; /* 确保每个化棒也不可点击 */
+}
+
+.floating-stick::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 4px;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  filter: blur(2px);
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 50px 20px;
+  position: relative;
+  z-index: 2;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 30px;
+  animation: fadeInDown 1s ease-out;
+}
+
+header h1 {
+  font-size: 2.5rem;
+  color: var(--text-light);
+  margin-bottom: 10px;
+  text-shadow: 0 0 10px var(--glow-color);
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+}
+
+/* 游戏容器样式 */
+.game-container {
+  background-color: rgba(30, 30, 30, 0.7); /* 半透明背景 */
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 20px var(--glow-color);
+  padding: 30px;
+  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  animation: fadeIn 1s ease-out;
+  border: 1px solid var(--border-color);
+  position: relative;
+  backdrop-filter: blur(5px);
+}
+
+/* 计时器区域 */
+.timer-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  margin-bottom: 30px;
+}
+
+.timer {
+  font-size: 6rem;
+  font-weight: bold;
+  color: var(--text-light);
+  background-color: rgba(30, 30, 30, 0.8);
+  padding: 20px 40px;
+  border-radius: 15px;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3), 0 0 25px var(--glow-color);
+  margin-bottom: 25px;
+  text-shadow: 0 0 15px var(--glow-color);
+  transition: all 0.3s ease;
+  letter-spacing: 5px;
+  animation: pulse 2s infinite alternate;
+}
+
+.timer.warning {
+  color: var(--warning-color);
+  animation: pulse-warning 0.8s infinite alternate;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3), 0 0 30px rgba(231, 76, 60, 0.7);
+  text-shadow: 0 0 20px rgba(231, 76, 60, 0.7);
+}
+
+.current-music {
+  margin: 15px 0 25px;
+  color: var(--text-secondary);
+  font-style: italic;
+  text-align: center;
+}
+
+#music-name {
+  font-weight: bold;
+  color: var(--primary-color);
+  display: block;
+  margin-top: 5px;
+  font-size: 1.2rem;
+}
+
+.timer-controls {
+  display: flex;
+  gap: 20px;
+}
+
+.time-setting {
+  margin-top: 20px;
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+#time-limit {
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+/* 导航区域 */
+.navigation {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  animation: fadeInUp 1s ease-out;
+}
+
+/* 半透明按钮样式增强 */
+button {
+  padding: 12px 25px;
+  background-color: rgba(52, 152, 219, 0.65); /* 更透明的背景 */
+  color: var(--text-light);
+  border: none;
+  border-radius: 8px; /* 增大圆角 */
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), 0 0 15px rgba(52, 152, 219, 0.3); /* 增加阴影和光晕效果 */
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(5px); /* 玻璃效果 */
+  border: 1px solid rgba(255, 255, 255, 0.1); /* 细微的边框 */
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+button:hover {
+  background-color: rgba(52, 152, 219, 0.8);
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4), 0 0 20px rgba(52, 152, 219, 0.6); /* 增强的光晕效果 */
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3), 0 0 10px rgba(52, 152, 219, 0.4);
+}
+
+/* 添加光晕边缘效果 */
+button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 8px;
+  padding: 2px; /* 控制光晕边缘的宽度 */
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.3),
+    rgba(52, 152, 219, 0.5),
+    rgba(0, 0, 0, 0)
+  );
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: destination-out;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+button:hover::before {
+  opacity: 1;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.5),
+    rgba(52, 152, 219, 0.7),
+    rgba(41, 128, 185, 0.3)
+  );
+}
+
+/* 开始按钮特殊样式 */
+#start-timer-btn {
+  background-color: rgba(46, 204, 113, 0.65);
+}
+
+#start-timer-btn:hover {
+  background-color: rgba(46, 204, 113, 0.8);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4), 0 0 20px rgba(46, 204, 113, 0.6);
+}
+
+#start-timer-btn::before {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.3),
+    rgba(46, 204, 113, 0.5),
+    rgba(0, 0, 0, 0)
+  );
+}
+
+#start-timer-btn:hover::before {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.5),
+    rgba(46, 204, 113, 0.7),
+    rgba(39, 174, 96, 0.3)
+  );
+}
+
+/* 暂停按钮特殊样式 */
+#pause-timer-btn {
+  background-color: rgba(241, 196, 15, 0.65);
+}
+
+#pause-timer-btn:hover {
+  background-color: rgba(241, 196, 15, 0.8);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4), 0 0 20px rgba(241, 196, 15, 0.6);
+}
+
+#pause-timer-btn::before {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.3),
+    rgba(241, 196, 15, 0.5),
+    rgba(0, 0, 0, 0)
+  );
+}
+
+#pause-timer-btn:hover::before {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.5),
+    rgba(241, 196, 15, 0.7),
+    rgba(243, 156, 18, 0.3)
+  );
+}
+
+/* 重置和返回按钮样式保持不变 */
+#settings-btn {
+  background-color: rgba(155, 89, 182, 0.7);
+}
+
+#settings-btn:hover {
+  background-color: rgba(142, 68, 173, 0.8);
+}
+
+#back-btn,
+#home-btn,
+#back-to-menu-btn {
+  background-color: rgba(231, 76, 60, 0.7);
+}
+
+#back-btn:hover,
+#home-btn:hover,
+#back-to-menu-btn:hover {
+  background-color: rgba(192, 57, 43, 0.8);
+}
+
+/* 结果模态框 */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(5px);
+}
+
+.modal.show {
+  display: flex;
+  animation: modalFadeIn 0.5s ease-out;
+}
+
+.modal-content {
+  background-color: var(--card-dark);
+  padding: 40px;
+  border-radius: 10px;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5), 0 0 20px var(--glow-color);
+  border: 1px solid var(--border-color);
+}
+
+.modal-content h2 {
+  color: var(--text-light);
+  margin-bottom: 20px;
+  text-shadow: 0 0 10px var(--glow-color);
+  font-size: 2rem;
+}
+
+.modal-content p {
+  font-size: 1.2rem;
+  margin-bottom: 30px;
+  color: var(--text-secondary);
+}
+
+/* 模态框按钮样式增强 */
+.modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.modal-buttons button {
+  padding: 12px 25px;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+#try-again-btn {
+  background-color: rgba(46, 204, 113, 0.65);
+}
+
+#try-again-btn:hover {
+  background-color: rgba(46, 204, 113, 0.8);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4), 0 0 20px rgba(46, 204, 113, 0.6);
+}
+
+#try-again-btn::before {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.3),
+    rgba(46, 204, 113, 0.5),
+    rgba(0, 0, 0, 0)
+  );
+}
+
+#try-again-btn:hover::before {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.5),
+    rgba(46, 204, 113, 0.7),
+    rgba(39, 174, 96, 0.3)
+  );
+}
+
+#back-to-menu-btn {
+  background-color: rgba(231, 76, 60, 0.65);
+}
+
+#back-to-menu-btn:hover {
+  background-color: rgba(231, 76, 60, 0.8);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4), 0 0 20px rgba(231, 76, 60, 0.6);
+}
+
+#back-to-menu-btn::before {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.3),
+    rgba(231, 76, 60, 0.5),
+    rgba(0, 0, 0, 0)
+  );
+}
+
+#back-to-menu-btn:hover::before {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.5),
+    rgba(231, 76, 60, 0.7),
+    rgba(192, 57, 43, 0.3)
+  );
+}
+
+/* 倒计时样式 */
+.countdown-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.countdown-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 8rem;
+  color: var(--text-light);
+  z-index: 1001;
+  text-shadow: 0 0 20px var(--glow-color);
+  font-weight: bold;
+}
+
+.countdown-animation {
+  animation: countdown-pulse 1s ease-out;
+}
+
+.start-animation {
+  animation: start-pulse 1s ease-out;
+  color: var(--success-color);
+  text-shadow: 0 0 30px var(--success-color);
+}
+
+@keyframes countdown-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  80% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0;
+  }
+}
+
+@keyframes start-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* 动画 */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow-color);
+  }
+  100% {
+    opacity: 0.95;
+    transform: scale(1.03);
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3), 0 0 30px var(--glow-color);
+  }
+}
+
+@keyframes pulse-warning {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0.9;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .timer {
+    font-size: 3.5rem;
+  }
+
+  .navigation {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  button {
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
+footer {
+  text-align: center;
+  margin-top: 30px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}

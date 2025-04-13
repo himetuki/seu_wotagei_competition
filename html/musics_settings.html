@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Y.Stage 3 - 音乐导入管理</title>
+    <link rel="stylesheet" href="../css/music_settings.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>音乐批量导入管理</h1>
+        <p class="subtitle">导入不同组别的音乐文件并更新配置</p>
+      </header>
+
+      <div class="group-selector">
+        <button class="group-btn active" data-group="1yearplus">
+          一年加组第一章节
+        </button>
+        <button class="group-btn" data-group="1yearplus_ex">
+          一年加组第二章节
+        </button>
+        <button class="group-btn" data-group="1yearminus">一年内组</button>
+        <button class="group-btn" data-group="games_musics">
+          搬化棒游戏音乐
+        </button>
+      </div>
+
+      <main>
+        <div class="upload-section">
+          <div class="upload-container" id="drop-area">
+            <div class="upload-icon">
+              <i class="icon-upload"></i>
+            </div>
+            <h3>拖放音乐文件到这里</h3>
+            <p>或者</p>
+            <label for="file-input" class="file-input-label">选择文件</label>
+            <input type="file" id="file-input" multiple accept="audio/*" />
+            <p class="upload-hint">支持格式: MP3, WAV, FLAC, OGG (最大50MB)</p>
+          </div>
+        </div>
+
+        <div class="preview-section">
+          <h3>音乐文件预览 (<span id="upload-count">0</span>)</h3>
+          <div class="file-list-container">
+            <ul id="file-list" class="file-list"></ul>
+          </div>
+          <div class="upload-target-selection">
+            <h4>上传目标组别</h4>
+            <select id="upload-target-group" class="upload-target-select">
+              <option value="1yearplus">一年加组第一章节</option>
+              <option value="1yearplus_ex">一年加组第二章节</option>
+              <option value="1yearminus">一年内组</option>
+              <option value="games_musics">搬化棒游戏音乐</option>
+            </select>
+            <p class="upload-hint">请确认上传目标组别是否正确</p>
+          </div>
+          <div class="upload-actions">
+            <button id="start-upload-btn" class="primary-btn" disabled>
+              开始上传
+            </button>
+            <button id="clear-files-btn" class="secondary-btn" disabled>
+              清空列表
+            </button>
+          </div>
+        </div>
+
+        <div class="group-info">
+          <div class="info-card">
+            <h3>当前所选组别</h3>
+            <p id="current-group-name">一年加组第一章节</p>
+            <p>
+              文件夹: <span id="current-folder">resource\musics\1yearplus</span>
+            </p>
+            <p>配置文件: <span id="current-json">musics_list.json</span></p>
+            <p>已有音乐数量: <span id="current-count">0</span></p>
+          </div>
+        </div>
+
+        <!-- 添加音乐文件列表区块 -->
+        <div class="music-files-section">
+          <h3>
+            音乐文件列表
+            <button
+              id="refresh-music-list"
+              class="action-btn"
+              title="刷新文件列表"
+            >
+              <span class="icon">🔄</span>
+            </button>
+          </h3>
+          <div class="music-files-container">
+            <table id="music-files-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>文件名</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="music-files-list">
+                <tr class="loading-row">
+                  <td colspan="3">加载音乐文件列表...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+
+      <div id="status-message" class="status-message"></div>
+      <div id="progress-container" class="progress-container hidden">
+        <div class="progress-bar">
+          <div id="progress-bar-inner" class="progress-bar-inner"></div>
+        </div>
+        <div id="progress-text" class="progress-text">0%</div>
+      </div>
+
+      <div class="navigation">
+        <button id="settings-btn" class="nav-btn">返回设置中心</button>
+        <button id="home-btn" class="nav-btn">返回主页</button>
+      </div>
+
+      <footer>
+        <p>&copy; 2025 Y.Stage X 开发团队</p>
+      </footer>
+    </div>
+
+    <!-- 模块化导入JS文件 -->
+    <script src="../js/music_st/music_core.js"></script>
+    <script src="../js/music_st/music_ui.js"></script>
+    <script src="../js/music_st/music_import.js"></script>
+    <script src="../js/music_st/music_api.js"></script>
+  </body>
+</html>

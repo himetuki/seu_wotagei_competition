@@ -1,0 +1,450 @@
+/* 设置页面专用样式 */
+.settings-container {
+  background-color: var(--card-dark);
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 20px var(--glow-color);
+  padding: 40px;
+  margin-bottom: 30px;
+  max-width: 600px;
+  margin: 0 auto 30px;
+  border: 1px solid var(--border-color);
+  animation: fadeIn 1s ease-out;
+}
+
+#settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.setting-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.setting-group label {
+  font-weight: bold;
+  color: var(--text-light);
+  font-size: 1.1rem;
+}
+
+.setting-description {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-top: 5px;
+}
+
+/* 美化时间限制输入框 */
+#time-setting {
+  padding: 12px 15px;
+  width: 100%;
+  background-color: rgba(30, 30, 30, 0.7);
+  border: 1px solid rgba(52, 152, 219, 0.3);
+  color: var(--text-light);
+  border-radius: 8px;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3);
+  -moz-appearance: textfield; /* 移除Firefox的数字调节按钮 */
+}
+
+/* 隐藏Chrome/Safari的上下箭头 */
+#time-setting::-webkit-inner-spin-button,
+#time-setting::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+#time-setting:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3), 0 0 8px rgba(52, 152, 219, 0.6);
+  background-color: rgba(40, 40, 40, 0.7);
+}
+
+.opacity-slider-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 5px;
+}
+
+#opacity-setting {
+  flex-grow: 1;
+  height: 10px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(30, 30, 30, 0.7);
+  outline: none;
+  border-radius: 5px;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+#opacity-setting::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(52, 152, 219, 0.5);
+  transition: all 0.2s ease;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+#opacity-setting::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  background-color: #2980b9;
+  box-shadow: 0 0 12px rgba(52, 152, 219, 0.8);
+}
+
+#opacity-setting::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(52, 152, 219, 0.5);
+  transition: all 0.2s ease;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+#opacity-setting::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  background-color: #2980b9;
+  box-shadow: 0 0 12px rgba(52, 152, 219, 0.8);
+}
+
+#opacity-setting::-moz-range-progress {
+  background-color: var(--primary-color);
+  height: 10px;
+  border-radius: 5px;
+}
+
+#opacity-value {
+  min-width: 50px;
+  color: var(--primary-color);
+  font-weight: bold;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+/* 按钮组和按钮半透明化和光效增强 */
+.button-group {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+  animation: fadeInUp 1s ease-out;
+}
+
+/* 设置页面按钮共同样式 */
+.button-group button,
+.navigation button {
+  padding: 12px 25px;
+  color: var(--text-light);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  background-color: rgba(52, 152, 219, 0.65);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), 0 0 15px rgba(52, 152, 219, 0.3);
+}
+
+.button-group button:hover,
+.navigation button:hover {
+  transform: translateY(-3px);
+  background-color: rgba(52, 152, 219, 0.8);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4), 0 0 20px rgba(52, 152, 219, 0.6);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.button-group button:active,
+.navigation button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3), 0 0 10px rgba(52, 152, 219, 0.4);
+}
+
+/* 添加光晕边缘效果 */
+.button-group button::before,
+.navigation button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 8px;
+  padding: 2px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.3),
+    rgba(52, 152, 219, 0.5),
+    rgba(0, 0, 0, 0)
+  );
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: destination-out;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.button-group button:hover::before,
+.navigation button:hover::before {
+  opacity: 1;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.5),
+    rgba(52, 152, 219, 0.7),
+    rgba(41, 128, 185, 0.3)
+  );
+}
+
+/* 保存设置按钮特殊样式 */
+#save-settings-btn {
+  background-color: rgba(46, 204, 113, 0.65);
+}
+
+#save-settings-btn:hover {
+  background-color: rgba(46, 204, 113, 0.8);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4), 0 0 20px rgba(46, 204, 113, 0.6);
+}
+
+#save-settings-btn::before {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.3),
+    rgba(46, 204, 113, 0.5),
+    rgba(0, 0, 0, 0)
+  );
+}
+
+#save-settings-btn:hover::before {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.5),
+    rgba(46, 204, 113, 0.7),
+    rgba(39, 174, 96, 0.3)
+  );
+}
+
+/* 重置默认按钮特殊样式 */
+#reset-default-btn {
+  background-color: rgba(230, 126, 34, 0.65);
+}
+
+#reset-default-btn:hover {
+  background-color: rgba(230, 126, 34, 0.8);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4), 0 0 20px rgba(230, 126, 34, 0.6);
+}
+
+#reset-default-btn::before {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.3),
+    rgba(230, 126, 34, 0.5),
+    rgba(0, 0, 0, 0)
+  );
+}
+
+#reset-default-btn:hover::before {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.5),
+    rgba(230, 126, 34, 0.7),
+    rgba(211, 84, 0, 0.3)
+  );
+}
+
+/* 返回游戏按钮特殊样式 */
+#back-to-game-btn {
+  background-color: rgba(52, 152, 219, 0.65);
+}
+
+#back-to-game-btn:hover {
+  background-color: rgba(52, 152, 219, 0.8);
+}
+
+/* 修改其他导航按钮样式 */
+#back-btn,
+#home-btn {
+  background-color: rgba(231, 76, 60, 0.65);
+}
+
+#back-btn:hover,
+#home-btn:hover {
+  background-color: rgba(231, 76, 60, 0.8);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4), 0 0 20px rgba(231, 76, 60, 0.6);
+}
+
+#back-btn::before,
+#home-btn::before {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.3),
+    rgba(231, 76, 60, 0.5),
+    rgba(0, 0, 0, 0)
+  );
+}
+
+#back-btn:hover::before,
+#home-btn:hover::before {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.5),
+    rgba(231, 76, 60, 0.7),
+    rgba(192, 57, 43, 0.3)
+  );
+}
+
+/* 设置表单提交成功的动画效果 */
+.settings-saved {
+  animation: saved-flash 1s;
+}
+
+@keyframes saved-flash {
+  0% {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 20px var(--glow-color);
+  }
+  50% {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 60px var(--success-color);
+  }
+  100% {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 20px var(--glow-color);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .settings-container {
+    padding: 20px;
+  }
+
+  .button-group {
+    flex-direction: column;
+  }
+}
+
+/* 通知弹窗样式 */
+.notification {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
+  padding: 15px 25px;
+  border-radius: 8px;
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  opacity: 0;
+  transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+}
+
+.notification.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.notification.success {
+  background-color: rgba(46, 204, 113, 0.9);
+}
+
+.notification.error {
+  background-color: rgba(231, 76, 60, 0.9);
+}
+
+.notification.info {
+  background-color: rgba(52, 152, 219, 0.9);
+}
+
+.notification.warning {
+  background-color: rgba(243, 156, 18, 0.9);
+}
+
+/* 自定义确认对话框 */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1001;
+}
+
+.dialog-container {
+  background-color: var(--card-dark);
+  border-radius: 10px;
+  padding: 25px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border-color);
+}
+
+.dialog-content {
+  color: var(--text-light);
+  margin-bottom: 20px;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.dialog-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.dialog-confirm,
+.dialog-cancel {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.dialog-confirm {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.dialog-confirm:hover {
+  background-color: var(--primary-hover);
+}
+
+.dialog-cancel {
+  background-color: #7f8c8d;
+  color: white;
+}
+
+.dialog-cancel:hover {
+  background-color: #95a5a6;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  #custom-notification {
+    left: 20px;
+    right: 20px;
+    width: auto;
+    min-width: unset;
+  }
+}

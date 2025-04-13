@@ -1,0 +1,18 @@
+[
+  {
+    "rank": 1,
+    "name": "第一名",
+    "description": "一年内组冠军奖品"
+  },
+  {
+    "rank": 2,
+    "name": "第二名",
+    "description": "一年内组亚军奖品"
+  },
+  {
+    "rank": 3,
+    "name": "第三名",
+    "description": "一年内组季军奖品"
+  },
+  "季军奖品"
+]

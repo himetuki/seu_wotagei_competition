@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>一年加组对战 - 排名</title>
+    <link rel="stylesheet" href="../css/rank.css" />
+  </head>
+  <body>
+    <!-- 添加烟花容器 -->
+    <div class="firework-container" id="fireworkContainer"></div>
+
+    <div class="container">
+      <header>
+        <h1>一年加组对战 - 最终排名</h1>
+        <p class="subtitle">双败赛制战况</p>
+      </header>
+      <main>
+        <!-- 第二章节前三名展示区域 -->
+        <section id="chapter2-top3">
+          <h2>第二章节最终排名</h2>
+          <div class="top3-container">
+            <div class="rank-position rank-silver" data-rank="2">
+              <span class="rank-number">2</span>
+              <div class="rank-player"></div>
+            </div>
+            <div class="rank-position rank-gold" data-rank="1">
+              <span class="rank-number">1</span>
+              <div class="rank-player"></div>
+            </div>
+            <div class="rank-position rank-bronze" data-rank="3">
+              <span class="rank-number">3</span>
+              <div class="rank-player"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="final-winner">
+          <h2>总冠军</h2>
+          <div class="champion-display" id="champion-display">
+            <p>请完成所有章节的比赛</p>
+          </div>
+        </section>
+
+        <!-- 添加比赛流程图区域 -->
+        <section id="tournament-bracket">
+          <h2>第二章节比赛流程</h2>
+          <div class="bracket-container" id="bracket-container">
+            <div class="loading">正在加载比赛数据...</div>
+          </div>
+        </section>
+
+        <section class="navigation">
+          <button id="home-btn">回到主页面</button>
+          <button id="chapter1-btn">回到第一章节</button>
+          <button id="chapter2-btn">回到第二章节</button>
+        </section>
+      </main>
+    </div>
+
+    <script src="../js/rank.js"></script>
+  </body>
+</html>

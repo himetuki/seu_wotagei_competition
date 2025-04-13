@@ -1,0 +1,524 @@
+/* 体态传技 - 设置页面样式 */
+
+/* 设置面板样式 */
+.settings-panel {
+  width: 100%;
+  max-width: 800px;
+  background-color: rgba(30, 30, 40, 0.7);
+  border-radius: 15px;
+  padding: 30px;
+  box-shadow: 0 0 20px rgba(100, 100, 255, 0.3);
+  margin-bottom: 30px;
+}
+
+.panel-header {
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(200, 200, 255, 0.2);
+  padding-bottom: 10px;
+}
+
+.data-container {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.data-list {
+  flex: 1;
+  min-width: 250px;
+}
+
+.data-editor {
+  flex: 1;
+  min-width: 250px;
+  background-color: rgba(40, 40, 60, 0.5);
+  padding: 20px;
+  border-radius: 10px;
+}
+
+/* 技能列表样式 */
+.trick-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+  max-height: 300px;
+  overflow-y: auto;
+  background-color: rgba(40, 40, 60, 0.5);
+  border-radius: 8px;
+}
+
+.trick-list li {
+  padding: 10px 15px;
+  margin: 5px 0;
+  background-color: rgba(60, 60, 100, 0.5);
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.2s;
+}
+
+.trick-list li:hover {
+  background-color: rgba(70, 70, 120, 0.7);
+}
+
+.trick-list .item-name {
+  flex: 1;
+}
+
+.trick-list .item-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.trick-list button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  padding: 2px;
+}
+
+.trick-list button:hover {
+  opacity: 1;
+}
+
+.trick-list .edit-btn:hover {
+  color: #90ff90;
+}
+
+.trick-list .delete-btn:hover {
+  color: #ff9090;
+}
+
+.trick-list .empty {
+  color: #888;
+  text-align: center;
+  padding: 20px;
+  font-style: italic;
+}
+
+/* 表单样式 */
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  color: #ccc;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 8px 12px;
+  background-color: rgba(50, 50, 70, 0.7);
+  border: 1px solid rgba(100, 100, 180, 0.3);
+  color: #fff;
+  border-radius: 5px;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: rgba(100, 100, 255, 0.5);
+  box-shadow: 0 0 5px rgba(100, 100, 255, 0.2);
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+/* 批量操作按钮样式 */
+.batch-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* 状态消息样式 */
+.status-message {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 20px;
+  border-radius: 8px;
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.status-message.visible {
+  opacity: 1;
+}
+
+.status-message.error {
+  background-color: rgba(180, 60, 60, 0.7);
+}
+
+.status-message.success {
+  background-color: rgba(60, 180, 60, 0.7);
+}
+
+.status-message.info {
+  background-color: rgba(60, 60, 180, 0.7);
+}
+
+/* 设置按钮样式 */
+.settings-btn {
+  padding: 10px 16px;
+  background-color: rgba(50, 50, 70, 0.7);
+  border: none;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.settings-btn:hover:not(:disabled) {
+  background-color: rgba(70, 70, 100, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.settings-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-btn.primary {
+  background-color: rgba(70, 100, 180, 0.7);
+}
+
+.settings-btn.primary:hover:not(:disabled) {
+  background-color: rgba(90, 120, 220, 0.9);
+}
+
+/* BPM设置区域样式增强 */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.setting-item {
+  flex: 1;
+  margin-right: 20px;
+}
+
+.setting-item label {
+  display: block;
+  margin-bottom: 10px;
+  color: #ccc;
+  font-weight: bold;
+}
+
+/* 美化BPM滑动条 */
+.setting-control {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 8px;
+  background-color: rgba(40, 40, 60, 0.6);
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.3);
+}
+
+#bpm-setting {
+  flex: 1;
+  height: 8px;
+  -webkit-appearance: none;
+  background: rgba(60, 60, 90, 0.4);
+  border-radius: 5px;
+  outline: none;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+#bpm-setting::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #4e7cff;
+  cursor: pointer;
+  box-shadow: 0 0 5px rgba(78, 124, 255, 0.8);
+  transition: all 0.2s;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+#bpm-setting::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(78, 124, 255, 1);
+}
+
+#bpm-setting::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: #4e7cff;
+  cursor: pointer;
+  box-shadow: 0 0 5px rgba(78, 124, 255, 0.8);
+  transition: all 0.2s;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+#bpm-setting::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(78, 124, 255, 1);
+}
+
+#bpm-value {
+  min-width: 50px;
+  text-align: center;
+  font-weight: bold;
+  color: #4e7cff;
+  font-size: 18px;
+  background-color: rgba(30, 30, 50, 0.7);
+  padding: 8px 12px;
+  border-radius: 5px;
+  box-shadow: 0 0 5px rgba(78, 124, 255, 0.3);
+}
+
+/* 节拍控制区 */
+.metronome-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.metronome-pattern {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: rgba(50, 50, 70, 0.5);
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.beat {
+  display: inline-block;
+  padding: 8px 15px;
+  border-radius: 20px;
+  margin: 0 8px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.beat.light {
+  background-color: rgba(100, 100, 255, 0.4);
+  box-shadow: 0 0 8px rgba(100, 100, 255, 0.5);
+}
+
+.beat.heavy {
+  background-color: rgba(255, 100, 100, 0.4);
+  box-shadow: 0 0 8px rgba(255, 100, 100, 0.5);
+}
+
+/* 拍子高亮效果 */
+.beat.active {
+  transform: scale(1.2);
+  filter: brightness(1.3);
+  transition: all 0.1s ease;
+}
+
+.beat.light.active {
+  background-color: rgba(100, 140, 255, 0.7);
+  box-shadow: 0 0 12px rgba(100, 140, 255, 0.8);
+}
+
+.beat.heavy.active {
+  background-color: rgba(255, 120, 120, 0.7);
+  box-shadow: 0 0 12px rgba(255, 120, 120, 0.8);
+}
+
+.icon {
+  margin-right: 5px;
+}
+
+.settings-saved {
+  animation: settings-saved-flash 1s;
+}
+
+@keyframes settings-saved-flash {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(100, 100, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(78, 124, 255, 0.8),
+      0 0 30px rgba(78, 124, 255, 0.5);
+  }
+}
+
+/* 按钮点击特效 */
+.btn-click-effect {
+  animation: btn-click 0.3s forwards;
+}
+
+@keyframes btn-click {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+}
+
+/* 添加按钮悬停动画效果 */
+.hover-glow {
+  transition: all 0.3s ease;
+}
+
+.hover-glow:hover:not(:disabled) {
+  box-shadow: 0 0 8px rgba(100, 140, 255, 0.7);
+  transform: translateY(-2px);
+}
+
+/* 增强按钮样式 */
+.glow-btn {
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.glow-btn::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0) 60%
+  );
+  transform: scale(0);
+  opacity: 0;
+  transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+  z-index: -1;
+}
+
+.glow-btn:hover::after {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.nav-btn {
+  padding: 10px 20px;
+  margin: 0 10px;
+  background-color: rgba(60, 60, 100, 0.7);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 16px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.nav-btn:hover {
+  background-color: rgba(80, 80, 150, 0.9);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* 简易确认对话框样式 */
+#confirmDialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+#confirmDialog .dialog-content {
+  background-color: #2a2a3a;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(100, 100, 255, 0.4);
+  text-align: center;
+  max-width: 400px;
+  width: 80%;
+}
+
+#confirmDialog p {
+  margin-bottom: 20px;
+  color: #fff;
+}
+
+#confirmDialog .button-container {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+#confirmDialog button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#confirmDialog .confirm-btn {
+  background-color: rgba(70, 100, 180, 0.8);
+  color: #fff;
+}
+
+#confirmDialog .confirm-btn:hover {
+  background-color: rgba(90, 120, 220, 0.9);
+  transform: translateY(-2px);
+}
+
+#confirmDialog .cancel-btn {
+  background-color: rgba(80, 80, 100, 0.8);
+  color: #fff;
+}
+
+#confirmDialog .cancel-btn:hover {
+  background-color: rgba(100, 100, 120, 0.9);
+  transform: translateY(-2px);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .data-container {
+    flex-direction: column;
+  }
+
+  .navigation {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .setting-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .setting-item {
+    margin-right: 0;
+    margin-bottom: 15px;
+  }
+
+  .metronome-controls {
+    margin-top: 10px;
+    justify-content: center;
+  }
+}

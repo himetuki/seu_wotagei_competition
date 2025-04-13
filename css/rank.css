@@ -1,0 +1,606 @@
+/* 基础样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Arial", sans-serif;
+  background-color: #121212;
+  background-image: url("../resource/images/bg_index.jpg");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  color: #e0e0e0;
+  min-height: 100vh;
+}
+
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: rgba(30, 30, 30, 0.9);
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+header h1 {
+  text-align: center;
+  margin-bottom: 10px;
+  font-size: 2.5rem;
+  color: #f0f0f0;
+  text-shadow: 0 0 10px rgba(0, 150, 255, 0.5);
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #00c3ff;
+  margin-bottom: 30px;
+}
+
+section {
+  margin-bottom: 40px;
+}
+
+section h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 1.8rem;
+  color: #f0f0f0;
+  text-shadow: 0 0 5px rgba(0, 150, 255, 0.3);
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 章节卡片区域 */
+.chapters-container {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.chapter-card {
+  background-color: rgba(40, 40, 40, 0.8);
+  border-radius: 8px;
+  padding: 20px;
+  min-width: 300px;
+  flex: 1;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.chapter-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+}
+
+.chapter-card h3 {
+  text-align: center;
+  margin-bottom: 15px;
+  font-size: 1.5rem;
+  color: #00c3ff;
+  text-shadow: 0 0 5px rgba(0, 150, 255, 0.3);
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 获胜者列表 */
+.winners-list {
+  min-height: 200px;
+}
+
+.winner-item {
+  background-color: rgba(50, 50, 50, 0.7);
+  margin-bottom: 10px;
+  padding: 12px 15px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background-color 0.2s ease;
+}
+
+.winner-item:hover {
+  background-color: rgba(60, 60, 60, 0.9);
+}
+
+.winner-round {
+  font-size: 14px;
+  color: #aaa;
+}
+
+.winner-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.chapter-winner {
+  background-color: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.chapter-winner .winner-name {
+  color: #ffd700;
+  text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+}
+
+/* 总冠军区域 */
+.champion-display {
+  background-color: rgba(255, 215, 0, 0.1);
+  border: 2px solid rgba(255, 215, 0, 0.3);
+  border-radius: 10px;
+  padding: 30px;
+  text-align: center;
+  margin: 0 auto;
+  max-width: 500px;
+}
+
+.champion-display p {
+  font-size: 20px;
+  color: #ccc;
+}
+
+.champion-name {
+  font-size: 36px;
+  font-weight: bold;
+  color: #ffd700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+  margin: 20px 0;
+  animation: glow 1.5s infinite alternate;
+}
+
+.champion-trophy {
+  font-size: 50px;
+  margin-bottom: 10px;
+  animation: float 3s ease-in-out infinite;
+}
+
+/* 导航区域 */
+.navigation {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 30px;
+  flex-wrap: wrap;
+}
+
+button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 5px;
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid #444;
+}
+
+button:hover {
+  background-color: #3a3a3a;
+  transform: translateY(-3px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+button:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+#home-btn {
+  border-color: #0066cc;
+  box-shadow: 0 0 5px rgba(0, 102, 204, 0.3);
+}
+
+#chapter1-btn {
+  border-color: #cc6600;
+  box-shadow: 0 0 5px rgba(204, 102, 0, 0.3);
+}
+
+#chapter2-btn {
+  border-color: #cc0066;
+  box-shadow: 0 0 5px rgba(204, 0, 102, 0.3);
+}
+
+/* 加载动画 */
+.loading {
+  text-align: center;
+  color: #888;
+  font-style: italic;
+}
+
+.loading:after {
+  content: ".";
+  animation: dots 1.5s steps(5, end) infinite;
+}
+
+@keyframes dots {
+  0%,
+  20% {
+    content: ".";
+  }
+  40% {
+    content: "..";
+  }
+  60% {
+    content: "...";
+  }
+  80%,
+  100% {
+    content: "";
+  }
+}
+
+/* 动画定义 */
+@keyframes glow {
+  from {
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+  }
+  to {
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.9);
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+/* 第二章节前三名区域 */
+.top3-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 20px;
+  margin: 30px 0;
+  height: 250px;
+}
+
+.rank-position {
+  background-color: rgba(50, 50, 50, 0.7);
+  border-radius: 10px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.3s ease;
+  position: relative;
+  width: 120px;
+}
+
+.rank-position:hover {
+  transform: translateY(-5px);
+}
+
+.rank-gold {
+  background-color: rgba(255, 215, 0, 0.3);
+  border: 2px solid #ffd700;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+  height: 220px;
+  z-index: 3;
+}
+
+.rank-silver {
+  background-color: rgba(192, 192, 192, 0.3);
+  border: 2px solid #c0c0c0;
+  box-shadow: 0 0 15px rgba(192, 192, 192, 0.5);
+  height: 190px;
+  z-index: 2;
+}
+
+.rank-bronze {
+  background-color: rgba(205, 127, 50, 0.3);
+  border: 2px solid #cd7f32;
+  box-shadow: 0 0 15px rgba(205, 127, 50, 0.5);
+  height: 160px;
+  z-index: 1;
+}
+
+.rank-number {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.rank-gold .rank-number {
+  color: #ffd700;
+}
+
+.rank-silver .rank-number {
+  color: #c0c0c0;
+}
+
+.rank-bronze .rank-number {
+  color: #cd7f32;
+}
+
+.rank-player {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.player-item {
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  text-align: center;
+  animation: appear 0.8s ease-out;
+  font-weight: bold;
+  width: 100%;
+}
+
+.rank-gold .player-item {
+  background-color: rgba(255, 215, 0, 0.2);
+  color: #ffd700;
+  font-size: 20px;
+}
+
+.rank-silver .player-item {
+  background-color: rgba(192, 192, 192, 0.2);
+  color: #c0c0c0;
+  font-size: 18px;
+}
+
+.rank-bronze .player-item {
+  background-color: rgba(205, 127, 50, 0.2);
+  color: #cd7f32;
+  font-size: 16px;
+}
+
+@keyframes appear {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 烟花效果样式 */
+.firework-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.firework {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  animation: explode 1.5s ease-out forwards;
+  z-index: 9999;
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  animation: fly var(--duration, 1500ms) ease-out forwards;
+  z-index: 9999;
+}
+
+@keyframes explode {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 0 5px 0px currentColor;
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 20px 5px currentColor;
+  }
+  100% {
+    transform: scale(15);
+    opacity: 0;
+    box-shadow: 0 0 40px 15px rgba(255, 255, 255, 0);
+  }
+}
+
+@keyframes fly {
+  0% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  30% {
+    opacity: 1;
+    box-shadow: 0 0 4px 1px currentColor;
+  }
+  100% {
+    transform: translate(
+      calc(cos(var(--angle)) * var(--distance)),
+      calc(sin(var(--angle)) * var(--distance))
+    );
+    opacity: 0;
+    box-shadow: 0 0 0 0 currentColor;
+  }
+}
+
+/* 比赛流程图区域 */
+#tournament-bracket {
+  margin-top: 40px;
+  padding-bottom: 20px;
+}
+
+.bracket-container {
+  background-color: rgba(30, 30, 30, 0.8);
+  border-radius: 8px;
+  padding: 25px;
+  position: relative;
+  overflow-x: auto;
+}
+
+.tournament-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.bracket-section {
+  margin-bottom: 20px;
+}
+
+.bracket-title {
+  font-size: 1.2rem;
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.winner-title {
+  color: #4caf50;
+}
+
+.loser-title {
+  color: #f44336;
+}
+
+.final-title {
+  color: #ffd700;
+}
+
+.bracket-rounds {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+}
+
+.bracket-round {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.round-title {
+  font-size: 0.9rem;
+  color: #aaa;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.matches-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.match-card {
+  background-color: rgba(50, 50, 50, 0.6);
+  border-radius: 5px;
+  padding: 10px;
+  min-width: 180px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.match-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.winner-match {
+  border-left: 3px solid #4caf50;
+}
+
+.loser-match {
+  border-left: 3px solid #f44336;
+}
+
+.final-match {
+  border-left: 3px solid #ffd700;
+}
+
+.match-player {
+  padding: 5px 10px;
+  margin: 5px 0;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  font-size: 0.95rem;
+}
+
+.match-vs {
+  font-size: 0.8rem;
+  color: #888;
+  text-align: center;
+  margin: 3px 0;
+}
+
+.match-player.winner {
+  background-color: rgba(76, 175, 80, 0.2);
+  color: #9aff9a;
+  font-weight: bold;
+}
+
+.match-player.loser {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.match-player.tbd {
+  font-style: italic;
+  color: #777;
+}
+
+/* 为决赛特殊样式 */
+.final-match {
+  background-color: rgba(60, 60, 60, 0.8);
+}
+
+/* 使比赛流程图在移动设备上可水平滚动 */
+@media (max-width: 768px) {
+  .bracket-container {
+    overflow-x: auto;
+    padding: 15px;
+  }
+
+  .tournament-flow {
+    min-width: 600px;
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .container {
+    width: 95%;
+    padding: 15px;
+  }
+
+  .chapter-card {
+    min-width: 100%;
+  }
+
+  .navigation {
+    flex-direction: column;
+  }
+
+  button {
+    width: 100%;
+  }
+}

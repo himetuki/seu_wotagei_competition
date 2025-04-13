@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>一年加组对战 - 第二章节</title>
+    <link rel="stylesheet" href="../css/battle-group1-2.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>一年加组对战 - 第二章节</h1>
+        <p class="subtitle">双败赛制</p>
+      </header>
+      <main>
+        <section id="battle-info">
+          <h2>
+            章节 <span id="chapter-number">2</span> - 轮次
+            <span id="round-number">1/6</span>
+          </h2>
+          <div id="tournament-status">
+            <span class="status-badge">胜者组</span>
+          </div>
+        </section>
+
+        <section id="tournament-bracket">
+          <h3>赛程图</h3>
+          <div class="bracket-container">
+            <div id="bracket-display" class="horizontal-layout">
+              <!-- 赛程图将通过JavaScript动态生成 -->
+            </div>
+          </div>
+        </section>
+
+        <section id="players-section">
+          <div class="players">
+            <div class="player" id="player1" onclick="setWinner('player1')">
+              <h3 id="player1-name"></h3>
+              <div class="player-record">
+                胜: <span id="player1-wins">0</span> 负:
+                <span id="player1-losses">0</span>
+              </div>
+            </div>
+            <div class="player" id="player2" onclick="setWinner('player2')">
+              <h3 id="player2-name"></h3>
+              <div class="player-record">
+                胜: <span id="player2-wins">0</span> 负:
+                <span id="player2-losses">0</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="actions-section">
+          <div class="actions">
+            <button id="random-match-btn">随机匹配</button>
+            <button id="draw-music-btn">抽取音乐</button>
+            <button id="play-music-btn">播放音乐</button>
+            <button id="next-match-btn">下一场比赛</button>
+          </div>
+        </section>
+
+        <section id="battle-display">
+          <div class="music">
+            <h3>随机抽取的音乐</h3>
+            <p><span id="music-name">音乐名称</span></p>
+            <audio id="music-player" controls></audio>
+          </div>
+        </section>
+
+        <section class="navigation">
+          <button id="reset-game-btn">重置对战</button>
+          <button id="clear-cache-btn">清除缓存</button>
+          <button id="home-btn">回到主页面</button>
+        </section>
+      </main>
+    </div>
+
+    <!-- 模块化引入JS文件 -->
+    <script src="../js/b-g1-2-core.js"></script>
+    <!--  b-g1-2-core是battle-group1-2的核心模块  -->
+    <script src="../js/b-g1-2-data.js"></script>
+    <!--  b-g1-2-data是battle-group1-2的数据模块  -->
+    <script src="../js/b-g1-2-ui.js"></script>
+    <!--  b-g1-2-ui是battle-group1-2的UI模块  -->
+    <script src="../js/b-g1-2-match.js"></script>
+    <!--  b-g1-2-match是battle-group1-2的比赛模块  -->
+    <script src="../js/b-g1-2-events.js"></script>
+    <!--  b-g1-2-events是battle-group1-2的事件模块  -->
+  </body>
+</html>
