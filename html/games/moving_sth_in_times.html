@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Y.Stage 3 - 定时搬化棒</title>
+    <link rel="stylesheet" href="../../css/games/moving_sth_in_times.css" />
+  </head>
+  <body>
+    <div class="background-overlay"></div>
+
+    <!-- 浮动化棒容器 -->
+    <div class="floating-sticks-container"></div>
+
+    <div class="container">
+      <header>
+        <h1>定时搬化棒</h1>
+        <p class="subtitle">计时器</p>
+      </header>
+
+      <main>
+        <div class="game-container">
+          <div class="timer-section">
+            <div class="timer" id="timer">00:00</div>
+            <div class="current-music">
+              <span id="music-name">准备播放音乐...</span>
+            </div>
+            <div class="timer-controls">
+              <button id="start-timer-btn">开始</button>
+              <button id="pause-timer-btn" disabled>暂停</button>
+              <button id="reset-timer-btn">重置</button>
+            </div>
+          </div>
+
+          <div class="time-setting">
+            <span>限时：</span>
+            <span id="time-limit">60</span>
+            <span>秒</span>
+          </div>
+        </div>
+      </main>
+
+      <div class="navigation">
+        <button id="settings-btn">设置</button>
+        <button id="back-btn">返回游戏中心</button>
+        <button id="home-btn">返回主页</button>
+      </div>
+
+      <footer>
+        <p>&copy; 2025 Y.Stage X 开发团队</p>
+      </footer>
+    </div>
+
+    <div id="result-modal" class="modal">
+      <div class="modal-content">
+        <h2 id="result-title">时间到！</h2>
+        <p id="result-message">计时结束</p>
+        <div class="modal-buttons">
+          <button id="try-again-btn">再试一次</button>
+          <button id="back-to-menu-btn">返回菜单</button>
+        </div>
+      </div>
+    </div>
+
+    <audio id="game-music" style="display: none"></audio>
+
+    <!-- 模块化 JS 文件加载 -->
+    <script src="../../js/games/moving_sth_core.js"></script>
+    <script src="../../js/games/moving_sth_ui.js"></script>
+    <script src="../../js/games/moving_sth_timer.js"></script>
+    <script src="../../js/games/moving_sth_data.js"></script>
+  </body>
+</html>

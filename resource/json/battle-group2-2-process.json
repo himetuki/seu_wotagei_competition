@@ -1,0 +1,38 @@
+{
+  "players": [
+    {
+      "name": "元孝"
+    },
+    {
+      "name": "自由男孩"
+    },
+    {
+      "name": "普洱猹"
+    },
+    {
+      "name": "银华"
+    },
+    {
+      "name": "斜化直"
+    },
+    {
+      "name": "班庐"
+    },
+    {
+      "name": "修女"
+    },
+    {
+      "name": "春春"
+    },
+    {
+      "name": "希腊奶"
+    },
+    {
+      "name": "橘桑"
+    }
+  ],
+  "currentIndex": 9,
+  "currentTrick": "村正",
+  "currentMusic": "ヒステリックナイトガール -Awakening- (feat. Such)",
+  "crossedTricks": []
+}

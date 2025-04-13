@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>体态传技设置 - Y.Stage</title>
+    <link rel="stylesheet" href="../../css/games/movement_without_hands.css" />
+    <!-- 添加设置页面特定样式 -->
+    <link
+      rel="stylesheet"
+      href="../../css/games/movement_without_hands_settings.css"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>体态传技设置</h1>
+        <p class="subtitle">自定义节拍器和技能列表</p>
+      </header>
+
+      <main>
+        <!-- 节拍器设置面板 -->
+        <section id="metronome-settings-panel" class="settings-panel">
+          <div class="panel-header">
+            <h2>节拍器设置</h2>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-item">
+              <label for="bpm-setting">节拍速度 (BPM):</label>
+              <div class="setting-control">
+                <input
+                  type="range"
+                  id="bpm-setting"
+                  min="60"
+                  max="180"
+                  step="1"
+                  value="120"
+                />
+                <span id="bpm-value">120</span>
+              </div>
+            </div>
+
+            <div class="metronome-controls">
+              <button id="test-metronome-btn" class="settings-btn glow-btn">
+                <span class="icon">▶</span> 试听
+              </button>
+              <button
+                id="stop-metronome-btn"
+                class="settings-btn glow-btn"
+                disabled
+              >
+                <span class="icon">■</span> 停止
+              </button>
+            </div>
+          </div>
+
+          <div class="metronome-pattern">
+            <p>
+              四四拍: <span class="beat light">轻</span>
+              <span class="beat light">轻</span>
+              <span class="beat light">轻</span>
+              <span class="beat heavy">重</span>
+            </p>
+          </div>
+        </section>
+
+        <section id="settings-panel" class="settings-panel">
+          <div class="panel-header">
+            <h2>技能管理</h2>
+          </div>
+
+          <div class="data-container">
+            <div class="data-list">
+              <h3>当前技能列表</h3>
+              <ul id="trick-list" class="trick-list"></ul>
+              <div class="batch-actions">
+                <button
+                  id="save-tricks-btn"
+                  class="settings-btn glow-btn primary"
+                >
+                  保存更改
+                </button>
+              </div>
+            </div>
+
+            <div class="data-editor">
+              <form id="trick-form">
+                <div class="form-group">
+                  <label for="trick-name">技能名称:</label>
+                  <input
+                    type="text"
+                    id="trick-name"
+                    name="trick-name"
+                    placeholder="输入技能名称"
+                    required
+                  />
+                </div>
+                <div class="form-actions">
+                  <button
+                    type="submit"
+                    id="save-trick-edit"
+                    class="settings-btn glow-btn primary"
+                  >
+                    添加到左侧列表
+                  </button>
+                  <button
+                    type="button"
+                    id="cancel-trick-edit"
+                    class="settings-btn glow-btn"
+                  >
+                    取消
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <div class="status-message" id="status-message"></div>
+      </main>
+
+      <div class="navigation">
+        <button id="back-btn" class="nav-btn glow-btn">返回游戏</button>
+        <button id="home-btn" class="nav-btn glow-btn">返回主页</button>
+      </div>
+
+      <footer>
+        <p>&copy; 2025 Y.Stage X 开发团队</p>
+      </footer>
+    </div>
+
+    <!-- 加载JavaScript文件 -->
+    <script src="../../js/games/movement_without_hands_data.js"></script>
+    <script src="../../js/games/movement_without_hands_settings.js"></script>
+  </body>
+</html>

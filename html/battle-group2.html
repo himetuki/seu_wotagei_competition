@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>一年内组比赛界面</title>
+    <link rel="stylesheet" href="../css/battle-group2.css" />
+  </head>
+  <body>
+    <header>
+      <div class="header-buttons">
+        <button id="homeButton">返回主页</button>
+      </div>
+      <h1>一年内组比赛界面</h1>
+      <button id="clearCacheButton" class="clear-cache-btn">清除缓存</button>
+    </header>
+    <main>
+      <section id="playerSection">
+        <h2 class="small-text">选手列表</h2>
+        <ul id="playerList"></ul>
+        <h3 id="currentPlayer" class="large-text">打师名</h3>
+        <h3 id="currentTrick" class="large-text">抽取技名</h3>
+        <h3 id="currentMusic" class="large-text">抽取音乐</h3>
+      </section>
+      <section id="trickSection">
+        <h2 class="small-text">技名列表</h2>
+        <ul id="trickList"></ul>
+      </section>
+      <div id="buttons">
+        <button id="shuffleButton">随机排序</button>
+        <button id="drawTrickButton">抽取动作</button>
+        <button id="drawMusicButton">抽取音乐</button>
+        <button id="playMusicButton">播放音乐</button>
+        <button id="nextPlayerButton">下一位</button>
+      </div>
+      <audio id="musicPlayer" controls></audio>
+    </main>
+    <!-- 模块化加载JS文件 -->
+    <script src="../js/b-g2-core.js"></script>
+    <script src="../js/b-g2-data.js"></script>
+    <script src="../js/b-g2-ui.js"></script>
+    <script src="../js/b-g2-events.js"></script>
+  </body>
+</html>

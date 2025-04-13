@@ -1,0 +1,7 @@
+{
+  "players": [],
+  "currentIndex": 0,
+  "currentTrick": "",
+  "currentMusic": "",
+  "crossedTricks": []
+}

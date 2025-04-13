@@ -1,0 +1,203 @@
+/* 完全重置所有元素的边距和填充 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* 基础样式设置 - 优化背景处理 */
+html,
+body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  position: fixed;
+  font-family: Arial, sans-serif;
+}
+
+/* 将背景图直接应用于body */
+body {
+  background-image: url("../resource/images/bg_index.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.8); /* 深色背景 */
+}
+
+/* 重新设计容器样式，确保无缝对齐 */
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100vw;
+  position: absolute;
+  top: 0;
+  left: 0;
+  text-align: center;
+}
+
+/* header 样式 */
+header {
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 25px 40px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  animation: fadeIn 2s;
+  max-width: 90%;
+}
+
+/* h1 样式 */
+header h1 {
+  font-size: 3em;
+  margin-bottom: 15px;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+/* p 样式 */
+header p {
+  font-size: 1.5em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* main 样式 */
+main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 按钮通用样式 - 深色模式 */
+button {
+  padding: 12px 25px;
+  font-size: 1.2em;
+  margin: 12px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  background-color: #1a1a1a;
+  color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* 开始比赛按钮样式 */
+.start-btn {
+  background-color: #2563eb;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+.start-btn:hover {
+  background-color: #1d4ed8;
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4),
+    0 0 5px rgba(59, 130, 246, 0.8);
+}
+
+/* 游戏按钮特殊样式 */
+.game-btn {
+  background-color: #7e22ce;
+  box-shadow: 0 4px 12px rgba(126, 34, 206, 0.4);
+}
+
+.game-btn:hover {
+  background-color: #6b21a8;
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(126, 34, 206, 0.4),
+    0 0 5px rgba(147, 51, 234, 0.8);
+}
+
+/* 进入设置按钮样式 */
+.settings-btn {
+  background-color: #292524;
+  border-color: #78716c;
+}
+
+.settings-btn:hover {
+  background-color: #1c1917;
+  transform: translateY(-8px);
+  box-shadow: 0 8px 25px rgba(120, 113, 108, 0.4),
+    0 0 5px rgba(120, 113, 108, 0.8);
+}
+
+/* 设置按钮样式 */
+.setting-btn {
+  display: block;
+  width: 200px;
+  height: 50px;
+  margin: 20px auto;
+  background-color: #292524;
+  color: white;
+  border: 1px solid #3b82f6; /* 修改为完整的边框定义，解决border:none冲突 */
+  border-radius: 25px;
+  font-size: 1.2em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.setting-btn:hover {
+  background-color: #1e40af;
+  transform: translateY(-8px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4),
+    0 0 5px rgba(59, 130, 246, 0.8);
+}
+
+/* footer 样式 */
+footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 12px 0;
+  z-index: 10;
+}
+
+footer p {
+  margin: 0;
+  font-size: 0.9em;
+}
+
+/* 淡入动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 浮动动画 */
+@keyframes bounce {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-6px);
+  }
+}
+
+/* 媒体查询确保在小屏幕上正确显示 */
+@media (max-width: 768px) {
+  header h1 {
+    font-size: 2.2em;
+  }
+
+  header p {
+    font-size: 1.2em;
+  }
+
+  button {
+    padding: 10px 20px;
+    font-size: 1em;
+    margin: 10px;
+  }
+}

@@ -1,0 +1,890 @@
+/* 基础样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Arial", sans-serif;
+  background-color: #121212;
+  background-image: url("../resource/images/bg.jpg");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  color: #e0e0e0;
+  min-height: 100vh;
+}
+
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: rgba(30, 30, 30, 0.9);
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+header h1 {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 2.5rem;
+  color: #f0f0f0;
+  text-shadow: 0 0 10px rgba(0, 150, 255, 0.5);
+}
+
+section {
+  margin-bottom: 30px;
+}
+
+/* 对战信息区域 */
+#battle-info {
+  text-align: center;
+  padding: 10px;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+#battle-info h2 {
+  font-size: 1.5rem;
+}
+
+#chapter-number,
+#round-number {
+  font-weight: bold;
+  color: #00c3ff;
+}
+
+/* 选手区域 */
+.players {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.player {
+  flex: 1;
+  background-color: rgba(40, 40, 40, 0.8);
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.player:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.player h3 {
+  text-align: center;
+  font-size: 28px;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tricks-list {
+  min-height: 150px;
+}
+
+/* 按钮区域 */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 5px;
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid #444;
+}
+
+button:hover {
+  background-color: #3a3a3a;
+  transform: translateY(-3px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+button:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+#draw-players-btn {
+  border-color: #0066cc;
+  box-shadow: 0 0 5px rgba(0, 102, 204, 0.3);
+}
+
+#draw-music-btn {
+  border-color: #cc6600;
+  box-shadow: 0 0 5px rgba(204, 102, 0, 0.3);
+}
+
+#draw-tricks-btn {
+  border-color: #00cc66;
+  box-shadow: 0 0 5px rgba(0, 204, 102, 0.3);
+}
+
+#play-music-btn {
+  border-color: #cc0066;
+  box-shadow: 0 0 5px rgba(204, 0, 102, 0.3);
+}
+
+#next-round-btn {
+  border-color: #6600cc;
+  box-shadow: 0 0 5px rgba(102, 0, 204, 0.3);
+}
+
+/* 抽取结果显示区域 */
+#battle-display {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.random-tricks,
+.music {
+  background-color: rgba(40, 40, 40, 0.8);
+  border-radius: 8px;
+  padding: 15px;
+  text-align: center;
+}
+
+.random-tricks h3,
+.music h3 {
+  margin-bottom: 10px;
+  font-size: 1.2rem;
+  color: #ccc;
+}
+
+#random-tricks-display {
+  font-size: 24px;
+  min-height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#music-name {
+  font-size: 24px;
+  display: block;
+  margin: 10px 0;
+}
+
+#music-player {
+  width: 250px;
+  height: 40px;
+  margin: 0 auto;
+  display: none;
+}
+
+#music-player::-webkit-media-controls-timeline,
+#music-player::-webkit-media-controls-current-time-display,
+#music-player::-webkit-media-controls-time-remaining-display,
+#music-player::-webkit-media-controls-mute-button,
+#music-player::-webkit-media-controls-volume-slider {
+  display: none;
+}
+
+/* 技池区域 */
+.tricks-pool {
+  background-color: rgba(35, 35, 35, 0.9);
+  border-radius: 8px;
+  padding: 15px;
+}
+
+.tricks-pool h3 {
+  text-align: center;
+  margin-bottom: 15px;
+  font-size: 1.3rem;
+}
+
+.tricks-pool-container {
+  display: flex;
+  gap: 20px;
+}
+
+.tricks-pool-player {
+  flex: 1;
+  background-color: rgba(50, 50, 50, 0.8);
+  border-radius: 8px;
+  padding: 15px;
+}
+
+.tricks-pool-player h4 {
+  text-align: center;
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tricks-pool-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: center;
+  min-height: 200px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+/* 技名元素样式 */
+.trick-item {
+  display: inline-block;
+  padding: 8px 12px;
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  margin: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.trick-item:hover {
+  background-color: #3a3a3a;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.trick-item.crossed {
+  text-decoration: line-through;
+  opacity: 0.5;
+  color: #ff6b6b;
+  background-color: #222;
+}
+
+.trick-item.animate {
+  animation: pulse 0.5s;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 导航区域 */
+.navigation {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+/* 技能高亮样式 */
+.tech-highlight {
+  display: inline-block;
+  padding: 8px 15px;
+  margin: 5px;
+  border-radius: 8px;
+  background: linear-gradient(145deg, #1c1c1c, #2e2e2e);
+  color: #00c3ff;
+  border: 1px solid rgba(0, 195, 255, 0.3);
+  box-shadow: 0 0 10px rgba(0, 195, 255, 0.3);
+  text-shadow: 0 0 10px rgba(0, 195, 255, 0.7);
+  font-weight: bold;
+  font-size: 1.2em;
+  animation: techname-glow 2s infinite, techname-color 8s infinite,
+    float 3s ease-in-out infinite;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.tech-highlight.player2 {
+  color: #ff9500;
+  border: 1px solid rgba(255, 149, 0, 0.3);
+  box-shadow: 0 0 10px rgba(255, 149, 0, 0.3);
+  text-shadow: 0 0 10px rgba(255, 149, 0, 0.7);
+  animation: techname-glow-orange 2s infinite, techname-color-orange 8s infinite,
+    float 3s ease-in-out infinite;
+}
+
+.tech-highlight.crossed {
+  text-decoration: line-through;
+  opacity: 0.5;
+  animation: none !important;
+  box-shadow: none;
+  text-shadow: none;
+  background: #222;
+  color: #ff6b6b !important;
+}
+
+/* 技能容器样式 */
+.random-tricks-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  background-color: rgba(45, 45, 45, 0.7);
+  border-radius: 10px;
+}
+
+.vs-text {
+  font-size: 24px;
+  font-weight: bold;
+  color: #888;
+}
+
+/* 获胜者效果 */
+.winner {
+  position: relative;
+  animation: winner-glow 2s infinite, winner-scale 1.5s infinite;
+  background-color: rgba(51, 51, 51, 0.9) !important;
+  border: 2px solid #ffd700 !important;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5) !important;
+}
+
+.winner h3 {
+  color: #ffd700 !important;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+}
+
+.winner::before {
+  content: "🏆";
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 24px;
+  animation: winner-scale 1.5s infinite;
+}
+
+.loser {
+  opacity: 0.6;
+}
+
+.winner-announcement {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(30, 30, 30, 0.9);
+  border: 3px solid #ffd700;
+  border-radius: 10px;
+  padding: 20px 40px;
+  color: #ffd700;
+  font-size: 32px;
+  font-weight: bold;
+  text-align: center;
+  z-index: 1000;
+  animation: winner-announcement 1s forwards;
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.7);
+}
+
+/* Battle模式样式 */
+.battle-start {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 72px;
+  font-weight: 900;
+  text-align: center;
+  z-index: 1000;
+  animation: battle-start-animation 4.5s forwards; /* 延长动画时间从2.5s到4.5s */
+  text-shadow: 0 0 20px #ff3c3c, 0 0 40px #ff6b6b, 0 0 60px #ff9999,
+    0 0 80px #ffcccc;
+  font-family: "Arial Black", "Impact", sans-serif;
+  letter-spacing: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  padding: 40px 80px;
+  background: linear-gradient(135deg, #ff3c3c, #ff0000, #cc0000);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.battle-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 999;
+  animation: overlay-fade 2s forwards;
+}
+
+.click-to-stop {
+  position: fixed;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 8px 15px;
+  border-radius: 20px;
+  z-index: 1001;
+  pointer-events: none;
+  animation: fade-in-out 2s infinite alternate;
+}
+
+/* 音乐播放模式样式 */
+.music-playing-mode .container,
+.music-playing-mode main,
+.music-playing-mode header,
+.music-playing-mode section,
+.music-playing-mode .players,
+.music-playing-mode .actions,
+.music-playing-mode .random-tricks,
+.music-playing-mode .music,
+.music-playing-mode .tricks-pool,
+.music-playing-mode .navigation {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  transition: opacity 0.8s ease;
+}
+
+.music-playing-mode .battle-start,
+.music-playing-mode .battle-overlay,
+.music-playing-mode #music-player,
+.music-playing-mode .click-to-stop {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  position: fixed !important;
+  z-index: 1001 !important;
+}
+
+.music-playing-mode #music-player {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 40px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 20px;
+  padding: 5px;
+  display: block !important;
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+/* 通知和消息样式 */
+.success-toast,
+.error-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  border-radius: 5px;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  animation: fadeInOut 2s ease-in-out;
+  font-weight: bold;
+}
+
+.success-toast {
+  background-color: rgba(34, 139, 34, 0.9);
+  color: white;
+}
+
+.error-toast {
+  background-color: rgba(178, 34, 34, 0.9);
+  color: white;
+}
+
+/* 章节提示弹窗样式 */
+.next-chapter-prompt {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+  animation: fadeIn 0.3s ease;
+}
+
+.prompt-content {
+  background-color: rgba(40, 40, 40, 0.95);
+  border: 2px solid #ffd700;
+  border-radius: 10px;
+  padding: 30px;
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+  animation: scaleIn 0.3s ease;
+}
+
+.prompt-content h3 {
+  color: #ffd700;
+  margin-bottom: 15px;
+  font-size: 24px;
+}
+
+.prompt-content p {
+  margin-bottom: 20px;
+  font-size: 16px;
+  color: #e0e0e0;
+}
+
+.prompt-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.prompt-buttons button {
+  padding: 12px 25px;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#stay-button {
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+  border: 1px solid #444;
+}
+
+#next-chapter-button {
+  background-color: #ffc107;
+  color: #333;
+  border: 1px solid #ffb300;
+}
+
+#stay-button:hover {
+  background-color: #3a3a3a;
+  transform: translateY(-3px);
+}
+
+#next-chapter-button:hover {
+  background-color: #ffca28;
+  transform: translateY(-3px);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 动画定义 */
+@keyframes winner-glow {
+  0% {
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+  }
+  100% {
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  }
+}
+
+@keyframes winner-scale {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes winner-announcement {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 1;
+  }
+  40% {
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 1;
+  }
+  60% {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 1;
+  }
+  80% {
+    transform: translate(-50%, -50%) scale(0.95);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes battle-start-animation {
+  0% {
+    transform: translate(-50%, -50%) scale(0.1) rotate(-5deg);
+    opacity: 0;
+    filter: blur(20px);
+  }
+  5% {
+    transform: translate(-50%, -50%) scale(1.8) rotate(5deg);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  10% {
+    transform: translate(-50%, -50%) scale(0.8) rotate(-3deg);
+    opacity: 1;
+  }
+  15% {
+    transform: translate(-50%, -50%) scale(1.4) rotate(2deg);
+    opacity: 1;
+  }
+  20% {
+    transform: translate(-50%, -50%) scale(0.9) rotate(-1deg);
+    opacity: 1;
+  }
+  25% {
+    transform: translate(-50%, -50%) scale(1.2) rotate(1deg);
+    opacity: 1;
+  }
+  /* 延长抖动效果部分 */
+  30% {
+    transform: translate(-50%, -50%) scale(1.1) rotate(-0.8deg);
+    opacity: 1;
+  }
+  35% {
+    transform: translate(-50%, -50%) scale(1.05) rotate(0.8deg);
+    opacity: 1;
+  }
+  40% {
+    transform: translate(-50%, -50%) scale(1.03) rotate(-0.5deg);
+    opacity: 1;
+  }
+  45% {
+    transform: translate(-50%, -50%) scale(1.01) rotate(0.3deg);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  /* 缩短后面不抖动的部分 */
+  70% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2);
+    opacity: 0;
+    filter: blur(20px);
+  }
+}
+
+@keyframes overlay-fade {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.7;
+  }
+  80% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  20% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in-out {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes techname-glow {
+  0% {
+    text-shadow: 0 0 5px rgba(0, 195, 255, 0.5);
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(0, 195, 255, 0.9),
+      0 0 30px rgba(0, 150, 255, 0.7);
+  }
+  100% {
+    text-shadow: 0 0 5px rgba(0, 195, 255, 0.5);
+  }
+}
+
+@keyframes techname-color {
+  0% {
+    color: #00c3ff;
+  }
+  25% {
+    color: #00ffcc;
+  }
+  50% {
+    color: #00c3ff;
+  }
+  75% {
+    color: #0099ff;
+  }
+  100% {
+    color: #00c3ff;
+  }
+}
+
+@keyframes techname-glow-orange {
+  0% {
+    text-shadow: 0 0 5px rgba(255, 149, 0, 0.5);
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(255, 149, 0, 0.9),
+      0 0 30px rgba(255, 100, 0, 0.7);
+  }
+  100% {
+    text-shadow: 0 0 5px rgba(255, 149, 0, 0.5);
+  }
+}
+
+@keyframes techname-color-orange {
+  0% {
+    color: #ff9500;
+  }
+  25% {
+    color: #ffb700;
+  }
+  50% {
+    color: #ff9500;
+  }
+  75% {
+    color: #ff7300;
+  }
+  100% {
+    color: #ff9500;
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translate(-52%, -48%) rotate(-1deg);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translate(-48%, -52%) rotate(1deg);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .container {
+    width: 95%;
+    padding: 10px;
+  }
+
+  .players {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .player {
+    width: 100%;
+  }
+
+  .tricks-pool-container {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .navigation {
+    flex-direction: column;
+  }
+
+  button {
+    width: 100%;
+  }
+}

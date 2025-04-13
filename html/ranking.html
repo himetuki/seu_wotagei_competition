@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>一年内组排名页面</title>
+    <link rel="stylesheet" href="../css/ranking.css" />
+  </head>
+  <body>
+    <header>
+      <div class="header-buttons">
+        <button id="homeButton">返回主页</button>
+        <button id="battleButton">返回比赛界面</button>
+      </div>
+      <h1>一年内组排名</h1>
+    </header>
+
+    <main>
+      <section id="playersSection">
+        <h2>选手列表</h2>
+        <ul id="playersList"></ul>
+      </section>
+
+      <section id="rankingSection">
+        <h1 style="font-size: 2em">排名</h1>
+        <div id="rankingContainer">
+          <div class="rank-position rank-gold" data-rank="1">
+            <span class="rank-number">1</span>
+            <div class="rank-player"></div>
+            <div class="rank-award"></div>
+          </div>
+          <div class="rank-position rank-silver" data-rank="2">
+            <span class="rank-number">2</span>
+            <div class="rank-player"></div>
+            <div class="rank-award"></div>
+          </div>
+          <div class="rank-position rank-bronze" data-rank="3">
+            <span class="rank-number">3</span>
+            <div class="rank-player"></div>
+            <div class="rank-award"></div>
+          </div>
+          <div class="rank-position" data-rank="4">
+            <span class="rank-number">4</span>
+            <div class="rank-player"></div>
+          </div>
+          <div class="rank-position" data-rank="5">
+            <span class="rank-number">5</span>
+            <div class="rank-player"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="../js/ranking.js"></script>
+  </body>
+</html>

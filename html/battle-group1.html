@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>一年加组对战</title>
+    <link rel="stylesheet" href="../css/battle-group1.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>一年加组对战</h1>
+      </header>
+      <main>
+        <section id="battle-info">
+          <h2>
+            章节 <span id="chapter-number">1</span> - 轮次
+            <span id="round-number">1/0</span>
+          </h2>
+        </section>
+
+        <section id="players-section">
+          <div class="players">
+            <div class="player" id="player1" onclick="setWinner('player1')">
+              <h3 id="player1-name"></h3>
+            </div>
+            <div class="player" id="player2" onclick="setWinner('player2')">
+              <h3 id="player2-name"></h3>
+            </div>
+          </div>
+        </section>
+
+        <section id="actions-section">
+          <div class="actions">
+            <button id="draw-players-btn">抽取选手</button>
+            <button id="draw-music-btn">抽取音乐</button>
+            <button id="draw-tricks-btn">抽取动作</button>
+            <button id="play-music-btn">播放音乐</button>
+            <button id="next-round-btn">进入下一轮次</button>
+          </div>
+        </section>
+
+        <section id="battle-display">
+          <div class="random-tricks">
+            <h3>随机抽取的动作</h3>
+            <div id="random-tricks-display">请抽取动作</div>
+          </div>
+
+          <div class="music">
+            <h3>随机抽取的音乐</h3>
+            <p><span id="music-name">音乐名称</span></p>
+            <audio id="music-player" controls></audio>
+          </div>
+        </section>
+
+        <section id="tricks-pool-section">
+          <div class="tricks-pool">
+            <h3>技池</h3>
+            <div class="tricks-pool-container">
+              <div class="tricks-pool-player">
+                <h4>选手1技池</h4>
+                <div
+                  id="tricks-pool-list-player1"
+                  class="tricks-pool-list"
+                ></div>
+              </div>
+              <div class="tricks-pool-player">
+                <h4>选手2技池</h4>
+                <div
+                  id="tricks-pool-list-player2"
+                  class="tricks-pool-list"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="navigation">
+          <button id="reset-game-btn">重置对战</button>
+          <button id="clear-cache-btn">清除缓存</button>
+          <button id="home-btn">回到主页面</button>
+        </section>
+      </main>
+    </div>
+
+    <!-- 模块化加载JS文件 -->
+    <script src="../js/bg1/bg1-core.js"></script>
+    <script src="../js/bg1/bg1-ui.js"></script>
+    <script src="../js/bg1/bg1-data.js"></script>
+    <script src="../js/bg1/bg1-game.js"></script>
+    <script src="../js/bg1/bg1-events.js"></script>
+  </body>
+</html>

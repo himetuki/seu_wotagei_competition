@@ -1,0 +1,149 @@
+{
+  "currentState": {
+    "currentChapter": 1,
+    "currentRound": 4,
+    "participatedPlayers": [
+      "雨音",
+      "晴子",
+      "汐槿",
+      "由佳莉",
+      "0j",
+      "见闻",
+      "无声",
+      "明生"
+    ],
+    "chapterWinners": [
+      "雨音",
+      "由佳莉",
+      "0j",
+      "无声"
+    ],
+    "players": [
+      {
+        "name": "由佳莉"
+      },
+      {
+        "name": "明生"
+      },
+      {
+        "name": "雨音"
+      },
+      {
+        "name": "无声"
+      },
+      {
+        "name": "汐槿"
+      },
+      {
+        "name": "晴子"
+      },
+      {
+        "name": "0j"
+      },
+      {
+        "name": "见闻"
+      }
+    ],
+    "currentWinner": "无声",
+    "selectedPlayer1Trick": null,
+    "selectedPlayer2Trick": null,
+    "currentPlayers": {
+      "player1": "无声",
+      "player2": "明生"
+    }
+  },
+  "battleRecords": [
+    {
+      "timestamp": "2025-04-13T04:55:07.780Z",
+      "chapter": 1,
+      "round": 1,
+      "players": {
+        "player1": "雨音",
+        "player2": "晴子"
+      },
+      "tricks": {
+        "player1": null,
+        "player2": null
+      },
+      "winner": "雨音",
+      "participatedPlayers": [],
+      "chapterWinners": []
+    },
+    {
+      "timestamp": "2025-04-13T04:55:33.834Z",
+      "chapter": 1,
+      "round": 2,
+      "players": {
+        "player1": "汐槿",
+        "player2": "由佳莉"
+      },
+      "tricks": {
+        "player1": "月读",
+        "player2": "自恋小姐"
+      },
+      "winner": "由佳莉",
+      "participatedPlayers": [
+        "雨音",
+        "晴子"
+      ],
+      "chapterWinners": [
+        "雨音"
+      ]
+    },
+    {
+      "timestamp": "2025-04-13T04:55:35.440Z",
+      "chapter": 1,
+      "round": 3,
+      "players": {
+        "player1": "0j",
+        "player2": "见闻"
+      },
+      "tricks": {
+        "player1": null,
+        "player2": null
+      },
+      "winner": "0j",
+      "participatedPlayers": [
+        "雨音",
+        "晴子",
+        "汐槿",
+        "由佳莉"
+      ],
+      "chapterWinners": [
+        "雨音",
+        "由佳莉"
+      ]
+    },
+    {
+      "timestamp": "2025-04-13T04:55:39.627Z",
+      "chapter": 1,
+      "round": 4,
+      "players": {
+        "player1": "无声",
+        "player2": "明生"
+      },
+      "tricks": {
+        "player1": null,
+        "player2": null
+      },
+      "winner": "无声",
+      "participatedPlayers": [
+        "雨音",
+        "晴子",
+        "汐槿",
+        "由佳莉",
+        "0j",
+        "见闻",
+        "无声",
+        "明生"
+      ],
+      "chapterWinners": [
+        "雨音",
+        "由佳莉",
+        "0j",
+        "无声"
+      ]
+    }
+  ],
+  "lastUpdate": "2025-04-13T04:55:39.627Z"
+}

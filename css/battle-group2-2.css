@@ -1,0 +1,420 @@
+/* 基于battle-group2.css样式，但可以进行第二章节的自定义 */
+
+body {
+  font-family: Arial, sans-serif;
+  background-image: url("../resource/images/bg.jpg");
+  background-size: cover;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.8); /* 深色背景 */
+  margin: 0;
+  padding: 0;
+}
+
+header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: rgba(0, 0, 0, 0.8);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header-buttons {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+main {
+  padding: 20px;
+  background-color: rgba(0, 0, 0, 0.8);
+  margin: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+h1 {
+  text-align: center;
+  margin: 10px 0;
+}
+
+h2.small-text {
+  font-size: 16px;
+}
+
+h3.large-text {
+  font-size: 44px;
+  text-align: center;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+li {
+  padding: 10px;
+  margin: 5px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+li:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+li.crossed {
+  text-decoration: line-through;
+  color: red;
+}
+
+button {
+  display: block;
+  margin: 10px;
+  padding: 10px 20px;
+  background-color: #1e1e1e; /* 更深的背景色 */
+  color: #e0e0e0; /* 更亮的文字颜色 */
+  border: 1px solid rgba(255, 255, 255, 0.1); /* 细微的边框 */
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); /* 轻微阴影增加深度 */
+}
+
+button:hover {
+  background-color: #2a2a2a; /* 悬停时稍亮 */
+  transform: translateY(-2px); /* 轻微上移效果 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); /* 更强的阴影 */
+  border-color: #4b96f0; /* 蓝色边框高亮 */
+}
+
+button:active {
+  transform: translateY(1px); /* 点击时下压效果 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); /* 减弱阴影 */
+}
+
+/* 为不同功能的按钮添加特殊边框颜色 */
+#shuffleButton {
+  border-color: #9c27b0; /* 紫色 */
+}
+
+#drawTrickButton {
+  border-color: #ff9800; /* 橙色 */
+}
+
+#drawMusicButton {
+  border-color: #4caf50; /* 绿色 */
+}
+
+#playMusicButton {
+  border-color: #2196f3; /* 蓝色 */
+}
+
+#nextPlayerButton {
+  border-color: #f44336; /* 红色 */
+}
+
+#clearCacheButton {
+  border-color: #795548; /* 棕色 */
+}
+
+#homeButton {
+  border-color: #607d8b; /* 蓝灰色 */
+}
+
+#clearMusicButton {
+  border-color: #9e9e9e; /* 灰色 */
+}
+
+/* 添加光晕效果 */
+button::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transition: 0.5s;
+}
+
+button:hover::after {
+  left: 100%;
+}
+
+#buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin: 15px auto;
+}
+
+#musicPlayer {
+  width: 300px;
+  margin: 20px auto;
+  border-radius: 15px;
+  background-color: #1e1e1e;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+/* 自定义第二章节的样式 - 添加不同的颜色来区分 */
+header {
+  background-color: rgba(0, 0, 30, 0.8); /* 稍微偏蓝色背景 */
+}
+
+/* 提示和弹窗样式 */
+.toast {
+  position: fixed;
+  top: 20px; /* 位于顶部 */
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  border-radius: 6px;
+  z-index: 3000; /* 确保在对话框上方 */
+  font-weight: bold;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.info-toast {
+  background-color: rgba(33, 150, 243, 0.9);
+  color: white;
+}
+
+.success-toast {
+  background-color: rgba(76, 175, 80, 0.9);
+  color: white;
+}
+
+.warning-toast {
+  background-color: rgba(255, 152, 0, 0.9);
+  color: white;
+}
+
+.error-toast {
+  background-color: rgba(244, 67, 54, 0.9);
+  color: white;
+}
+
+.loading-toast {
+  background-color: rgba(50, 50, 50, 0.9);
+  color: white;
+}
+
+/* 新增自定义对话框样式 */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+}
+
+.custom-dialog-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000; /* 增加z-index确保在最上层 */
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: auto; /* 确保可以点击 */
+}
+
+.custom-dialog-container.show {
+  opacity: 1;
+}
+
+.custom-dialog {
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+  transform: scale(0.9);
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: auto; /* 确保可以点击 */
+  z-index: 2001; /* 比容器更高的z-index */
+}
+
+.custom-dialog.show {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.custom-dialog p {
+  font-size: 18px;
+  margin-bottom: 25px;
+  color: white;
+}
+
+.dialog-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.dialog-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  pointer-events: auto; /* 确保按钮可点击 */
+}
+
+.confirm-btn {
+  background-color: #4caf50;
+  color: white;
+}
+
+.confirm-btn:hover {
+  background-color: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.cancel-btn {
+  background-color: #f44336;
+  color: white;
+}
+
+.cancel-btn:hover {
+  background-color: #d32f2f;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* 金光效果 */
+.golden-glow {
+  border: 2px solid #ffd700;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.7), 0 0 30px rgba(255, 215, 0, 0.4),
+    0 0 45px rgba(255, 215, 0, 0.2);
+  animation: glow 1.5s infinite alternate;
+}
+
+/* 浮动效果 */
+.floating {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* 为选手名和技池添加浮动效果 */
+#currentPlayer,
+#currentTrick,
+#currentMusic,
+#trickList,
+#playerList {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* 让列表项有交错的浮动效果 */
+#trickList li {
+  animation: float 3s ease-in-out infinite;
+  animation-delay: calc(
+    0.2s * var(--item-index, 0)
+  ); /* 使用CSS变量给每个项添加不同延迟 */
+}
+
+/* 让选手列表项有交错的浮动效果 */
+#playerList li {
+  animation: float 3s ease-in-out infinite;
+  animation-delay: calc(
+    0.15s * var(--player-index, 0)
+  ); /* 使用CSS变量给每个选手添加不同延迟 */
+  transition: all 0.3s ease; /* 添加平滑过渡效果 */
+}
+
+#playerList li.current {
+  font-weight: bold;
+  animation: float 2s ease-in-out infinite; /* 当前选手浮动更快 */
+  transform: scale(1.05); /* 当前选手略微放大 */
+}
+
+/* 动画定义 */
+@keyframes glow {
+  from {
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.7), 0 0 30px rgba(255, 215, 0, 0.4),
+      0 0 45px rgba(255, 215, 0, 0.2);
+  }
+  to {
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.9), 0 0 35px rgba(255, 215, 0, 0.6),
+      0 0 50px rgba(255, 215, 0, 0.3);
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+/* 弹窗内容淡入 */
+.dialog-content {
+  opacity: 0;
+  animation: fadeIn 0.5s forwards;
+  animation-delay: 0.2s;
+}
+
+@media (max-width: 768px) {
+  main {
+    margin: 10px;
+    padding: 10px;
+  }
+
+  h3.large-text {
+    font-size: 32px;
+  }
+
+  button {
+    margin: 5px;
+    padding: 8px 16px;
+  }
+}

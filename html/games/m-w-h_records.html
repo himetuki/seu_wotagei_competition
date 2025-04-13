@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>体态传技记录 - Y.Stage</title>
+    <link rel="stylesheet" href="../../css/games/movement_without_hands.css" />
+    <link rel="stylesheet" href="../../css/games/m-w-h_records.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>体态传技记录</h1>
+        <p class="subtitle">查看游戏记录和统计</p>
+      </header>
+
+      <main>
+        <section id="records-panel" class="records-panel">
+          <div class="panel-header">
+            <h2>游戏记录</h2>
+            <div class="header-actions">
+              <button id="refresh-btn" class="action-btn" title="刷新记录列表">
+                <span class="icon">🔄</span>
+              </button>
+              <button
+                id="clear-all-btn"
+                class="action-btn danger"
+                title="清空所有记录"
+              >
+                <span class="icon">🗑️</span>
+              </button>
+              <div class="search-container">
+                <input
+                  type="text"
+                  id="search-input"
+                  placeholder="搜索队伍名称..."
+                />
+                <button id="search-btn" class="action-btn">
+                  <span class="icon">🔍</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="records-stats">
+            <div class="stat-card">
+              <h3>总记录数</h3>
+              <p id="total-records">0</p>
+            </div>
+            <div class="stat-card">
+              <h3>猜中率</h3>
+              <p id="correct-percentage">0%</p>
+            </div>
+            <div class="stat-card">
+              <h3>平均时间</h3>
+              <p id="average-time">00:00</p>
+            </div>
+          </div>
+
+          <div class="records-container">
+            <table id="records-table">
+              <thead>
+                <tr>
+                  <th>队伍名称</th>
+                  <th>技能</th>
+                  <th>用时</th>
+                  <th>猜测结果</th>
+                  <th>日期</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="records-list">
+                <!-- 记录将通过JS动态加载 -->
+                <tr class="loading-row">
+                  <td colspan="6">正在加载记录...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <div class="navigation">
+          <button id="back-btn" class="nav-btn">返回游戏</button>
+          <button id="home-btn" class="nav-btn">返回主页</button>
+        </div>
+      </main>
+    </div>
+
+    <!-- 确认对话框模板 -->
+    <template id="confirm-dialog-template">
+      <div class="confirm-dialog-overlay">
+        <div class="confirm-dialog">
+          <h3 class="dialog-title">确认操作</h3>
+          <p class="dialog-message">确定要执行此操作吗？</p>
+          <div class="dialog-buttons">
+            <button class="confirm-btn primary-btn">确定</button>
+            <button class="cancel-btn secondary-btn">取消</button>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- 加载JS模块 -->
+    <script src="../../js/games/m-w-h_records_data.js"></script>
+    <script src="../../js/games/m-w-h_records_ui.js"></script>
+  </body>
+</html>

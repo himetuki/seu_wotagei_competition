@@ -1,0 +1,45 @@
+{
+  "name": "y-stage3",
+  "version": "1.0.0",
+  "description": "Y.Stage 3比赛系统",
+  "main": "server-lowdb.js",
+  "bin": {
+    "y-stage3": "server-lowdb.js"
+  },
+  "scripts": {
+    "start": "node server-lowdb.js",
+    "dev": "nodemon server-lowdb.js",
+    "build": "pkg ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "fs-extra": "^11.3.0",
+    "lowdb": "^1.0.0",
+    "multer": "^1.4.5-lts.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.7",
+    "pkg": "^5.8.1"
+  },
+  "pkg": {
+    "targets": [
+      "node16-win-x64"
+    ],
+    "outputPath": "dist",
+    "assets": [
+      "resource/json/*.json",
+      "html/*.html",
+      "css/*.css",
+      "js/*.js",
+      "resource/musics/*/*.mp3",
+      "resource/images/*.png",
+      "resource/images/*.jpg"
+    ]
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "debugMode": false,
+  "enableAnimations": true,
+  "language": "zh-CN",
+  "configFiles": {
+    "player1": {
+      "path": "resource/json/player1.json",
+      "lastModified": null
+    },
+    "player2": {
+      "path": "resource/json/player2.json",
+      "lastModified": null
+    },
+    "tricks": {
+      "path": "resource/json/tricks.json",
+      "lastModified": null
+    },
+    "musics_list": {
+      "path": "resource/json/musics_list.json",
+      "lastModified": null
+    },
+    "musics_list_ex": {
+      "path": "resource/json/musics_list_ex.json",
+      "lastModified": null
+    }
+  },
+  "configBackups": {
+    "player1": {
+      "data": null,
+      "lastModified": null
+    },
+    "player2": {
+      "data": null,
+      "lastModified": null
+    },
+    "tricks": {
+      "data": null,
+      "lastModified": null
+    },
+    "musics_list": {
+      "data": null,
+      "lastModified": null
+    },
+    "musics_list_ex": {
+      "data": null,
+      "lastModified": null
+    }
+  },
+  "moving-sth": {
+    "timeLimit": 60,
+    "targetMoves": 20,
+    "stickCount": 10,
+    "difficulty": "normal"
+  }
+}
