@@ -163,7 +163,9 @@ Y.Stage X 是一个专为异度沸腾WOTA艺团设计的比赛管理软件。
 如有问题或建议，请联系 Y.StageX 开发团队：  
 
 👤 QQ: 3664518772
-🌐 WOTA艺wiki: https://wotagei.huijiwiki.com/  
+
+🌐 WOTA艺wiki: https://wotagei.huijiwiki.com/
+
 ​**​更新时间​**​：2025年4月13日晚21点  
 
 ---
