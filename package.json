@@ -1,7 +1,7 @@
 {
   "name": "y-stage3",
   "version": "1.0.0",
-  "description": "Y.Stage 3比赛系统",
+  "description": "Y.Stage 4比赛系统",
   "main": "server-lowdb.js",
   "bin": {
     "y-stage3": "server-lowdb.js"

@@ -1,5 +1,5 @@
 @echo off
-echo 正在打包Y.Stage 3为独立应用...
+echo 正在打包Y.Stage 4为独立应用...
 
 REM 确保安装了所有依赖
 call npm install

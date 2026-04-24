@@ -1,5 +1,5 @@
 /**
- * Y.Stage3 服务器主入口文件
+ * Y.Stage4 服务器主入口文件
  * 负责启动各个模块化服务
  */
 
@@ -107,7 +107,7 @@ process.stdin.on("data", async (data) => {
 });
 
 // 启动时打印使用说明
-console.log("\n=== Y.Stage3 服务器命令行操作 ===");
+console.log("\n=== Y.Stage4 服务器命令行操作 ===");
 console.log("- 输入 'test' 或 't' 运行数据库操作测试");
 console.log("- 输入 'exit' 或 'quit' 或 'q' 关闭服务器");
 console.log("- 输入 'help' 或 'h' 或 '?' 显示帮助信息");
