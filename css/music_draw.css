@@ -1,0 +1,347 @@
+/* ========== 基础样式 ========== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Arial", sans-serif;
+  background-color: #000000;
+  background-image: url("../resource/images/bg.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  color: #e0e0e0;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* 确保背景图完全覆盖 */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #000000;
+  z-index: -2;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("../resource/images/bg.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: -1;
+  opacity: 1;
+}
+
+body.battle-mode #main-container {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  transition: opacity 0.8s ease;
+}
+
+body.battle-mode .battle-overlay,
+body.battle-mode .battle-start-text,
+body.battle-mode .click-to-stop {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.container {
+  width: 90%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 30px;
+  background-color: rgba(20, 20, 20, 0.95);
+  border-radius: 15px;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+  min-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header h1 {
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 2.5rem;
+  color: #f97316;
+  text-shadow: 0 0 15px rgba(249, 115, 22, 0.5);
+}
+
+/* ========== 音乐区域 ========== */
+#music-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.music-group {
+  background-color: rgba(35, 35, 35, 0.8);
+  border-radius: 12px;
+  padding: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.music-group:hover {
+  border-color: rgba(249, 115, 22, 0.3);
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+}
+
+.music-group h2 {
+  font-size: 1.5rem;
+  color: #a855f7;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.music-info {
+  text-align: center;
+  padding: 15px;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+  color: #fbbf24;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.button-group {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+button {
+  padding: 12px 25px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: bold;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.draw-btn {
+  background-color: #065f46;
+  color: #e0e0e0;
+  border: 2px solid #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+}
+
+.draw-btn:hover:not(:disabled) {
+  background-color: #047857;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 20px rgba(16, 185, 129, 0.4);
+}
+
+.battle-btn {
+  background-color: #991b1b;
+  color: #e0e0e0;
+  border: 2px solid #ef4444;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+}
+
+.battle-btn:hover:not(:disabled) {
+  background-color: #b91c1c;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 20px rgba(239, 68, 68, 0.4);
+}
+
+/* ========== 导航 ========== */
+.navigation {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
+  padding-top: 20px;
+}
+
+#home-btn {
+  background-color: #5b0e8a;
+  color: #e0e0e0;
+  border: 2px solid #a855f7;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
+}
+
+#home-btn:hover {
+  background-color: #6d28d9;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 20px rgba(168, 85, 247, 0.4);
+}
+
+/* ========== 页脚 ========== */
+footer {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* ========== Battle Start 动画 ========== */
+.battle-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 999;
+  animation: overlay-fade 2s forwards;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.battle-start-text {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 72px;
+  font-weight: 900;
+  text-align: center;
+  z-index: 1000;
+  animation: battle-start-anim 4.5s forwards;
+  text-shadow: 0 0 20px #ff3c3c, 0 0 40px #ff6b6b, 0 0 60px #ff9999;
+  font-family: "Arial Black", "Impact", sans-serif;
+  letter-spacing: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  padding: 40px 80px;
+  background: linear-gradient(135deg, #ff3c3c, #ff0000, #cc0000);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.click-to-stop {
+  position: fixed;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 8px 15px;
+  border-radius: 20px;
+  z-index: 1001;
+  pointer-events: none;
+  animation: fade-in-out 2s infinite alternate;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.hidden {
+  display: none !important;
+}
+
+@keyframes battle-start-anim {
+  0% {
+    transform: translate(-50%, -50%) scale(0.1) rotate(-5deg);
+    opacity: 0;
+    filter: blur(20px);
+  }
+  5% {
+    transform: translate(-50%, -50%) scale(1.8) rotate(5deg);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  10% {
+    transform: translate(-50%, -50%) scale(0.8) rotate(-3deg);
+    opacity: 1;
+  }
+  15% {
+    transform: translate(-50%, -50%) scale(1.4) rotate(2deg);
+    opacity: 1;
+  }
+  20% {
+    transform: translate(-50%, -50%) scale(0.9) rotate(-1deg);
+    opacity: 1;
+  }
+  25% {
+    transform: translate(-50%, -50%) scale(1.2) rotate(1deg);
+    opacity: 1;
+  }
+  30% {
+    transform: translate(-50%, -50%) scale(1.1) rotate(-0.8deg);
+    opacity: 1;
+  }
+  35% {
+    transform: translate(-50%, -50%) scale(1.05) rotate(0.8deg);
+    opacity: 1;
+  }
+  40% {
+    transform: translate(-50%, -50%) scale(1.03) rotate(-0.5deg);
+    opacity: 1;
+  }
+  45% {
+    transform: translate(-50%, -50%) scale(1.01) rotate(0.3deg);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  70% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2);
+    opacity: 0;
+    filter: blur(20px);
+  }
+}
+
+@keyframes overlay-fade {
+  0% { opacity: 0; }
+  20% { opacity: 0.7; }
+  80% { opacity: 0.7; }
+  100% { opacity: 0; }
+}
+
+@keyframes fade-in-out {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+
+/* ========== 响应式设计 ========== */
+@media (max-width: 600px) {
+  header h1 {
+    font-size: 2rem;
+  }
+
+  .button-group {
+    flex-direction: column;
+  }
+
+  button {
+    width: 100%;
+  }
+}

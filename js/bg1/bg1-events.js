@@ -11,6 +11,7 @@ function setupEventListeners() {
     !DOM.drawMusicBtn ||
     !DOM.drawTricksBtn ||
     !DOM.playMusicBtn ||
+    !DOM.clearWinnerBtn ||
     !DOM.nextRoundBtn ||
     !DOM.resetGameBtn
   ) {
@@ -24,6 +25,7 @@ function setupEventListeners() {
   DOM.drawMusicBtn.addEventListener("click", handleDrawMusic);
   DOM.drawTricksBtn.addEventListener("click", handleDrawTricks);
   DOM.playMusicBtn.addEventListener("click", handlePlayMusic);
+  DOM.clearWinnerBtn.addEventListener("click", handleClearWinnerSelection);
   DOM.nextRoundBtn.addEventListener("click", handleNextRound);
 
   // 重置按钮
@@ -100,6 +102,11 @@ function handleDrawMusic() {
 function handleDrawTricks() {
   console.log("执行抽取动作");
 
+  if (localStorage.getItem("feature_group1_draw_trick_enabled") === "false") {
+    showToast("抽取动作功能已在设置页关闭", "info");
+    return;
+  }
+
   if (!BattleState.tricksLoaded) {
     showToast("技能数据正在加载，请稍候", "info");
     return;
@@ -165,6 +172,18 @@ function handlePlayMusic() {
     // 停止播放
     stopMusicMode();
   }
+}
+
+// 撤消当前轮次的胜者选择
+function handleClearWinnerSelection() {
+  if (!BattleState.currentWinner) {
+    showToast("当前尚未选择胜者", "info");
+    return;
+  }
+
+  resetWinnerDisplay();
+  saveGameState();
+  showToast("已撤消本轮胜者选择", "success");
 }
 
 // 启动音乐播放模式

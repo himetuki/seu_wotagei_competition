@@ -111,6 +111,10 @@ select {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.hidden-file-input {
+  display: none;
+}
+
 /* 数据容器 */
 .data-container {
   display: flex;
@@ -540,6 +544,82 @@ button[type="submit"]:hover,
   box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
 }
 
+.feature-switches {
+  background-color: rgba(40, 40, 40, 0.8);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.feature-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background-color: rgba(50, 50, 50, 0.4);
+  margin-bottom: 14px;
+}
+
+.feature-text h3 {
+  margin: 0 0 8px;
+  padding: 0;
+  border: none;
+  color: #e6f7ff;
+  font-size: 1.02rem;
+}
+
+.feature-text p {
+  margin: 0;
+  color: #b8c7d1;
+  font-size: 0.92rem;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 54px;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #555;
+  transition: 0.25s;
+  border-radius: 30px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 4px;
+  top: 4px;
+  background-color: #fff;
+  transition: 0.25s;
+  border-radius: 50%;
+}
+
+.switch input:checked + .slider {
+  background-color: #00c3ff;
+}
+
+.switch input:checked + .slider:before {
+  transform: translateX(24px);
+}
+
 /* 表单按钮样式优化 */
 .form-buttons button[type="submit"] {
   background-color: #2a2a2a;
@@ -679,6 +759,7 @@ button[type="submit"]:hover,
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.7);
+  -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
   z-index: 1999;
 }
@@ -689,7 +770,9 @@ button[type="submit"]:hover,
   padding: 25px;
   width: 90%;
   max-width: 400px;
-  box-shadow: 0 0 20px rgba(0, 195, 255, 0.6), 0 0 40px rgba(0, 100, 255, 0.3);
+  box-shadow:
+    0 0 20px rgba(0, 195, 255, 0.6),
+    0 0 40px rgba(0, 100, 255, 0.3);
   border: 1px solid rgba(0, 195, 255, 0.4);
   transform: scale(0.8);
   opacity: 0;
@@ -722,7 +805,10 @@ button[type="submit"]:hover,
   border-radius: 5px;
   cursor: pointer;
   font-size: 1rem;
-  transition: all 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    all 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .confirm-btn {

@@ -34,6 +34,10 @@ const BattleState = {
 // =============== DOM 元素引用缓存 ===============
 const DOM = {};
 
+const FEATURE_TOGGLE_KEYS = {
+  group1DrawTrick: "feature_group1_draw_trick_enabled",
+};
+
 // =============== 初始化函数 ===============
 // 主入口函数 - 页面加载完成时执行
 document.addEventListener("DOMContentLoaded", function () {
@@ -41,6 +45,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // 缓存DOM元素引用
   cacheDOMReferences();
+
+  // 应用功能开关
+  applyFeatureToggles();
 
   // 绑定事件监听器
   setupEventListeners();
@@ -66,6 +73,7 @@ function cacheDOMReferences() {
   DOM.drawMusicBtn = document.getElementById("draw-music-btn");
   DOM.drawTricksBtn = document.getElementById("draw-tricks-btn");
   DOM.playMusicBtn = document.getElementById("play-music-btn");
+  DOM.clearWinnerBtn = document.getElementById("clear-winner-btn");
   DOM.nextRoundBtn = document.getElementById("next-round-btn");
   DOM.resetGameBtn = document.getElementById("reset-game-btn");
   DOM.homeBtn = document.getElementById("home-btn");
@@ -75,10 +83,24 @@ function cacheDOMReferences() {
   DOM.musicName = document.getElementById("music-name");
   DOM.musicPlayer = document.getElementById("music-player");
   DOM.randomTricksDisplay = document.getElementById("random-tricks-display");
+  DOM.randomTricksPanel = document.querySelector("#battle-display .random-tricks");
 
   // 技池区域
   DOM.tricksPoolPlayer1 = document.getElementById("tricks-pool-list-player1");
   DOM.tricksPoolPlayer2 = document.getElementById("tricks-pool-list-player2");
+}
+
+function applyFeatureToggles() {
+  const drawTrickEnabled =
+    localStorage.getItem(FEATURE_TOGGLE_KEYS.group1DrawTrick) !== "false";
+
+  if (DOM.drawTricksBtn) {
+    DOM.drawTricksBtn.style.display = drawTrickEnabled ? "" : "none";
+  }
+
+  if (DOM.randomTricksPanel) {
+    DOM.randomTricksPanel.style.display = drawTrickEnabled ? "" : "none";
+  }
 }
 
 // 初始化数据

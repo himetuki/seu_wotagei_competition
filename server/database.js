@@ -153,6 +153,13 @@ const databases = [
       },
     },
   },
+  {
+    name: "group-battle-process",
+    defaultValue: {
+      currentState: null,
+      lastUpdate: new Date().toISOString(),
+    },
+  },
 ];
 
 // 创建一个数据库管理器，支持多个JSON文件

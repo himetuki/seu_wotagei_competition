@@ -17,6 +17,7 @@
         <button class="tab-btn active" data-tab="players">选手管理</button>
         <button class="tab-btn" data-tab="tricks">技能管理</button>
         <button class="tab-btn" data-tab="awards">奖励管理</button>
+        <button class="tab-btn" data-tab="features">功能开关</button>
         <button class="tab-btn" data-tab="musics">音乐导入</button>
       </nav>
 
@@ -25,7 +26,7 @@
         <section id="players-panel" class="tab-panel active">
           <div class="section-header">
             <h2>选手管理</h2>
-            <select id="player-file-select">
+            <select id="player-file-select" title="选择选手数据文件" aria-label="选择选手数据文件">
               <option value="player1">加组选手 (player1.json)</option>
               <option value="player2">内组选手 (player2.json)</option>
             </select>
@@ -53,7 +54,7 @@
                     <span class="import-icon">📄</span>
                     以TXT文件批量导入选手
                   </label>
-                  <input type="file" id="import-players-file" accept=".txt" style="display: none;" />
+                  <input type="file" id="import-players-file" class="hidden-file-input" accept=".txt" />
                 </div>
                 <div class="drop-zone">
                   <p class="drop-message">拖放TXT文件到这里</p>
@@ -93,7 +94,7 @@
         <section id="tricks-panel" class="tab-panel">
           <div class="section-header">
             <h2>技能管理</h2>
-            <select id="trick-file-select">
+            <select id="trick-file-select" title="选择技能数据文件" aria-label="选择技能数据文件">
               <option value="tricks">加组技能 (tricks.json)</option>
               <option value="tricks_for_group2">
                 内组技能 (tricks_for_group2.json)
@@ -130,7 +131,7 @@
                     <span class="import-icon">📄</span>
                     以TXT文件批量导入技能
                   </label>
-                  <input type="file" id="import-tricks-file" accept=".txt" style="display: none;" />
+                  <input type="file" id="import-tricks-file" class="hidden-file-input" accept=".txt" />
                 </div>
                 <div class="drop-zone">
                   <p class="drop-message">拖放TXT文件到这里</p>
@@ -202,6 +203,39 @@
         </section>
 
         <!-- 音乐导入面板 -->
+        <section id="features-panel" class="tab-panel">
+          <div class="section-header">
+            <h2>功能开关</h2>
+          </div>
+          <div class="feature-switches">
+            <div class="feature-item">
+              <div class="feature-text">
+                <h3>一年加组对战 - 抽取动作</h3>
+                <p>控制“一年加组对战”界面的抽取动作按钮及抽取结果显示区域。</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-group1-draw-trick" title="一年加组对战抽取动作开关" aria-label="一年加组对战抽取动作开关" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="feature-item">
+              <div class="feature-text">
+                <h3>一年内组比赛 - 抽取动作</h3>
+                <p>控制“一年内组比赛”界面的抽取动作按钮及当前抽取动作显示。</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-group2-draw-trick" title="一年内组比赛抽取动作开关" aria-label="一年内组比赛抽取动作开关" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="action-buttons">
+              <button id="save-feature-toggles-btn" class="primary-action-btn">保存开关设置</button>
+            </div>
+          </div>
+        </section>
+
         <section id="musics-panel" class="tab-panel">
           <div class="section-header">
             <h2>音乐导入管理</h2>

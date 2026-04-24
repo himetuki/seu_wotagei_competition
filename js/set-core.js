@@ -29,6 +29,11 @@ const ENDPOINTS = {
   award: "/award", // 确保这里是"/award"而不是"/awards"
 };
 
+const FEATURE_TOGGLE_KEYS = {
+  group1DrawTrick: "feature_group1_draw_trick_enabled",
+  group2DrawTrick: "feature_group2_draw_trick_enabled",
+};
+
 // 初始化函数
 document.addEventListener("DOMContentLoaded", function () {
   console.log("设置页面加载完成");
@@ -39,8 +44,14 @@ document.addEventListener("DOMContentLoaded", function () {
   // 绑定通用事件
   bindCommonEvents();
 
+  // 绑定功能开关事件
+  bindFeatureToggleEvents();
+
   // 显示初始标签页
   showTab(State.currentTab);
+
+  // 加载功能开关状态
+  loadFeatureToggles();
 
   // 返回主页按钮
   DOM.homeBtn.addEventListener("click", function () {
@@ -91,6 +102,61 @@ function cacheDOMElements() {
   DOM.addAwardBtn = document.getElementById("add-award-btn");
   DOM.saveAwardsBtn = document.getElementById("save-awards-btn");
   DOM.cancelAwardEdit = document.getElementById("cancel-award-edit");
+
+  // 功能开关元素
+  DOM.toggleGroup1DrawTrick = document.getElementById("toggle-group1-draw-trick");
+  DOM.toggleGroup2DrawTrick = document.getElementById("toggle-group2-draw-trick");
+  DOM.saveFeatureTogglesBtn = document.getElementById("save-feature-toggles-btn");
+}
+
+function bindFeatureToggleEvents() {
+  if (
+    !DOM.toggleGroup1DrawTrick ||
+    !DOM.toggleGroup2DrawTrick ||
+    !DOM.saveFeatureTogglesBtn
+  ) {
+    return;
+  }
+
+  DOM.toggleGroup1DrawTrick.addEventListener("change", () => {
+    State.hasChanges = true;
+  });
+
+  DOM.toggleGroup2DrawTrick.addEventListener("change", () => {
+    State.hasChanges = true;
+  });
+
+  DOM.saveFeatureTogglesBtn.addEventListener("click", saveFeatureToggles);
+}
+
+function loadFeatureToggles() {
+  if (!DOM.toggleGroup1DrawTrick || !DOM.toggleGroup2DrawTrick) {
+    return;
+  }
+
+  const group1Value = localStorage.getItem(FEATURE_TOGGLE_KEYS.group1DrawTrick);
+  const group2Value = localStorage.getItem(FEATURE_TOGGLE_KEYS.group2DrawTrick);
+
+  DOM.toggleGroup1DrawTrick.checked = group1Value !== "false";
+  DOM.toggleGroup2DrawTrick.checked = group2Value !== "false";
+}
+
+function saveFeatureToggles() {
+  if (!DOM.toggleGroup1DrawTrick || !DOM.toggleGroup2DrawTrick) {
+    return;
+  }
+
+  localStorage.setItem(
+    FEATURE_TOGGLE_KEYS.group1DrawTrick,
+    String(DOM.toggleGroup1DrawTrick.checked)
+  );
+  localStorage.setItem(
+    FEATURE_TOGGLE_KEYS.group2DrawTrick,
+    String(DOM.toggleGroup2DrawTrick.checked)
+  );
+
+  State.hasChanges = false;
+  showStatusMessage("功能开关设置已保存", "success");
 }
 
 // 显示自定义确认对话框
@@ -206,6 +272,9 @@ function showTab(tabName) {
       break;
     case "awards":
       loadAwardData();
+      break;
+    case "features":
+      loadFeatureToggles();
       break;
     case "musics":
       // 音乐导入面板不需要加载数据，只有跳转按钮

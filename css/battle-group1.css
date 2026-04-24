@@ -143,6 +143,11 @@ button:active {
   box-shadow: 0 0 5px rgba(204, 0, 102, 0.3);
 }
 
+#clear-winner-btn {
+  border-color: #cc3333;
+  box-shadow: 0 0 5px rgba(204, 51, 51, 0.35);
+}
+
 #next-round-btn {
   border-color: #6600cc;
   box-shadow: 0 0 5px rgba(102, 0, 204, 0.3);

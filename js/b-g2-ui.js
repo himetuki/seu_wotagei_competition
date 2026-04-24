@@ -69,6 +69,11 @@ function shufflePlayers() {
 
 // 抽取技名
 function drawRandomTrick() {
+  if (localStorage.getItem("feature_group2_draw_trick_enabled") === "false") {
+    showToast("抽取动作功能已在设置页关闭", "info");
+    return;
+  }
+
   const availableTricks = Array.from(DOM.trickList.children).filter(
     (li) => !li.classList.contains("crossed")
   );

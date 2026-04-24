@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>直接抽取音乐</title>
+  <link rel="stylesheet" href="../css/music_draw.css" />
+</head>
+<body>
+  <div class="container" id="main-container">
+    <header>
+      <h1>🎵 直接抽取音乐 🎵</h1>
+    </header>
+
+    <section id="music-section">
+      <!-- 1yearminus 曲库 -->
+      <div class="music-group">
+        <h2>1年-曲库</h2>
+        <div class="music-info" id="music-info-1yearminus">未抽取</div>
+        <div class="button-group">
+          <button id="draw-1yearminus-btn" class="draw-btn">抽取音乐</button>
+          <button id="battle-1yearminus-btn" class="battle-btn" disabled>比赛开始</button>
+        </div>
+      </div>
+
+      <!-- 1yearplus 曲库 -->
+      <div class="music-group">
+        <h2>1年+曲库</h2>
+        <div class="music-info" id="music-info-1yearplus">未抽取</div>
+        <div class="button-group">
+          <button id="draw-1yearplus-btn" class="draw-btn">抽取音乐</button>
+          <button id="battle-1yearplus-btn" class="battle-btn" disabled>比赛开始</button>
+        </div>
+      </div>
+
+      <!-- 1yearplus_ex 曲库 -->
+      <div class="music-group">
+        <h2>四强赛曲库</h2>
+        <div class="music-info" id="music-info-1yearplus-ex">未抽取</div>
+        <div class="button-group">
+          <button id="draw-1yearplus-ex-btn" class="draw-btn">抽取音乐</button>
+          <button id="battle-1yearplus-ex-btn" class="battle-btn" disabled>比赛开始</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="navigation">
+      <button id="home-btn">回到主页面</button>
+    </section>
+
+    <footer><p>&copy; 2025 Y.Stage-X YUKAORI</p></footer>
+  </div>
+
+  <!-- Battle Start 动画元素 -->
+  <div id="battle-start-overlay" class="battle-overlay hidden"></div>
+  <div id="battle-start-text" class="battle-start-text hidden"></div>
+  <div id="click-to-stop" class="click-to-stop hidden">双击屏幕退出播放</div>
+
+  <audio id="music-player"></audio>
+  <script src="../js/music_draw.js"></script>
+</body>
+</html>

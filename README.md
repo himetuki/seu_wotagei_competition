@@ -100,41 +100,34 @@ Y.Stage X 是一个专为异度沸腾 WOTA 艺团设计的比赛管理软件。
 系统所有的数据都保存在以下文件中：
 
 1. ​**​ 选手数据 ​**​：保存在 `resource/json` 文件夹下的
-
    - `player1.json`（一年加组选手）
    - `player2.json`（一年内组选手）
    - `winners.json`（获奖选手）
 
 2. ​**​ 技能数据 ​**​：保存在 `resource/json` 文件夹下的
-
    - `tricks.json`（一年加组技能）
    - `tricks_for_group2.json`（一年内组技能）
    - `tricks_for_game.json`（小游戏技能）
 
 3. ​**​ 音乐数据 ​**​：保存在 `resource/json` 文件夹下的
-
    - `musics_list.json`（一年加组第一章节音乐）
    - `musics_list_ex.json`（一年加组第二章节音乐）
    - `musics_list_for_group2.json`（一年内组音乐）
    - `games_musics.json`（小游戏音乐）
 
 4. ​**​ 设置数据 ​**​：保存在 `resource/json` 文件夹下的
-
    - `settings.json`（系统设置）
 
 5. ​**​ 比赛记录 ​**​：保存在系统数据库中，部分也会保存在浏览器中
-
    - `battle-group1-process.json`（一年加组第一章节比赛记录）
    - `battle-group1-2-process.json`（一年加组第二章节比赛记录）
    - `battle-group2-process.json`（一年内组上半场比赛记录）
    - `battle-group2-2-process.json`（一年内组下半场比赛记录）
 
 6. **​ 其他数据 ​**​：保存在 `resource/json` 文件夹下的
-
    - `award.json`（一年内组奖品数据）
 
 7. ** 游戏相关 **：保存在 `resource/json` 文件夹下的
-
    - `game_2_process.json`（游戏《体态传技》记录）
    - `game_2_setting.json`（游戏《体态传技》设置）
 
@@ -206,7 +199,7 @@ Y.Stage X 是一个专为异度沸腾 WOTA 艺团设计的比赛管理软件。
 
 ## 九、联系方式
 
-如有问题或建议，请联系 Y.StageX 开发团队：
+如有问题或建议，请联系 2025 Y.Stage-X YUKAORI：
 
 👤 QQ: 3664518772
 
@@ -318,22 +311,18 @@ Y.Stage X 是一个专为异度沸腾 WOTA 艺团设计的比赛管理软件。
 系统所有的数据都保存在以下文件中：
 
 1. ​**​ 选手数据 ​**​：保存在 `resource/json` 文件夹下的
-
    - `player1.json`（一年加组选手）
    - `player2.json`（一年内组选手）
 
 2. ​**​ 技能数据 ​**​：保存在 `resource/json` 文件夹下的
-
    - `tricks.json`（一年加组技能）
    - `tricks_for_group2.json`（一年内组技能）
 
 3. ​**​ 音乐数据 ​**​：保存在 `resource/json` 文件夹下的
-
    - `musics_list.json`（一年加组第一章节音乐）
    - `musics_list_ex.json`（一年加组第二章节音乐）
 
 4. ​**​ 设置数据 ​**​：保存在 `resource/json` 文件夹下的
-
    - `settings.json`（系统设置）
 
 5. ​**​ 比赛记录 ​**​：保存在系统数据库中，部分也会保存在浏览器中
@@ -405,7 +394,7 @@ Y.Stage X 是一个专为异度沸腾 WOTA 艺团设计的比赛管理软件。
 
 ## 九、联系方式
 
-如有问题或建议，请联系 Y.StageX 开发团队：
+如有问题或建议，请联系 2025 Y.Stage-X YUKAORI：
 
 👤 QQ: 3664518772
 

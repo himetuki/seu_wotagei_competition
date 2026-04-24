@@ -132,6 +132,32 @@ button:hover::after {
   box-shadow: 0 7px 20px rgba(0, 0, 0, 0.6), 0 0 15px rgba(14, 165, 233, 0.4);
 }
 
+/* 团体赛按钮样式 */
+.group-battle-btn {
+  background-color: #5b0e8a;
+  border-color: #a855f7;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 10px rgba(168, 85, 247, 0.2);
+}
+
+.group-battle-btn:hover {
+  background-color: #6d28d9;
+  transform: translateY(-5px);
+  box-shadow: 0 7px 20px rgba(0, 0, 0, 0.6), 0 0 15px rgba(168, 85, 247, 0.4);
+}
+
+/* 直接抽取音乐按钮样式 */
+.music-draw-btn {
+  background-color: #7c2d12;
+  border-color: #f97316;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 10px rgba(249, 115, 22, 0.2);
+}
+
+.music-draw-btn:hover {
+  background-color: #9a3412;
+  transform: translateY(-5px);
+  box-shadow: 0 7px 20px rgba(0, 0, 0, 0.6), 0 0 15px rgba(249, 115, 22, 0.4);
+}
+
 /* 设置按钮样式 */
 .settings-btn {
   background-color: #292524;

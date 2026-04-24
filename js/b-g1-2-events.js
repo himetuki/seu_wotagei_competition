@@ -119,15 +119,41 @@ function handleDrawMusic() {
     return;
   }
 
-  // 随机抽取音乐
-  const randomIndex = Math.floor(Math.random() * BattleState.musicList.length);
-  const selectedMusic = BattleState.musicList[randomIndex];
+  // 禁用抽取按钮
+  DOM.drawMusicBtn.disabled = true;
 
-  // 更新UI
-  DOM.musicName.innerText = selectedMusic;
-  DOM.musicPlayer.src = `../resource/musics/1yearplus_ex/${selectedMusic}`;
+  // 闪现效果参数
+  const flashCount = 15;
+  const flashInterval = 80;
+  let currentFlash = 0;
 
-  showToast(`已抽取音乐: ${selectedMusic}`, "success");
+  // 闪现动画
+  const flashTimer = setInterval(() => {
+    const randomIdx = Math.floor(Math.random() * BattleState.musicList.length);
+    const flashMusic = BattleState.musicList[randomIdx];
+
+    // 更新UI（闪现）
+    DOM.musicName.innerText = flashMusic;
+    DOM.musicName.style.color = "#fbbf24";
+
+    currentFlash++;
+
+    if (currentFlash >= flashCount) {
+      clearInterval(flashTimer);
+
+      // 最终随机选择
+      const finalIdx = Math.floor(Math.random() * BattleState.musicList.length);
+      const finalMusic = BattleState.musicList[finalIdx];
+
+      // 更新UI
+      DOM.musicName.innerText = finalMusic;
+      DOM.musicName.style.color = "#10b981";
+      DOM.musicPlayer.src = `../resource/musics/1yearplus_ex/${finalMusic}`;
+
+      DOM.drawMusicBtn.disabled = false;
+      showToast(`已抽取音乐: ${finalMusic}`, "success");
+    }
+  }, flashInterval);
 }
 
 // 处理播放音乐

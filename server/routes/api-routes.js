@@ -163,6 +163,40 @@ function setupApiRoutes(app) {
   // 添加音乐管理API路由
   app.use("/api", musicRoutes);
 
+  // 团体赛相关API
+  app.get("/api/group-battle-process", (req, res) => {
+    try {
+      const data = getDB("group-battle-process").getState();
+      res.json(data);
+    } catch (error) {
+      console.error("获取团体赛数据失败:", error);
+      res.status(500).send(`Error: ${error.message}`);
+    }
+  });
+
+  app.post("/api/group-battle-process", (req, res) => {
+    try {
+      console.log("收到团体赛数据:", req.body);
+      getDB("group-battle-process").setState(req.body).write();
+      console.log("成功保存团体赛数据");
+      res.status(200).send("保存成功");
+    } catch (error) {
+      console.error("保存团体赛数据失败:", error);
+      res.status(500).send(`Error: ${error.message}`);
+    }
+  });
+
+  app.post("/api/clear-group-battle-process", (req, res) => {
+    try {
+      getDB("group-battle-process").setState({}).write();
+      console.log("已成功清空团体赛数据");
+      res.status(200).send("团体赛数据已清空");
+    } catch (error) {
+      console.error("清空团体赛数据失败:", error);
+      res.status(500).send(`Error: ${error.message}`);
+    }
+  });
+
   console.log("API路由已设置完成");
 }
 

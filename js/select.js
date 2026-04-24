@@ -3,11 +3,15 @@ document.addEventListener("DOMContentLoaded", function () {
   const group1PreButton = document.querySelector(".group1-pre-btn");
   const group1Button = document.querySelector(".group1-btn");
   const group2Button = document.querySelector(".group2-btn");
+  const groupBattleButton = document.querySelector(".group-battle-btn");
+  const musicDrawButton = document.querySelector(".music-draw-btn");
 
   // 检查按钮是否存在，并在控制台输出调试信息
   console.log("一年内组第二章节按钮:", group1PreButton);
   console.log("一年加组按钮:", group1Button);
   console.log("一年内组按钮:", group2Button);
+  console.log("团体赛按钮:", groupBattleButton);
+  console.log("直接抽取音乐按钮:", musicDrawButton);
 
   // 修改为跳转到一年内组第二章节页面
   if (group1PreButton) {
@@ -58,5 +62,39 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   } else {
     console.error("找不到一年内组按钮元素");
+  }
+
+  // 为团体赛按钮添加事件
+  if (groupBattleButton) {
+    groupBattleButton.addEventListener("click", function () {
+      // 左键点击
+      window.location.href = "../html/group_battle.html";
+    });
+
+    groupBattleButton.addEventListener("mousedown", function (event) {
+      if (event.button === 1) {
+        // 中键点击
+        window.location.href = "../html/performance.html";
+      }
+    });
+  } else {
+    console.error("找不到团体赛按钮元素");
+  }
+
+  // 为直接抽取音乐按钮添加事件
+  if (musicDrawButton) {
+    musicDrawButton.addEventListener("click", function () {
+      // 左键点击
+      window.location.href = "../html/music_draw.html";
+    });
+
+    musicDrawButton.addEventListener("mousedown", function (event) {
+      if (event.button === 1) {
+        // 中键点击
+        window.location.href = "../html/performance.html";
+      }
+    });
+  } else {
+    console.error("找不到直接抽取音乐按钮元素");
   }
 });

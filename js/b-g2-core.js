@@ -20,6 +20,10 @@ const DOM = {
   homeButton: document.getElementById("homeButton"),
 };
 
+const FEATURE_TOGGLE_KEYS = {
+  group2DrawTrick: "feature_group2_draw_trick_enabled",
+};
+
 // 全局状态
 const AppState = {
   players: [],
@@ -47,6 +51,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // 隐藏音乐播放进度
   DOM.musicPlayer.style.display = "none";
 
+  // 应用功能开关
+  applyFeatureToggles();
+
   // 加载数据
   loadData();
 
@@ -58,3 +65,16 @@ document.addEventListener("DOMContentLoaded", () => {
     saveState();
   });
 });
+
+function applyFeatureToggles() {
+  const drawTrickEnabled =
+    localStorage.getItem(FEATURE_TOGGLE_KEYS.group2DrawTrick) !== "false";
+
+  if (DOM.drawTrickButton) {
+    DOM.drawTrickButton.style.display = drawTrickEnabled ? "" : "none";
+  }
+
+  if (DOM.currentTrick) {
+    DOM.currentTrick.style.display = drawTrickEnabled ? "" : "none";
+  }
+}
