@@ -55,18 +55,20 @@ function saveState() {
     const stateData = {
       players: AppState.players,
       currentIndex: AppState.currentPlayerIndex,
-      currentTrick: DOM.currentTrick.textContent,
-      currentMusic: DOM.currentMusic.textContent,
-      crossedTricks: Array.from(DOM.trickList.children)
-        .filter((li) => li.classList.contains("crossed"))
-        .map((li) => li.textContent),
+      currentTrick: DOM.currentTrick ? DOM.currentTrick.textContent : "",
+      currentMusic: DOM.currentMusic ? DOM.currentMusic.textContent : "",
+      crossedTricks: DOM.trickList
+        ? Array.from(DOM.trickList.children)
+            .filter((li) => li.classList.contains("crossed"))
+            .map((li) => li.textContent)
+        : [],
     };
 
     // 保存到浏览器缓存
     localStorage.setItem(CACHE_KEY.PLAYERS, JSON.stringify(AppState.players));
     localStorage.setItem(CACHE_KEY.CURRENT_INDEX, AppState.currentPlayerIndex);
-    localStorage.setItem(CACHE_KEY.CURRENT_TRICK, DOM.currentTrick.textContent);
-    localStorage.setItem(CACHE_KEY.CURRENT_MUSIC, DOM.currentMusic.textContent);
+    localStorage.setItem(CACHE_KEY.CURRENT_TRICK, DOM.currentTrick ? DOM.currentTrick.textContent : "");
+    localStorage.setItem(CACHE_KEY.CURRENT_MUSIC, DOM.currentMusic ? DOM.currentMusic.textContent : "");
     localStorage.setItem(
       CACHE_KEY.CROSSED_TRICKS,
       JSON.stringify(stateData.crossedTricks)
@@ -126,12 +128,12 @@ function loadState() {
     }
 
     // 恢复当前技名
-    if (savedTrick) {
+    if (savedTrick && DOM.currentTrick) {
       DOM.currentTrick.textContent = savedTrick;
     }
 
     // 恢复当前音乐
-    if (savedMusic) {
+    if (savedMusic && DOM.currentMusic) {
       DOM.currentMusic.textContent = savedMusic;
     }
 
@@ -191,11 +193,11 @@ function loadStateFromServer() {
       }
 
       // 恢复当前技名和音乐
-      if (data.currentTrick) {
+      if (data.currentTrick && DOM.currentTrick) {
         DOM.currentTrick.textContent = data.currentTrick;
       }
 
-      if (data.currentMusic) {
+      if (data.currentMusic && DOM.currentMusic) {
         DOM.currentMusic.textContent = data.currentMusic;
       }
 
@@ -276,9 +278,15 @@ function clearCache() {
         }
 
         // 重置其他显示
-        DOM.currentTrick.textContent = "";
-        DOM.currentMusic.textContent = "";
-        DOM.musicPlayer.src = "";
+        if (DOM.currentTrick) {
+          DOM.currentTrick.textContent = "";
+        }
+        if (DOM.currentMusic) {
+          DOM.currentMusic.textContent = "";
+        }
+        if (DOM.musicPlayer) {
+          DOM.musicPlayer.src = "";
+        }
         AppState.currentMusicFile = "";
 
         // 移除加载提示

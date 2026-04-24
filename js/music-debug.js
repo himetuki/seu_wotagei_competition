@@ -55,7 +55,7 @@ function checkMusicPath(filename) {
 
 // 扫描音乐列表及文件可用性
 function scanMusicFiles() {
-  fetch("../resource/json/musics_list-2.json")
+  fetch("../resource/json/musics_list_2.json")
     .then((response) => response.json())
     .then((musicList) => {
       console.log("音乐列表中有 " + musicList.length + " 首音乐");

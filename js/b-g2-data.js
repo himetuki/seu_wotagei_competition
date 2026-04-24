@@ -44,14 +44,14 @@ function loadData() {
       console.error("加载技名数据失败:", error);
     });
 
-  // 读取音乐列表数据 - 从musics_list-2.json加载
-  fetch("../resource/json/musics_list-2.json")
+  // 读取音乐列表数据 - 从musics_list_2.json加载
+  fetch("../resource/json/musics_list_2.json")
     .then((response) => {
-      if (!response.ok) throw new Error("无法加载musics_list-2.json");
+      if (!response.ok) throw new Error("无法加载musics_list_2.json");
       return response.json();
     })
     .then((data) => {
-      console.log("从musics_list-2.json加载音乐数据:", data);
+      console.log("从musics_list_2.json加载音乐数据:", data);
       AppState.musicList = data;
     })
     .catch((error) => {

@@ -1,17 +1,20 @@
 {
   "players": [
     {
-      "name": "雅各布"
+      "name": "不可查询"
     },
     {
       "name": "洛川"
     },
     {
-      "name": "不可查询"
+      "name": "千翎"
+    },
+    {
+      "name": "雅各布"
     }
   ],
   "currentIndex": 0,
-  "currentTrick": "复仇女神",
-  "currentMusic": "抽取音乐",
+  "currentTrick": "",
+  "currentMusic": "空の箱.wav",
   "crossedTricks": []
 }

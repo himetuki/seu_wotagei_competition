@@ -62,8 +62,11 @@ async function initializeGame() {
       }
     }
   } else {
-    // 预先抽取一个技能但不显示
-    drawRandomTrick();
+    // 预先抽取一个技能但不显示（初始化时静默抽取，不闪现）
+    const silentTrick = drawRandomTrickSilent();
+    if (silentTrick) {
+      updateTrickDisplay(silentTrick);
+    }
   }
 
   GameState.isInitialized = true;
@@ -77,24 +80,20 @@ function handleDrawTrick() {
     return;
   }
 
-  // 抽取新技能并显示
-  const newTrick = drawRandomTrick();
-  if (newTrick) {
-    showTrickDisplay(); // 确保技能显示
-    updateTrickDisplay(newTrick);
-    showToast(`已抽取技能: ${newTrick}`, "success");
-  } else {
-    showToast("抽取技能失败，请检查技能数据", "error");
-  }
+  // 抽取新技能并显示（drawRandomTrick 内部已处理闪现效果和 toast）
+  drawRandomTrick();
 }
 
 // 开始游戏
 function startGame() {
   if (GameState.isPlaying) return;
 
-  // 先随机抽取一个技能（如果未抽取）
+  // 先随机抽取一个技能（如果未抽取，静默抽取不闪现）
   if (!GameData.currentTrick) {
-    drawRandomTrick();
+    const silentTrick = drawRandomTrickSilent();
+    if (silentTrick) {
+      updateTrickDisplay(silentTrick);
+    }
   }
 
   // 加载BPM设置
@@ -180,12 +179,16 @@ function resetGame() {
   GameData.endTime = null;
   GameData.elapsedTime = 0;
 
-  // 重新抽取技能
-  drawRandomTrick();
+  // 重新抽取技能（重置时静默抽取，不闪现）
+  const silentTrick = drawRandomTrickSilent();
+  if (silentTrick) {
+    updateTrickDisplay(silentTrick);
+  } else {
+    updateTrickDisplay("等待抽取...");
+  }
 
   // 更新UI
   updateTimerDisplay();
-  updateTrickDisplay("等待抽取...");
 
   // 更新按钮状态
   enableStartButton();

@@ -87,15 +87,48 @@ function handleDrawMusic() {
     return;
   }
 
-  // 随机抽取音乐
-  const randomIndex = Math.floor(Math.random() * BattleState.musicList.length);
-  const selectedMusic = BattleState.musicList[randomIndex];
+  // 禁用抽取按钮，防止重复点击
+  if (DOM.drawMusicBtn) DOM.drawMusicBtn.disabled = true;
 
-  // 更新UI
-  DOM.musicName.innerText = selectedMusic;
-  DOM.musicPlayer.src = `../resource/musics/1yearplus/${selectedMusic}`;
+  // 闪现效果参数
+  const flashCount = 15; // 闪现次数
+  const flashInterval = 80; // 闪现间隔（毫秒）
+  let currentFlash = 0;
 
-  showToast(`已抽取音乐: ${selectedMusic}`, "success");
+  // 闪现动画
+  const flashTimer = setInterval(() => {
+    // 随机选择一个音乐显示
+    const randomIdx = Math.floor(Math.random() * BattleState.musicList.length);
+    const flashMusic = BattleState.musicList[randomIdx];
+
+    if (DOM.musicName) {
+      DOM.musicName.innerText = flashMusic;
+      DOM.musicName.style.color = "#fbbf24"; // 闪现时为黄色
+    }
+
+    currentFlash++;
+
+    // 最后一次闪现，确定最终结果
+    if (currentFlash >= flashCount) {
+      clearInterval(flashTimer);
+
+      // 最终随机选择
+      const finalIdx = Math.floor(Math.random() * BattleState.musicList.length);
+      const selectedMusic = BattleState.musicList[finalIdx];
+
+      // 更新UI
+      if (DOM.musicName) {
+        DOM.musicName.innerText = selectedMusic;
+        DOM.musicName.style.color = "#10b981"; // 最终结果为绿色
+      }
+      DOM.musicPlayer.src = `../resource/musics/1yearplus/${selectedMusic}`;
+
+      // 启用按钮
+      if (DOM.drawMusicBtn) DOM.drawMusicBtn.disabled = false;
+
+      showToast(`已抽取音乐: ${selectedMusic}`, "success");
+    }
+  }, flashInterval);
 }
 
 // 处理抽取动作

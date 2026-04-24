@@ -97,27 +97,69 @@ function drawRandomTrick() {
 
 // 抽取音乐
 function drawRandomMusic() {
-  fetch("../resource/json/musics_list-2.json")
+  fetch("../resource/json/musics_list_2.json")
     .then((response) => response.json())
     .then((musics) => {
-      const randomMusic = musics[Math.floor(Math.random() * musics.length)];
-      DOM.currentMusic.textContent = randomMusic;
-      // 正确设置音乐文件路径
-      AppState.currentMusicFile = `../resource/musics/1yearminus/${randomMusic}`;
-      console.log("设置音乐路径:", AppState.currentMusicFile);
+      if (!musics || musics.length === 0) {
+        showToast("音乐列表为空", "error");
+        return;
+      }
 
-      // 确保音乐文件存在
-      DOM.musicPlayer.src = AppState.currentMusicFile;
-      // 预加载音乐
-      DOM.musicPlayer.load();
-      saveState();
+      // 禁用抽取按钮，防止重复点击
+      if (DOM.drawMusicButton) DOM.drawMusicButton.disabled = true;
 
-      // 显示提示
-      showToast(`已选择音乐: ${randomMusic.replace(/\.mp3$/, "")}`, "success");
+      // 闪现效果参数
+      const flashCount = 15;
+      const flashInterval = 80;
+      let currentFlash = 0;
+
+      // 闪现动画
+      const flashTimer = setInterval(() => {
+        const randomIdx = Math.floor(Math.random() * musics.length);
+        const flashMusic = musics[randomIdx];
+
+        if (DOM.currentMusic) {
+          DOM.currentMusic.textContent = flashMusic.replace(/\.mp3$/, "");
+          DOM.currentMusic.style.color = "#fbbf24"; // 闪现时为黄色
+        }
+
+        currentFlash++;
+
+        if (currentFlash >= flashCount) {
+          clearInterval(flashTimer);
+
+          // 最终随机选择
+          const finalIdx = Math.floor(Math.random() * musics.length);
+          const randomMusic = musics[finalIdx];
+
+          // 更新UI
+          if (DOM.currentMusic) {
+            DOM.currentMusic.textContent = randomMusic.replace(/\.mp3$/, "");
+            DOM.currentMusic.style.color = "#10b981"; // 最终结果为绿色
+          }
+
+          // 正确设置音乐文件路径
+          AppState.currentMusicFile = `../resource/musics/1yearminus/${randomMusic}`;
+          console.log("设置音乐路径:", AppState.currentMusicFile);
+
+          // 确保音乐文件存在
+          DOM.musicPlayer.src = AppState.currentMusicFile;
+          // 预加载音乐
+          DOM.musicPlayer.load();
+          saveState();
+
+          // 启用按钮
+          if (DOM.drawMusicButton) DOM.drawMusicButton.disabled = false;
+
+          showToast(`已选择音乐: ${randomMusic.replace(/\.mp3$/, "")}`, "success");
+        }
+      }, flashInterval);
     })
     .catch((error) => {
       console.error("加载音乐列表失败:", error);
-      DOM.currentMusic.textContent = "无法加载音乐";
+      if (DOM.currentMusic) {
+        DOM.currentMusic.textContent = "无法加载音乐";
+      }
       showToast("无法加载音乐列表", "error");
     });
 }

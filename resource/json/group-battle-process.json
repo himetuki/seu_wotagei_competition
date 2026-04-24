@@ -1,368 +1,304 @@
 {
-  "currentState": {
-    "phase": "assigning",
-    "round": 1,
-    "allPlayers": [
-      "春春",
-      "自由男孩",
-      "斜化直",
-      "无声",
-      "银华",
-      "元孝",
-      "斑庐",
-      "由佳莉",
-      "不可查询",
-      "洛川",
-      "千翎",
-      "雅各布"
+  "phase": "selecting_players",
+  "round": 3,
+  "allPlayers": [
+    "春春",
+    "自由男孩",
+    "斜化直",
+    "无声",
+    "千翎",
+    "银华",
+    "元孝",
+    "斑庐",
+    "由佳莉",
+    "不可查询",
+    "洛川",
+    "雅各布"
+  ],
+  "oldPlayers": [
+    "春春",
+    "自由男孩",
+    "斜化直",
+    "无声",
+    "千翎",
+    "银华",
+    "元孝",
+    "斑庐",
+    "由佳莉"
+  ],
+  "newPlayers": [
+    "不可查询",
+    "洛川",
+    "雅各布"
+  ],
+  "unassigned": [],
+  "selectedMember": null,
+  "groups": [
+    {
+      "id": "A",
+      "wins": 0,
+      "losses": 0,
+      "status": "active",
+      "members": [
+        "自由男孩",
+        "春春",
+        "斜化直"
+      ],
+      "eliminated": []
+    },
+    {
+      "id": "B",
+      "wins": 0,
+      "losses": 0,
+      "status": "active",
+      "members": [
+        "千翎",
+        "银华",
+        "无声"
+      ],
+      "eliminated": []
+    },
+    {
+      "id": "C",
+      "wins": 0,
+      "losses": 0,
+      "status": "active",
+      "members": [
+        "元孝",
+        "由佳莉",
+        "洛川"
+      ],
+      "eliminated": []
+    },
+    {
+      "id": "D",
+      "wins": 0,
+      "losses": 0,
+      "status": "active",
+      "members": [
+        "雅各布",
+        "不可查询",
+        "斑庐"
+      ],
+      "eliminated": []
+    }
+  ],
+  "currentMatch": {
+    "group1Idx": 2,
+    "group2Idx": 0,
+    "defender": {
+      "groupIdx": 2,
+      "playerName": "洛川",
+      "role": "defender"
+    },
+    "challenger": {
+      "groupIdx": 0,
+      "playerName": "自由男孩",
+      "role": "challenger"
+    },
+    "winner": null,
+    "loser": null,
+    "duelHistory": [],
+    "matchWinnerGroupIdx": null,
+    "matchLoserGroupIdx": null,
+    "nextChallengerGroupIdx": null,
+    "firstTrickLocked": true,
+    "selectedTrick": null
+  },
+  "bracket": {
+    "pendingMatches": [
+      {
+        "g1": 0,
+        "g2": 2,
+        "played": false
+      },
+      {
+        "g1": 3,
+        "g2": 1,
+        "played": false
+      }
     ],
-    "oldPlayers": [
-      "春春",
-      "自由男孩",
-      "斜化直",
-      "无声",
-      "银华",
-      "元孝",
-      "斑庐",
-      "由佳莉"
-    ],
-    "newPlayers": [
-      "不可查询",
-      "洛川",
-      "千翎",
-      "雅各布"
-    ],
-    "unassigned": [
-      "春春",
-      "自由男孩",
-      "斜化直",
-      "无声",
-      "银华",
-      "元孝",
-      "斑庐",
-      "由佳莉",
-      "不可查询",
-      "洛川",
-      "千翎",
-      "雅各布"
-    ],
-    "selectedMember": null,
+    "completedMatches": []
+  },
+  "undoStack": [
+    {
+      "type": "select_defender",
+      "groupIdx": 0,
+      "playerName": "春春"
+    },
+    {
+      "type": "select_challenger",
+      "groupIdx": 2,
+      "playerName": "由佳莉"
+    },
+    {
+      "type": "return_challenger",
+      "groupIdx": 2,
+      "playerName": "由佳莉"
+    },
+    {
+      "type": "select_challenger",
+      "groupIdx": 2,
+      "playerName": "由佳莉"
+    },
+    {
+      "type": "return_challenger",
+      "groupIdx": 2,
+      "playerName": "由佳莉"
+    },
+    {
+      "type": "select_challenger",
+      "groupIdx": 2,
+      "playerName": "由佳莉"
+    },
+    {
+      "type": "return_challenger",
+      "groupIdx": 2,
+      "playerName": "由佳莉"
+    },
+    {
+      "type": "return_defender",
+      "groupIdx": 0,
+      "playerName": "春春"
+    },
+    {
+      "type": "select_defender",
+      "groupIdx": 2,
+      "playerName": "洛川"
+    },
+    {
+      "type": "select_challenger",
+      "groupIdx": 0,
+      "playerName": "自由男孩"
+    }
+  ],
+  "trickPool": [
+    "雷蛇",
+    "天照",
+    "镇魂曲",
+    "自恋",
+    "豚侍",
+    "月读",
+    "仙女座",
+    "金刚",
+    "流星蛇",
+    "消力",
+    "神威",
+    "性感蝴蝶",
+    "伊邪那岐",
+    "风雅",
+    "樱华",
+    "复仇女神",
+    "龙之矛",
+    "性感蝴蝶改",
+    "村正"
+  ],
+  "musicListNew": [
+    "kanaria,GUMI - エンヴィーベイビー.mp3",
+    "MAN WITH A MISSION,milet - 絆ノ奇跡.mp3",
+    "Neru,鏡音リン - ロストワンの号哭.mp3",
+    "PSYQUI,ぷにぷに電機 - Still in my heart.mp3",
+    "r-906,裏命,狐子 - あまもや.mp3",
+    "Reol - 劣等上等.mp3",
+    "Risa Yuzuki - 風が冴えるより疾く.mp3",
+    "tuki. - ひゅるりらぱっぱ - HYURURIRAPAPPA.mp3",
+    "あたらよ - 極夜.mp3",
+    "やなぎなぎ - 春擬き.mp3",
+    "ユリイ・カノン,GUMI - スーサイドパレヱド.mp3",
+    "ワルキューレ - ワルキューレがとまらない.mp3",
+    "島爺 - ブリキノダンス.mp3",
+    "缶缶,ナツノセ - 青染 (feat. ナツノセ).mp3",
+    "西村宜隆 - FLOWER.mp3",
+    "麻枝准,やなぎなぎ - 君という神話.mp3"
+  ],
+  "musicListOld": [
+    "Henceforth.wav",
+    "ひかり.wav",
+    "トリカゴ.wav",
+    "ヒューマノイド.wav",
+    "ブラック★ロックシューター.wav",
+    "レクイエム.wav",
+    "勘冴えて悔しいわ.wav",
+    "太陽系デスコ.wav",
+    "少女レイ.wav",
+    "心という名の不可解.wav",
+    "流線形メーデー.wav",
+    "猛独が襲う.wav",
+    "空の箱.wav"
+  ],
+  "revivalUsed": {},
+  "musicListEx": [
+    "アスノヨゾラ哨戒班.wav",
+    "ダークロムシンカー.wav",
+    "ニワカ雨ニモ負ケズ.wav",
+    "五月は花緑青の窓辺から.wav",
+    "名前のない怪物.wav",
+    "夜紛い.wav",
+    "天上天下唯我独尊.wav",
+    "舞台に立って.wav",
+    "輪廻.wav",
+    "雨、キミを連れて.wav"
+  ],
+  "round2Data": {
+    "round": 2,
     "groups": [
       {
         "id": "A",
-        "members": [],
-        "eliminated": [],
-        "wins": 0,
-        "losses": 0,
-        "status": "active"
+        "wins": 1,
+        "losses": 1,
+        "status": "active",
+        "members": [
+          "自由男孩",
+          "春春",
+          "斜化直"
+        ]
       },
       {
         "id": "B",
-        "members": [],
-        "eliminated": [],
-        "wins": 0,
-        "losses": 0,
-        "status": "active"
+        "wins": 1,
+        "losses": 1,
+        "status": "active",
+        "members": [
+          "千翎",
+          "无声",
+          "元孝"
+        ]
       },
       {
         "id": "C",
-        "members": [],
-        "eliminated": [],
-        "wins": 0,
+        "wins": 2,
         "losses": 0,
-        "status": "active"
+        "status": "active",
+        "members": [
+          "银华",
+          "由佳莉",
+          "不可查询"
+        ]
       },
       {
         "id": "D",
-        "members": [],
-        "eliminated": [],
         "wins": 0,
-        "losses": 0,
-        "status": "active"
+        "losses": 2,
+        "status": "eliminated",
+        "members": [
+          "雅各布",
+          "斑庐",
+          "洛川"
+        ]
       }
     ],
-    "currentMatch": {
-      "group1Idx": null,
-      "group2Idx": null,
-      "defender": null,
-      "challenger": null,
-      "winner": null,
-      "loser": null,
-      "duelHistory": [],
-      "matchWinnerGroupIdx": null,
-      "matchLoserGroupIdx": null,
-      "nextChallengerGroupIdx": null,
-      "firstTrickLocked": true,
-      "selectedTrick": null
-    },
-    "bracket": {
-      "pendingMatches": [],
-      "completedMatches": []
-    },
-    "undoStack": [],
-    "trickPool": [
-      "雷蛇",
-      "天照",
-      "镇魂曲",
-      "自恋",
-      "豚侍",
-      "月读",
-      "仙女座",
-      "金刚",
-      "流星蛇",
-      "消力",
-      "神威",
-      "性感蝴蝶",
-      "伊邪那岐",
-      "风雅",
-      "樱华",
-      "复仇女神",
-      "龙之矛",
-      "性感蝴蝶改",
-      "村正"
-    ],
-    "musicListNew": [
-      "kanaria,GUMI - エンヴィーベイビー.mp3",
-      "MAN WITH A MISSION,milet - 絆ノ奇跡.mp3",
-      "Neru,鏡音リン - ロストワンの号哭.mp3",
-      "PSYQUI,ぷにぷに電機 - Still in my heart.mp3",
-      "r-906,裏命,狐子 - あまもや.mp3",
-      "Reol - 劣等上等.mp3",
-      "Risa Yuzuki - 風が冴えるより疾く.mp3",
-      "tuki. - ひゅるりらぱっぱ - HYURURIRAPAPPA.mp3",
-      "あたらよ - 極夜.mp3",
-      "やなぎなぎ - 春擬き.mp3",
-      "ユリイ・カノン,GUMI - スーサイドパレヱド.mp3",
-      "ワルキューレ - ワルキューレがとまらない.mp3",
-      "島爺 - ブリキノダンス.mp3",
-      "缶缶,ナツノセ - 青染 (feat. ナツノセ).mp3",
-      "西村宜隆 - FLOWER.mp3",
-      "麻枝准,やなぎなぎ - 君という神話.mp3"
-    ],
-    "musicListOld": [
-      "Henceforth.wav",
-      "ひかり.wav",
-      "トリカゴ.wav",
-      "ヒューマノイド.wav",
-      "ブラック★ロックシューター.wav",
-      "レクイエム.wav",
-      "勘冴えて悔しいわ.wav",
-      "太陽系デスコ.wav",
-      "少女レイ.wav",
-      "心という名の不可解.wav",
-      "流線形メーデー.wav",
-      "猛独が襲う.wav",
-      "空の箱.wav"
-    ],
-    "revivalUsed": {},
-    "finalResult": {
-      "round": 3,
-      "groups": [
-        {
-          "id": "A",
-          "wins": 2,
-          "losses": 1
-        },
-        {
-          "id": "B",
-          "wins": 1,
-          "losses": 2
-        },
-        {
-          "id": "C",
-          "wins": 2,
-          "losses": 1
-        },
-        {
-          "id": "D",
-          "wins": 1,
-          "losses": 2
-        }
-      ],
-      "completedMatches": [
-        {
-          "round": 3,
-          "stage": "final",
-          "group1": 3,
-          "group2": 1,
-          "winner": 3,
-          "duelHistory": [
-            {
-              "defender": {
-                "groupIdx": 1,
-                "playerName": "无声",
-                "role": "defender"
-              },
-              "challenger": {
-                "groupIdx": 3,
-                "playerName": "斑庐",
-                "role": "challenger"
-              },
-              "winner": {
-                "groupIdx": 3,
-                "playerName": "斑庐",
-                "role": "challenger"
-              },
-              "loser": {
-                "groupIdx": 1,
-                "playerName": "无声",
-                "role": "defender"
-              }
-            }
-          ],
-          "label": "季军赛"
-        },
-        {
-          "round": 3,
-          "stage": "final",
-          "group1": 0,
-          "group2": 2,
-          "winner": 0,
-          "duelHistory": [
-            {
-              "defender": {
-                "groupIdx": 0,
-                "playerName": "自由男孩",
-                "role": "defender"
-              },
-              "challenger": {
-                "groupIdx": 2,
-                "playerName": "由佳莉",
-                "role": "challenger"
-              },
-              "winner": {
-                "groupIdx": 0,
-                "playerName": "自由男孩",
-                "role": "defender"
-              },
-              "loser": {
-                "groupIdx": 2,
-                "playerName": "由佳莉",
-                "role": "challenger"
-              }
-            }
-          ],
-          "label": "冠亚军赛"
-        }
-      ],
-      "finalRank": [
-        "A",
-        "C",
-        "B",
-        "D"
-      ]
-    },
-    "currentState": {
-      "phase": "match_end",
-      "round": 3,
-      "allPlayers": [
-        "春春",
-        "自由男孩",
-        "斜化直",
-        "无声",
-        "千翎",
-        "银华",
-        "元孝",
-        "斑庐",
-        "由佳莉",
-        "不可查询",
-        "洛川",
-        "雅各布"
-      ],
-      "oldPlayers": [
-        "春春",
-        "自由男孩",
-        "斜化直",
-        "无声",
-        "千翎",
-        "银华",
-        "元孝",
-        "斑庐",
-        "由佳莉"
-      ],
-      "newPlayers": [
-        "不可查询",
-        "洛川",
-        "雅各布"
-      ],
-      "groups": [
-        {
-          "id": "A",
-          "wins": 2,
-          "losses": 1,
-          "status": "active",
-          "members": [
-            "自由男孩",
-            "春春",
-            "斜化直"
-          ],
-          "eliminated": []
-        },
-        {
-          "id": "B",
-          "wins": 1,
-          "losses": 2,
-          "status": "active",
-          "members": [
-            "千翎",
-            "无声",
-            "元孝"
-          ],
-          "eliminated": []
-        },
-        {
-          "id": "C",
-          "wins": 2,
-          "losses": 1,
-          "status": "active",
-          "members": [
-            "银华",
-            "由佳莉",
-            "不可查询"
-          ],
-          "eliminated": []
-        },
-        {
-          "id": "D",
-          "wins": 1,
-          "losses": 2,
-          "status": "eliminated",
-          "members": [
-            "雅各布",
-            "斑庐",
-            "洛川"
-          ],
-          "eliminated": []
-        }
-      ],
-      "currentMatch": {
-        "group1Idx": 2,
-        "group2Idx": 0,
-        "defender": {
-          "groupIdx": 0,
-          "playerName": "自由男孩",
-          "role": "defender"
-        },
-        "challenger": {
-          "groupIdx": 2,
-          "playerName": "由佳莉",
-          "role": "challenger"
-        },
-        "winner": {
-          "groupIdx": 0,
-          "playerName": "自由男孩",
-          "role": "defender"
-        },
-        "loser": {
-          "groupIdx": 2,
-          "playerName": "由佳莉",
-          "role": "challenger"
-        },
+    "completedMatches": [
+      {
+        "round": 2,
+        "stage": "winners_losers",
+        "group1": 2,
+        "group2": 1,
+        "winner": 2,
         "duelHistory": [
           {
             "defender": {
-              "groupIdx": 0,
-              "playerName": "自由男孩",
+              "groupIdx": 1,
+              "playerName": "无声",
               "role": "defender"
             },
             "challenger": {
@@ -371,518 +307,208 @@
               "role": "challenger"
             },
             "winner": {
-              "groupIdx": 0,
-              "playerName": "自由男孩",
+              "groupIdx": 2,
+              "playerName": "由佳莉",
+              "role": "challenger"
+            },
+            "loser": {
+              "groupIdx": 1,
+              "playerName": "无声",
               "role": "defender"
+            }
+          },
+          {
+            "defender": {
+              "groupIdx": 2,
+              "playerName": "由佳莉",
+              "role": "defender"
+            },
+            "challenger": {
+              "groupIdx": 1,
+              "playerName": "元孝",
+              "role": "challenger"
+            },
+            "winner": {
+              "groupIdx": 1,
+              "playerName": "元孝",
+              "role": "challenger"
             },
             "loser": {
               "groupIdx": 2,
               "playerName": "由佳莉",
-              "role": "challenger"
+              "role": "defender"
             }
-          }
-        ],
-        "matchWinnerGroupIdx": 0,
-        "matchLoserGroupIdx": 2,
-        "drawnMusic": "ダークロムシンカー.wav"
-      },
-      "bracket": {
-        "pendingMatches": [
-          {
-            "g1": 1,
-            "g2": 3,
-            "played": true,
-            "label": "季军赛",
-            "winner": 3,
-            "loser": 1
           },
           {
-            "g1": 2,
-            "g2": 0,
-            "played": true,
-            "label": "冠亚军赛",
-            "winner": 0,
-            "loser": 2
-          }
-        ],
-        "completedMatches": [
-          {
-            "round": 3,
-            "stage": "final",
-            "group1": 3,
-            "group2": 1,
-            "winner": 3,
-            "duelHistory": [
-              {
-                "defender": {
-                  "groupIdx": 1,
-                  "playerName": "无声",
-                  "role": "defender"
-                },
-                "challenger": {
-                  "groupIdx": 3,
-                  "playerName": "斑庐",
-                  "role": "challenger"
-                },
-                "winner": {
-                  "groupIdx": 3,
-                  "playerName": "斑庐",
-                  "role": "challenger"
-                },
-                "loser": {
-                  "groupIdx": 1,
-                  "playerName": "无声",
-                  "role": "defender"
-                }
-              }
-            ],
-            "label": "季军赛"
+            "defender": {
+              "groupIdx": 1,
+              "playerName": "元孝",
+              "role": "defender"
+            },
+            "challenger": {
+              "groupIdx": 2,
+              "playerName": "不可查询",
+              "role": "challenger"
+            },
+            "winner": {
+              "groupIdx": 2,
+              "playerName": "不可查询",
+              "role": "challenger"
+            },
+            "loser": {
+              "groupIdx": 1,
+              "playerName": "元孝",
+              "role": "defender"
+            }
           },
           {
-            "round": 3,
-            "stage": "final",
-            "group1": 0,
-            "group2": 2,
-            "winner": 0,
-            "duelHistory": [
-              {
-                "defender": {
-                  "groupIdx": 0,
-                  "playerName": "自由男孩",
-                  "role": "defender"
-                },
-                "challenger": {
-                  "groupIdx": 2,
-                  "playerName": "由佳莉",
-                  "role": "challenger"
-                },
-                "winner": {
-                  "groupIdx": 0,
-                  "playerName": "自由男孩",
-                  "role": "defender"
-                },
-                "loser": {
-                  "groupIdx": 2,
-                  "playerName": "由佳莉",
-                  "role": "challenger"
-                }
-              }
-            ],
-            "label": "冠亚军赛"
+            "defender": {
+              "groupIdx": 2,
+              "playerName": "不可查询",
+              "role": "defender"
+            },
+            "challenger": {
+              "groupIdx": 1,
+              "playerName": "千翎",
+              "role": "challenger"
+            },
+            "winner": {
+              "groupIdx": 1,
+              "playerName": "千翎",
+              "role": "challenger"
+            },
+            "loser": {
+              "groupIdx": 2,
+              "playerName": "不可查询",
+              "role": "defender"
+            }
+          },
+          {
+            "defender": {
+              "groupIdx": 1,
+              "playerName": "千翎",
+              "role": "defender"
+            },
+            "challenger": {
+              "groupIdx": 2,
+              "playerName": "银华",
+              "role": "challenger"
+            },
+            "winner": {
+              "groupIdx": 2,
+              "playerName": "银华",
+              "role": "challenger"
+            },
+            "loser": {
+              "groupIdx": 1,
+              "playerName": "千翎",
+              "role": "defender"
+            }
           }
         ]
       },
-      "undoStack": [
-        {
-          "type": "select_defender",
-          "groupIdx": 1,
-          "playerName": "千翎"
-        },
-        {
-          "type": "return_defender",
-          "groupIdx": 1,
-          "playerName": "千翎"
-        },
-        {
-          "type": "select_defender",
-          "groupIdx": 1,
-          "playerName": "无声"
-        },
-        {
-          "type": "select_challenger",
-          "groupIdx": 3,
-          "playerName": "斑庐"
-        },
-        {
-          "type": "return_challenger",
-          "groupIdx": 3,
-          "playerName": "斑庐"
-        },
-        {
-          "type": "return_defender",
-          "groupIdx": 1,
-          "playerName": "无声"
-        },
-        {
-          "type": "select_defender",
-          "groupIdx": 1,
-          "playerName": "无声"
-        },
-        {
-          "type": "select_challenger",
-          "groupIdx": 3,
-          "playerName": "斑庐"
-        },
-        {
-          "type": "return_challenger",
-          "groupIdx": 3,
-          "playerName": "斑庐"
-        },
-        {
-          "type": "return_defender",
-          "groupIdx": 1,
-          "playerName": "无声"
-        },
-        {
-          "type": "select_defender",
-          "groupIdx": 1,
-          "playerName": "无声"
-        },
-        {
-          "type": "select_challenger",
-          "groupIdx": 3,
-          "playerName": "斑庐"
-        },
-        {
-          "type": "select_winner",
-          "winner": {
-            "groupIdx": 3,
-            "playerName": "斑庐",
-            "role": "challenger"
-          },
-          "loser": {
-            "groupIdx": 1,
-            "playerName": "无声",
-            "role": "defender"
-          }
-        },
-        {
-          "type": "finish_match",
-          "winnerGroupIdx": 3,
-          "loserGroupIdx": 1
-        },
-        {
-          "type": "select_defender",
-          "groupIdx": 0,
-          "playerName": "自由男孩"
-        },
-        {
-          "type": "select_challenger",
-          "groupIdx": 2,
-          "playerName": "由佳莉"
-        },
-        {
-          "type": "select_winner",
-          "winner": {
-            "groupIdx": 0,
-            "playerName": "自由男孩",
-            "role": "defender"
-          },
-          "loser": {
-            "groupIdx": 2,
-            "playerName": "由佳莉",
-            "role": "challenger"
-          }
-        },
-        {
-          "type": "finish_match",
-          "winnerGroupIdx": 0,
-          "loserGroupIdx": 2
-        }
-      ],
-      "musicListNew": [
-        "kanaria,GUMI - エンヴィーベイビー.mp3",
-        "MAN WITH A MISSION,milet - 絆ノ奇跡.mp3",
-        "Neru,鏡音リン - ロストワンの号哭.mp3",
-        "PSYQUI,ぷにぷに電機 - Still in my heart.mp3",
-        "r-906,裏命,狐子 - あまもや.mp3",
-        "Reol - 劣等上等.mp3",
-        "Risa Yuzuki - 風が冴えるより疾く.mp3",
-        "tuki. - ひゅるりらぱっぱ - HYURURIRAPAPPA.mp3",
-        "あたらよ - 極夜.mp3",
-        "やなぎなぎ - 春擬き.mp3",
-        "ユリイ・カノン,GUMI - スーサイドパレヱド.mp3",
-        "ワルキューレ - ワルキューレがとまらない.mp3",
-        "島爺 - ブリキノダンス.mp3",
-        "缶缶,ナツノセ - 青染 (feat. ナツノセ).mp3",
-        "西村宜隆 - FLOWER.mp3",
-        "麻枝准,やなぎなぎ - 君という神話.mp3"
-      ],
-      "musicListEx": [
-        "アスノヨゾラ哨戒班.wav",
-        "ダークロムシンカー.wav",
-        "ニワカ雨ニモ負ケズ.wav",
-        "五月は花緑青の窓辺から.wav",
-        "名前のない怪物.wav",
-        "夜紛い.wav",
-        "天上天下唯我独尊.wav",
-        "舞台に立って.wav",
-        "輪廻.wav",
-        "雨、キミを連れて.wav"
-      ],
-      "round2Data": {
+      {
         "round": 2,
-        "groups": [
+        "stage": "winners_losers",
+        "group1": 0,
+        "group2": 3,
+        "winner": 0,
+        "duelHistory": [
           {
-            "id": "A",
-            "wins": 1,
-            "losses": 1,
-            "status": "active",
-            "members": [
-              "自由男孩",
-              "春春",
-              "斜化直"
-            ]
+            "defender": {
+              "groupIdx": 0,
+              "playerName": "春春",
+              "role": "defender"
+            },
+            "challenger": {
+              "groupIdx": 3,
+              "playerName": "洛川",
+              "role": "challenger"
+            },
+            "winner": {
+              "groupIdx": 0,
+              "playerName": "春春",
+              "role": "defender"
+            },
+            "loser": {
+              "groupIdx": 3,
+              "playerName": "洛川",
+              "role": "challenger"
+            }
           },
           {
-            "id": "B",
-            "wins": 1,
-            "losses": 1,
-            "status": "active",
-            "members": [
-              "千翎",
-              "无声",
-              "元孝"
-            ]
+            "defender": {
+              "groupIdx": 0,
+              "playerName": "春春",
+              "role": "defender"
+            },
+            "challenger": {
+              "groupIdx": 3,
+              "playerName": "雅各布",
+              "role": "challenger"
+            },
+            "winner": {
+              "groupIdx": 3,
+              "playerName": "雅各布",
+              "role": "challenger"
+            },
+            "loser": {
+              "groupIdx": 0,
+              "playerName": "春春",
+              "role": "defender"
+            }
           },
           {
-            "id": "C",
-            "wins": 2,
-            "losses": 0,
-            "status": "active",
-            "members": [
-              "银华",
-              "由佳莉",
-              "不可查询"
-            ]
+            "defender": {
+              "groupIdx": 3,
+              "playerName": "雅各布",
+              "role": "defender"
+            },
+            "challenger": {
+              "groupIdx": 0,
+              "playerName": "斜化直",
+              "role": "challenger"
+            },
+            "winner": {
+              "groupIdx": 0,
+              "playerName": "斜化直",
+              "role": "challenger"
+            },
+            "loser": {
+              "groupIdx": 3,
+              "playerName": "雅各布",
+              "role": "defender"
+            }
           },
           {
-            "id": "D",
-            "wins": 0,
-            "losses": 2,
-            "status": "eliminated",
-            "members": [
-              "雅各布",
-              "斑庐",
-              "洛川"
-            ]
+            "defender": {
+              "groupIdx": 0,
+              "playerName": "斜化直",
+              "role": "defender"
+            },
+            "challenger": {
+              "groupIdx": 3,
+              "playerName": "斑庐",
+              "role": "challenger"
+            },
+            "winner": {
+              "groupIdx": 0,
+              "playerName": "斜化直",
+              "role": "defender"
+            },
+            "loser": {
+              "groupIdx": 3,
+              "playerName": "斑庐",
+              "role": "challenger"
+            }
           }
-        ],
-        "completedMatches": [
-          {
-            "round": 2,
-            "stage": "winners_losers",
-            "group1": 2,
-            "group2": 1,
-            "winner": 2,
-            "duelHistory": [
-              {
-                "defender": {
-                  "groupIdx": 1,
-                  "playerName": "无声",
-                  "role": "defender"
-                },
-                "challenger": {
-                  "groupIdx": 2,
-                  "playerName": "由佳莉",
-                  "role": "challenger"
-                },
-                "winner": {
-                  "groupIdx": 2,
-                  "playerName": "由佳莉",
-                  "role": "challenger"
-                },
-                "loser": {
-                  "groupIdx": 1,
-                  "playerName": "无声",
-                  "role": "defender"
-                }
-              },
-              {
-                "defender": {
-                  "groupIdx": 2,
-                  "playerName": "由佳莉",
-                  "role": "defender"
-                },
-                "challenger": {
-                  "groupIdx": 1,
-                  "playerName": "元孝",
-                  "role": "challenger"
-                },
-                "winner": {
-                  "groupIdx": 1,
-                  "playerName": "元孝",
-                  "role": "challenger"
-                },
-                "loser": {
-                  "groupIdx": 2,
-                  "playerName": "由佳莉",
-                  "role": "defender"
-                }
-              },
-              {
-                "defender": {
-                  "groupIdx": 1,
-                  "playerName": "元孝",
-                  "role": "defender"
-                },
-                "challenger": {
-                  "groupIdx": 2,
-                  "playerName": "不可查询",
-                  "role": "challenger"
-                },
-                "winner": {
-                  "groupIdx": 2,
-                  "playerName": "不可查询",
-                  "role": "challenger"
-                },
-                "loser": {
-                  "groupIdx": 1,
-                  "playerName": "元孝",
-                  "role": "defender"
-                }
-              },
-              {
-                "defender": {
-                  "groupIdx": 2,
-                  "playerName": "不可查询",
-                  "role": "defender"
-                },
-                "challenger": {
-                  "groupIdx": 1,
-                  "playerName": "千翎",
-                  "role": "challenger"
-                },
-                "winner": {
-                  "groupIdx": 1,
-                  "playerName": "千翎",
-                  "role": "challenger"
-                },
-                "loser": {
-                  "groupIdx": 2,
-                  "playerName": "不可查询",
-                  "role": "defender"
-                }
-              },
-              {
-                "defender": {
-                  "groupIdx": 1,
-                  "playerName": "千翎",
-                  "role": "defender"
-                },
-                "challenger": {
-                  "groupIdx": 2,
-                  "playerName": "银华",
-                  "role": "challenger"
-                },
-                "winner": {
-                  "groupIdx": 2,
-                  "playerName": "银华",
-                  "role": "challenger"
-                },
-                "loser": {
-                  "groupIdx": 1,
-                  "playerName": "千翎",
-                  "role": "defender"
-                }
-              }
-            ]
-          },
-          {
-            "round": 2,
-            "stage": "winners_losers",
-            "group1": 0,
-            "group2": 3,
-            "winner": 0,
-            "duelHistory": [
-              {
-                "defender": {
-                  "groupIdx": 0,
-                  "playerName": "春春",
-                  "role": "defender"
-                },
-                "challenger": {
-                  "groupIdx": 3,
-                  "playerName": "洛川",
-                  "role": "challenger"
-                },
-                "winner": {
-                  "groupIdx": 0,
-                  "playerName": "春春",
-                  "role": "defender"
-                },
-                "loser": {
-                  "groupIdx": 3,
-                  "playerName": "洛川",
-                  "role": "challenger"
-                }
-              },
-              {
-                "defender": {
-                  "groupIdx": 0,
-                  "playerName": "春春",
-                  "role": "defender"
-                },
-                "challenger": {
-                  "groupIdx": 3,
-                  "playerName": "雅各布",
-                  "role": "challenger"
-                },
-                "winner": {
-                  "groupIdx": 3,
-                  "playerName": "雅各布",
-                  "role": "challenger"
-                },
-                "loser": {
-                  "groupIdx": 0,
-                  "playerName": "春春",
-                  "role": "defender"
-                }
-              },
-              {
-                "defender": {
-                  "groupIdx": 3,
-                  "playerName": "雅各布",
-                  "role": "defender"
-                },
-                "challenger": {
-                  "groupIdx": 0,
-                  "playerName": "斜化直",
-                  "role": "challenger"
-                },
-                "winner": {
-                  "groupIdx": 0,
-                  "playerName": "斜化直",
-                  "role": "challenger"
-                },
-                "loser": {
-                  "groupIdx": 3,
-                  "playerName": "雅各布",
-                  "role": "defender"
-                }
-              },
-              {
-                "defender": {
-                  "groupIdx": 0,
-                  "playerName": "斜化直",
-                  "role": "defender"
-                },
-                "challenger": {
-                  "groupIdx": 3,
-                  "playerName": "斑庐",
-                  "role": "challenger"
-                },
-                "winner": {
-                  "groupIdx": 0,
-                  "playerName": "斜化直",
-                  "role": "defender"
-                },
-                "loser": {
-                  "groupIdx": 3,
-                  "playerName": "斑庐",
-                  "role": "challenger"
-                }
-              }
-            ]
-          }
-        ],
-        "revivalUsed": {
-          "不可查询": true,
-          "洛川": true,
-          "雅各布": true
-        }
+        ]
       }
+    ],
+    "revivalUsed": {
+      "不可查询": true,
+      "洛川": true,
+      "雅各布": true
     }
-  },
-  "lastUpdate": "2026-04-24T11:52:52.046Z"
+  }
 }

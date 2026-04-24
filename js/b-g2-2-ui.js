@@ -239,28 +239,60 @@ function drawRandomMusic() {
         return;
       }
 
-      const randomIndex = Math.floor(Math.random() * data.length);
-      // 这里直接获取字符串，因为musics_list-2.json是字符串数组
-      const selectedMusic = data[randomIndex];
+      // 禁用抽取按钮，防止重复点击
+      const drawBtn = document.getElementById("drawMusicButton") || DOM.drawMusicButton;
+      if (drawBtn) drawBtn.disabled = true;
 
-      console.log("已选择音乐:", selectedMusic);
+      // 闪现效果参数
+      const flashCount = 15;
+      const flashInterval = 80;
+      let currentFlash = 0;
 
-      // 更新显示 - 可能需要截取文件名以改善显示
-      const displayName = selectedMusic.replace(/\.mp3$/, "");
-      DOM.currentMusic.textContent = displayName;
+      // 闪现动画
+      const flashTimer = setInterval(() => {
+        const randomIdx = Math.floor(Math.random() * data.length);
+        const flashMusic = data[randomIdx];
 
-      // 设置音乐文件 - 不做任何编码处理，保留原始文件名
-      AppState.currentMusicFile = selectedMusic;
+        if (DOM.currentMusic) {
+          DOM.currentMusic.textContent = flashMusic.replace(/\.mp3$/, "");
+          DOM.currentMusic.style.color = "#fbbf24"; // 闪现时为黄色
+        }
 
-      // 这里不预加载音乐，避免404错误
-      DOM.playMusicButton.textContent = "播放音乐";
-      AppState.isMusicPaused = false;
-      AppState.isMusicPlaying = false;
+        currentFlash++;
 
-      // 保存状态
-      saveState();
+        if (currentFlash >= flashCount) {
+          clearInterval(flashTimer);
 
-      showToast(`已抽取音乐: ${displayName}`, "success");
+          // 最终随机选择
+          const randomIndex = Math.floor(Math.random() * data.length);
+          const selectedMusic = data[randomIndex];
+
+          console.log("已选择音乐:", selectedMusic);
+
+          // 更新显示 - 可能需要截取文件名以改善显示
+          const displayName = selectedMusic.replace(/\.mp3$/, "");
+          if (DOM.currentMusic) {
+            DOM.currentMusic.textContent = displayName;
+            DOM.currentMusic.style.color = "#10b981"; // 最终结果为绿色
+          }
+
+          // 设置音乐文件 - 不做任何编码处理，保留原始文件名
+          AppState.currentMusicFile = selectedMusic;
+
+          // 这里不预加载音乐，避免404错误
+          DOM.playMusicButton.textContent = "播放音乐";
+          AppState.isMusicPaused = false;
+          AppState.isMusicPlaying = false;
+
+          // 保存状态
+          saveState();
+
+          // 启用按钮
+          if (drawBtn) drawBtn.disabled = false;
+
+          showToast(`已抽取音乐: ${displayName}`, "success");
+        }
+      }, flashInterval);
     })
     .catch((error) => {
       console.error("加载音乐列表失败:", error);

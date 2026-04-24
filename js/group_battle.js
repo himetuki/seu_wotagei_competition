@@ -286,7 +286,10 @@ function handleMemberClick(groupIdx, playerName, e) {
     if (match.challenger === null && groupIdx !== match.defender.groupIdx) {
       match.challenger = { groupIdx, playerName, role: "challenger" };
       pushUndo({ type: "select_challenger", groupIdx, playerName });
+      // 两名选手都已选定，自动进入 ready_to_battle 阶段
+      GBState.phase = "ready_to_battle";
       saveState(); renderAll();
+      showToast("选手已就位，请抽取音乐", "success");
       return;
     }
     if (match.challenger === null && groupIdx === match.defender.groupIdx) {
@@ -328,7 +331,7 @@ function handleDrawMusic() {
     
     // 更新曲库显示（闪现）
     DOM.currentMusicLib.textContent = getMusicLibName() + " | " + flashMusic;
-    DOM.currentMusicLib.style.color = "#fbbf24";
+    DOM.currentMusicLib.style.color = "#fbbf24"; // 闪现时为黄色
     
     currentFlash++;
     
@@ -346,7 +349,7 @@ function handleDrawMusic() {
       
       // 更新最终显示
       DOM.currentMusicLib.textContent = getMusicLibName() + " | " + finalMusic;
-      DOM.currentMusicLib.style.color = "#fbbf24";
+      DOM.currentMusicLib.style.color = "#10b981"; // 最终结果为绿色
       
       saveState(); renderAll();
       DOM.drawMusicBtn.disabled = false;

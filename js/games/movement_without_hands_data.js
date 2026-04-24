@@ -178,8 +178,8 @@ async function clearGameProgress() {
   }
 }
 
-// 随机抽取一个技能
-function drawRandomTrick() {
+// 随机抽取一个技能（无闪现，用于初始化）
+function drawRandomTrickSilent() {
   if (!GameData.tricks || GameData.tricks.length === 0) {
     console.error("没有可用的技能数据");
     return null;
@@ -187,6 +187,58 @@ function drawRandomTrick() {
 
   const randomIndex = Math.floor(Math.random() * GameData.tricks.length);
   GameData.currentTrick = GameData.tricks[randomIndex].name;
+  return GameData.currentTrick;
+}
+
+// 随机抽取一个技能（带闪现效果，用于按钮点击）
+function drawRandomTrick() {
+  if (!GameData.tricks || GameData.tricks.length === 0) {
+    console.error("没有可用的技能数据");
+    return null;
+  }
+
+  const trickElement = document.getElementById("current-trick");
+
+  // 禁用抽取按钮，防止重复点击
+  const drawBtn = document.getElementById("draw-trick-btn");
+  if (drawBtn) drawBtn.disabled = true;
+
+  // 闪现效果参数
+  const flashCount = 15;
+  const flashInterval = 80;
+  let currentFlash = 0;
+
+  // 闪现动画
+  const flashTimer = setInterval(() => {
+    const randomIdx = Math.floor(Math.random() * GameData.tricks.length);
+    const flashTrick = GameData.tricks[randomIdx].name;
+
+    if (trickElement) {
+      trickElement.textContent = flashTrick;
+      trickElement.style.color = "#fbbf24"; // 闪现时为黄色
+    }
+
+    currentFlash++;
+
+    if (currentFlash >= flashCount) {
+      clearInterval(flashTimer);
+
+      // 最终随机选择
+      const finalIdx = Math.floor(Math.random() * GameData.tricks.length);
+      GameData.currentTrick = GameData.tricks[finalIdx].name;
+
+      if (trickElement) {
+        trickElement.textContent = GameData.currentTrick;
+        trickElement.style.color = "#10b981"; // 最终结果为绿色
+      }
+
+      // 启用按钮
+      if (drawBtn) drawBtn.disabled = false;
+
+      showToast(`已抽取技能: ${GameData.currentTrick}`, "success");
+    }
+  }, flashInterval);
+
   return GameData.currentTrick;
 }
 

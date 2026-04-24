@@ -18,9 +18,6 @@
         "name": "无声"
       },
       {
-        "name": "千翎"
-      },
-      {
         "name": "银华"
       },
       {
@@ -37,18 +34,18 @@
     "selectedPlayer1Trick": null,
     "selectedPlayer2Trick": null,
     "currentPlayers": {
-      "player1": "春春",
-      "player2": "自由男孩"
+      "player1": "",
+      "player2": ""
     }
   },
   "battleRecords": [
     {
-      "timestamp": "2026-04-24T09:22:20.551Z",
+      "timestamp": "2026-04-24T14:39:09.728Z",
       "chapter": 1,
       "round": 1,
       "players": {
-        "player1": "春春",
-        "player2": "自由男孩"
+        "player1": "",
+        "player2": ""
       },
       "tricks": {
         "player1": null,
@@ -57,28 +54,7 @@
       "winner": null,
       "participatedPlayers": [],
       "chapterWinners": []
-    },
-    {
-      "timestamp": "2026-04-24T06:50:18.709Z",
-      "chapter": 1,
-      "round": 2,
-      "players": {
-        "player1": "春春",
-        "player2": "银华"
-      },
-      "tricks": {
-        "player1": null,
-        "player2": null
-      },
-      "winner": null,
-      "participatedPlayers": [
-        "斜化直",
-        "自由"
-      ],
-      "chapterWinners": [
-        "自由"
-      ]
     }
   ],
-  "lastUpdate": "2026-04-24T09:22:20.551Z"
+  "lastUpdate": "2026-04-24T14:39:09.728Z"
 }
