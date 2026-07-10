@@ -287,6 +287,11 @@ FakesAssemblies/
 .ntvs_analysis.dat
 node_modules/
 
+# Build outputs
+y-stageX.exe
+server/inlined-assets.js
+.pkg-cache/
+
 # Visual Studio 6 build log
 *.plg
 

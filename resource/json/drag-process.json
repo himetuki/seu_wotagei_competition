@@ -264,5 +264,15 @@
   "music": {
     "current": null
   },
-  "lastUpdate": "2026-07-10T04:18:37.063Z"
+  "lastUpdate": "2026-07-10T04:18:37.063Z",
+  "players": [],
+  "currentRound": 1,
+  "totalRounds": 1,
+  "bracket": {
+    "rounds": []
+  },
+  "currentMatch": null,
+  "currentMusic": null,
+  "currentMusicLib": null,
+  "matchHistory": []
 }

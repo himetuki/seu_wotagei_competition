@@ -1,5 +1,6 @@
 @echo off
 chcp 65001 >nul
+cd /d "%~dp0"
 echo ========================================
 echo   Y.Stage X 打包工具（旧版 pkg + Node 18）
 echo ========================================
@@ -39,6 +40,12 @@ if not exist "%LOCAL_CACHE%\v3.4\fetched-v18.5.0-win-x64" (
 set PKG_CACHE_PATH=%LOCAL_CACHE%
 
 echo.
+echo [内联] 将网页文件打包到 JS 模块中...
+call node build-inline.js
+
+echo.
+echo [打包] 开始...
+del y-stageX.exe 2>nul
 call npx pkg server.js --targets node18-win-x64 --output y-stageX.exe
 
 if %errorlevel% equ 0 (

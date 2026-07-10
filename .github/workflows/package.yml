@@ -1,26 +1,37 @@
-name: 打包项目 ZIP
+name: 构建发布
 
 on:
   push:
     tags: ['v*']
 
 jobs:
-  package:
-    runs-on: ubuntu-latest
+  build-exe:
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: 打包 ZIP（排除 .codebuddy 和音乐）
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - run: npm ci
+
+      - name: 内联静态文件
+        run: node build-inline.js
+
+      - name: 打包 exe
+        run: npx pkg server.js --targets node18-win-x64 --output y-stageX.exe
+
+      - name: 打包源码 ZIP
         run: |
-          zip -r y-stageX.zip . \
-            -x ".git/*" \
-            -x ".codebuddy/*" \
-            -x "resource/music/*"
+          powershell Compress-Archive -Path html,css,js,server,resource,favicon.ico,package.json,build.bat,server.js,README.md,LICENSE -DestinationPath y-stageX-source.zip
 
       - name: 发布 Release
         uses: softprops/action-gh-release@v2
         with:
-          files: y-stageX.zip
+          files: |
+            y-stageX.exe
+            y-stageX-source.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

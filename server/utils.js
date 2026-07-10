@@ -7,15 +7,23 @@ const fs = require("fs");
 // 获取应用根目录(兼容打包和非打包环境)
 const getAppRoot = () => {
   // 当使用pkg打包时，process.pkg会存在
-  return process.pkg
-    ? path.dirname(process.execPath)
-    : path.join(__dirname, "..");
+  // pkg 虚拟文件系统用正斜杠，Windows 反斜杠可能导致匹配失败
+  if (process.pkg) {
+    return path.dirname(process.execPath).replace(/\\/g, "/");
+  }
+  return path.join(__dirname, "..");
+};
+
+// pkg 兼容的路径拼接（pkg 环境下强制正斜杠）
+const joinPath = (...segments) => {
+  const joined = path.join(...segments);
+  return process.pkg ? joined.replace(/\\/g, "/") : joined;
 };
 
 const APP_ROOT = getAppRoot();
 
 // 定义数据目录
-const dataDir = path.join(APP_ROOT, "resource", "json");
+const dataDir = joinPath(APP_ROOT, "resource", "json");
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
@@ -66,6 +74,7 @@ const handleErrors = (err, req, res, next) => {
 
 module.exports = {
   getAppRoot,
+  joinPath,
   APP_ROOT,
   dataDir,
   handle404,

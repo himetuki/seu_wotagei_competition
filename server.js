@@ -1,5 +1,5 @@
 /**
- * Y.Stage4 服务器主入口文件
+ * Y.Stage X 服务器主入口文件
  * 负责启动各个模块化服务
  */
 
@@ -10,7 +10,7 @@ const path = require("path");
 const cors = require("cors");
 
 // 导入核心模块
-const { getAppRoot, dataDir, serverLog } = require("./server/utils");
+const { getAppRoot, joinPath, dataDir, serverLog } = require("./server/utils");
 const { dbManager, initializeAllDatabases } = require("./server/database");
 const setupRoutes = require("./server/routes/index");
 const { runAllTests } = require("./server/test-utils");
@@ -27,7 +27,71 @@ serverLog(`应用根目录: ${APP_ROOT}`);
 // 使用中间件
 app.use(bodyParser.json({ limit: "5mb" })); // 增加请求体限制
 app.use(cors());
-app.use(express.static(path.join(APP_ROOT)));
+
+// pkg 环境下加载内联资源
+const fs = require("fs");
+let inlinedAssets = null;
+try {
+  inlinedAssets = require("./server/inlined-assets");
+} catch (e) { /* 非构建环境 */ }
+
+// pkg 兼容的静态文件中间件
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api/") || req.path.startsWith("/resource/json/")) {
+    return next();
+  }
+
+  const filePath = joinPath(APP_ROOT, req.path);
+
+  // 1. 尝试文件系统
+  try {
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      const ext = path.extname(filePath).toLowerCase();
+      const mimeMap = {
+        ".html": "text/html", ".css": "text/css",
+        ".js": "application/javascript", ".json": "application/json",
+        ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+        ".gif": "image/gif", ".svg": "image/svg+xml", ".ico": "image/x-icon",
+        ".mp3": "audio/mpeg", ".wav": "audio/wav",
+      };
+      res.type(mimeMap[ext] || "application/octet-stream");
+      res.send(fs.readFileSync(filePath));
+      return;
+    }
+  } catch (e) { /* fall through */ }
+
+  // 2. 尝试内联资源
+  if (inlinedAssets) {
+    const asset = inlinedAssets.getAsset(filePath);
+    if (asset) {
+      res.type(asset.mime);
+      res.send(Buffer.from(asset.data, "base64"));
+      return;
+    }
+  }
+
+  next();
+});
+
+// ===== 诊断 =====
+serverLog("=== 诊断：检查内联资源 ===");
+if (inlinedAssets) {
+  const count = Object.keys(inlinedAssets.assets).length;
+  serverLog(`  内联资源已加载: ${count} 个文件`);
+  const testKeys = ["html/index.html", "css/index.css", "js/index.js", "favicon.ico"];
+  testKeys.forEach(k => {
+    const a = inlinedAssets.getAsset(k);
+    if (a) {
+      const size = Buffer.from(a.data, "base64").length;
+      serverLog(`  ✓ ${k} (${size} bytes, ${a.mime})`);
+    } else {
+      serverLog(`  ✗ ${k} — 未找到`, "error");
+    }
+  });
+} else {
+  serverLog("  未加载内联资源（开发模式，使用文件系统）");
+}
+serverLog("=== 诊断结束 ===");
 
 // 初始化数据库
 try {
@@ -130,7 +194,7 @@ process.stdin.on("data", async (data) => {
 });
 
 // 启动时打印使用说明
-console.log("\n=== Y.Stage4 服务器命令行操作 ===");
+console.log("\n=== Y.Stage X 服务器命令行操作 ===");
 console.log("- 输入 'test' 或 't' 运行数据库操作测试");
 console.log("- 输入 'exit' 或 'quit' 或 'q' 关闭服务器");
 console.log("- 输入 'help' 或 'h' 或 '?' 显示帮助信息");

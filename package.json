@@ -30,16 +30,6 @@
   "pkg": {
     "targets": [
       "node18-win-x64"
-    ],
-    "outputPath": "dist",
-    "assets": [
-      "resource/json/*.json",
-      "html/*.html",
-      "css/*.css",
-      "js/*.js",
-      "resource/musics/*/*.mp3",
-      "resource/images/*.png",
-      "resource/images/*.jpg"
     ]
   }
 }
