@@ -34,18 +34,18 @@
     "selectedPlayer1Trick": null,
     "selectedPlayer2Trick": null,
     "currentPlayers": {
-      "player1": "",
-      "player2": ""
+      "player1": "斜化直",
+      "player2": "无声"
     }
   },
   "battleRecords": [
     {
-      "timestamp": "2026-04-24T14:39:09.728Z",
+      "timestamp": "2026-04-25T11:19:50.720Z",
       "chapter": 1,
       "round": 1,
       "players": {
-        "player1": "",
-        "player2": ""
+        "player1": "斜化直",
+        "player2": "无声"
       },
       "tricks": {
         "player1": null,
@@ -56,5 +56,5 @@
       "chapterWinners": []
     }
   ],
-  "lastUpdate": "2026-04-24T14:39:09.728Z"
+  "lastUpdate": "2026-04-25T11:19:50.720Z"
 }

@@ -36,7 +36,7 @@ const MUSIC_DIRS = [
   },
 ];
 
-// 获取音频文件
+// 获取音频文件（修复中文编码问题）
 function getAudioFiles(dir) {
   const fullPath = path.join(process.cwd(), dir);
 
@@ -49,11 +49,22 @@ function getAudioFiles(dir) {
       return [];
     }
 
-    const files = fs.readdirSync(fullPath);
-    const audioFiles = files.filter((file) => {
-      const extension = path.extname(file).toLowerCase();
-      return [".mp3", ".wav", ".flac", ".ogg"].includes(extension);
-    });
+    // 使用 fs.readdirSync({ withFileTypes: true }) 配合 Buffer 方式解决中文编码问题
+    let files;
+    try {
+      files = fs.readdirSync(fullPath, { withFileTypes: true });
+    } catch (readErr) {
+      serverLog(`读取目录失败 ${fullPath}: ${readErr.message}`, "error");
+      return [];
+    }
+
+    const audioFiles = files
+      .filter((entry) => {
+        if (!entry.isFile()) return false;
+        const extension = path.extname(entry.name).toLowerCase();
+        return [".mp3", ".wav", ".flac", ".ogg"].includes(extension);
+      })
+      .map((entry) => entry.name);
 
     return audioFiles;
   } catch (error) {

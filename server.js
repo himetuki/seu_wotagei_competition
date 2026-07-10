@@ -68,6 +68,29 @@ const server = app.listen(PORT, () => {
   }
 });
 
+// 处理 SIGTERM/SIGINT 信号（优雅关闭）
+let isShuttingDown = false;
+const gracefulShutdown = (signal) => {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  serverLog(`收到 ${signal} 信号，正在优雅关闭服务器...`, "warn");
+
+  server.close(() => {
+    serverLog("HTTP 服务器已关闭");
+    serverLog("服务器已完全关闭", "info");
+    process.exit(0);
+  });
+
+  // 强制超时关闭
+  setTimeout(() => {
+    serverLog("强制关闭服务器", "error");
+    process.exit(1);
+  }, 5000);
+};
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+
 // 处理未捕获的异常
 process.on("uncaughtException", (error) => {
   serverLog(`未捕获的异常: ${error.message}`, "error");

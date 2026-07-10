@@ -160,6 +160,30 @@ const databases = [
       lastUpdate: new Date().toISOString(),
     },
   },
+  {
+    name: "drag-process",
+    defaultValue: {
+      phase: "idle",
+      players: [],
+      playerSource: "player1",
+      totalCount: 8,
+      currentRound: 1,
+      totalRounds: 1,
+      bracket: { rounds: [] },
+      currentMatch: null,
+      currentMusic: null,
+      currentMusicLib: null,
+      matchHistory: [],
+      undoStack: [],
+      lastUpdate: new Date().toISOString(),
+    },
+  },
+  {
+    name: "drag-settings",
+    defaultValue: {
+      totalCount: 8,
+    },
+  },
 ];
 
 // 创建一个数据库管理器，支持多个JSON文件

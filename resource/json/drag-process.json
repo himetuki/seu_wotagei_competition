@@ -1,0 +1,268 @@
+{
+  "playerSource": "player1",
+  "totalCount": 8,
+  "allPlayers": [
+    "春春",
+    "自由男孩",
+    "斜化直",
+    "无声",
+    "银华",
+    "元孝",
+    "班庐",
+    "由佳莉"
+  ],
+  "n": 3,
+  "nodes": [
+    {
+      "id": "L_0",
+      "type": "leaf",
+      "side": "left",
+      "round": 0,
+      "index": 0,
+      "playerName": "春春",
+      "state": "advanced",
+      "parentIds": [],
+      "childId": "WL_1_0",
+      "badge": null
+    },
+    {
+      "id": "L_1",
+      "type": "leaf",
+      "side": "left",
+      "round": 0,
+      "index": 1,
+      "playerName": "自由男孩",
+      "state": "occupied",
+      "parentIds": [],
+      "childId": "WL_1_0",
+      "badge": null
+    },
+    {
+      "id": "L_2",
+      "type": "leaf",
+      "side": "left",
+      "round": 0,
+      "index": 2,
+      "playerName": "斜化直",
+      "state": "advanced",
+      "parentIds": [],
+      "childId": "WL_1_1",
+      "badge": null
+    },
+    {
+      "id": "L_3",
+      "type": "leaf",
+      "side": "left",
+      "round": 0,
+      "index": 3,
+      "playerName": "无声",
+      "state": "occupied",
+      "parentIds": [],
+      "childId": "WL_1_1",
+      "badge": null
+    },
+    {
+      "id": "R_0",
+      "type": "leaf",
+      "side": "right",
+      "round": 0,
+      "index": 0,
+      "playerName": "银华",
+      "state": "advanced",
+      "parentIds": [],
+      "childId": "WR_1_0",
+      "badge": null
+    },
+    {
+      "id": "R_1",
+      "type": "leaf",
+      "side": "right",
+      "round": 0,
+      "index": 1,
+      "playerName": "元孝",
+      "state": "occupied",
+      "parentIds": [],
+      "childId": "WR_1_0",
+      "badge": null
+    },
+    {
+      "id": "R_2",
+      "type": "leaf",
+      "side": "right",
+      "round": 0,
+      "index": 2,
+      "playerName": "班庐",
+      "state": "advanced",
+      "parentIds": [],
+      "childId": "WR_1_1",
+      "badge": null
+    },
+    {
+      "id": "R_3",
+      "type": "leaf",
+      "side": "right",
+      "round": 0,
+      "index": 3,
+      "playerName": "由佳莉",
+      "state": "occupied",
+      "parentIds": [],
+      "childId": "WR_1_1",
+      "badge": null
+    },
+    {
+      "id": "WL_1_0",
+      "type": "winner",
+      "side": "left",
+      "round": 1,
+      "index": 0,
+      "playerName": "春春",
+      "state": "advanced",
+      "parentIds": [
+        "L_0",
+        "L_1"
+      ],
+      "childId": "WL_2_0",
+      "badge": null
+    },
+    {
+      "id": "WL_1_1",
+      "type": "winner",
+      "side": "left",
+      "round": 1,
+      "index": 1,
+      "playerName": "斜化直",
+      "state": "occupied",
+      "parentIds": [
+        "L_2",
+        "L_3"
+      ],
+      "childId": "WL_2_0",
+      "badge": null
+    },
+    {
+      "id": "WR_1_0",
+      "type": "winner",
+      "side": "right",
+      "round": 1,
+      "index": 0,
+      "playerName": "银华",
+      "state": "advanced",
+      "parentIds": [
+        "R_0",
+        "R_1"
+      ],
+      "childId": "WR_2_0",
+      "badge": null
+    },
+    {
+      "id": "WR_1_1",
+      "type": "winner",
+      "side": "right",
+      "round": 1,
+      "index": 1,
+      "playerName": "班庐",
+      "state": "occupied",
+      "parentIds": [
+        "R_2",
+        "R_3"
+      ],
+      "childId": "WR_2_0",
+      "badge": null
+    },
+    {
+      "id": "WL_2_0",
+      "type": "winner",
+      "side": "left",
+      "round": 2,
+      "index": 0,
+      "playerName": "春春",
+      "state": "occupied",
+      "parentIds": [
+        "WL_1_0",
+        "WL_1_1"
+      ],
+      "childId": "CHAMPION",
+      "badge": null
+    },
+    {
+      "id": "WR_2_0",
+      "type": "winner",
+      "side": "right",
+      "round": 2,
+      "index": 0,
+      "playerName": "银华",
+      "state": "occupied",
+      "parentIds": [
+        "WR_1_0",
+        "WR_1_1"
+      ],
+      "childId": "CHAMPION",
+      "badge": null
+    },
+    {
+      "id": "CHAMPION",
+      "type": "champion",
+      "side": "center",
+      "round": 3,
+      "index": 0,
+      "playerName": null,
+      "state": "pending",
+      "parentIds": [
+        "WL_2_0",
+        "WR_2_0"
+      ],
+      "childId": null,
+      "badge": null
+    }
+  ],
+  "championId": "CHAMPION",
+  "phase": "playing",
+  "undoStack": [
+    {
+      "fromId": "R_0",
+      "toId": "WR_1_0",
+      "prevFromState": "occupied",
+      "prevToState": "pending",
+      "prevToName": null
+    },
+    {
+      "fromId": "R_2",
+      "toId": "WR_1_1",
+      "prevFromState": "occupied",
+      "prevToState": "pending",
+      "prevToName": null
+    },
+    {
+      "fromId": "L_2",
+      "toId": "WL_1_1",
+      "prevFromState": "occupied",
+      "prevToState": "pending",
+      "prevToName": null
+    },
+    {
+      "fromId": "L_0",
+      "toId": "WL_1_0",
+      "prevFromState": "occupied",
+      "prevToState": "pending",
+      "prevToName": null
+    },
+    {
+      "fromId": "WR_1_0",
+      "toId": "WR_2_0",
+      "prevFromState": "occupied",
+      "prevToState": "pending",
+      "prevToName": null
+    },
+    {
+      "fromId": "WL_1_0",
+      "toId": "WL_2_0",
+      "prevFromState": "occupied",
+      "prevToState": "pending",
+      "prevToName": null
+    }
+  ],
+  "music": {
+    "current": null
+  },
+  "lastUpdate": "2026-07-10T04:18:37.063Z"
+}

@@ -1,0 +1,555 @@
+/* ============================================================
+   Drag式比赛 — AGENTS.md UI/UX 精确规格实现
+   坐标系: 1 GU = 容器宽度/50, 容器 16:9
+   方框: 4 GU × 1.2 GU
+   ============================================================ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: "Microsoft YaHei", Arial, sans-serif;
+  background: #0a0a0a;
+  background-image: url("../resource/images/bg.jpg");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  color: #e0e0e0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* ── 应用包装器 ── */
+.app-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 95vw;
+  max-width: 1200px;
+  gap: 8px;
+}
+
+/* ── 错误状态条 ── */
+.error-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: #b91c1c;
+  color: #fff;
+  text-align: center;
+  padding: 10px;
+  font-weight: bold;
+  z-index: 1000;
+  animation: slideDown 0.3s ease;
+}
+.error-bar.hidden { display: none; }
+@keyframes slideDown {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(0); }
+}
+
+/* ── 工具提示 ── */
+.tooltip {
+  position: fixed;
+  padding: 8px 14px;
+  background: rgba(0,0,0,0.85);
+  color: #fff;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  pointer-events: none;
+  z-index: 2000;
+  white-space: nowrap;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.tooltip.hidden { display: none; }
+
+/* ── 顶部控制栏 ── */
+.control-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: rgba(20, 20, 20, 0.9);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.control-bar h1 {
+  font-size: 1.3rem;
+  color: #eab308;
+  text-shadow: 0 0 8px rgba(234,179,8,0.3);
+}
+.mode-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  color: #ff6b6b;
+  border: 1px solid #ff6b6b;
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+  animation: pulse-badge 2s infinite;
+}
+.mode-badge.hidden { display: none; }
+@keyframes pulse-badge {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.source-switch {
+  display: flex;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.12);
+}
+.source-btn {
+  padding: 4px 14px;
+  font-size: 0.82rem;
+  border: none;
+  background: #1a1a1a;
+  color: #999;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.source-btn.active {
+  background: rgba(234,179,8,0.2);
+  color: #eab308;
+  font-weight: bold;
+}
+.source-btn:hover:not(.active) {
+  background: #2a2a2a;
+  color: #ccc;
+}
+.round-label {
+  color: #eab308;
+  font-weight: bold;
+  font-size: 0.95rem;
+  min-width: 60px;
+  text-align: center;
+}
+.ctrl-btn {
+  padding: 4px 14px;
+  font-size: 0.82rem;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 5px;
+  background: #1a1a1a;
+  color: #aaa;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ctrl-btn:hover {
+  background: #2a2a2a;
+  color: #fff;
+  border-color: rgba(255,255,255,0.3);
+}
+.shuffle-btn {
+  border-color: rgba(168, 85, 247, 0.3);
+  color: #a855f7;
+}
+.shuffle-btn:hover {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border-color: rgba(168, 85, 247, 0.5);
+}
+
+/* ── 16:9 画布 ── */
+.canvas {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: rgba(18, 18, 18, 0.92);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+  overflow: hidden;
+}
+/* 中轴线 */
+.center-axis {
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: rgba(234,179,8,0.12);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── SVG 连线层 ── */
+.lines-layer {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+.lines-layer line,
+.lines-layer polyline {
+  stroke: rgba(234,179,8,0.3);
+  stroke-width: 2;
+}
+.lines-layer line.active-line,
+.lines-layer polyline.active-line {
+  stroke: rgba(234,179,8,0.7);
+  stroke-width: 2.5;
+  stroke-dasharray: none;
+}
+.lines-layer line.pending-line,
+.lines-layer polyline.pending-line {
+  stroke: rgba(255,255,255,0.06);
+  stroke-dasharray: 4 3;
+}
+
+/* ── 节点层 ── */
+.nodes-layer {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 2;
+}
+
+/* ── 方框（Player / Winner Box） ──
+   尺寸: 4 GU × 1.2 GU，JS 动态定位
+   ────────────────────────────────── */
+.node-box {
+  position: absolute;
+  /* width/height 由 JS 内联设置 */
+  background: rgba(28, 28, 28, 0.92);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  color: #ddd;
+  cursor: default;
+  user-select: none;
+  transition: box-shadow 0.2s, border-color 0.2s, opacity 0.25s;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 2px;
+  text-align: center;
+}
+
+/* ── 3种方框状态 ── */
+/* 待定 Pending */
+.node-box.state-pending {
+  border-style: dashed;
+  border-color: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.25);
+  background: rgba(18,18,18,0.7);
+}
+
+/* 已占 Occupied */
+.node-box.state-occupied {
+  border-style: solid;
+  border-color: rgba(234,179,8,0.35);
+  color: #eee;
+  background: rgba(28,28,28,0.92);
+}
+
+/* 已晋级 Advanced */
+.node-box.state-advanced {
+  border-style: solid;
+  border-color: rgba(255,255,255,0.08);
+  opacity: 0.5;
+  font-style: italic;
+  color: #888;
+}
+
+/* ── 可拖拽（父级已占但目标待定） ── */
+.node-box.draggable {
+  cursor: grab;
+  border-color: rgba(234,179,8,0.55);
+  box-shadow: 0 0 10px rgba(234,179,8,0.15);
+}
+.node-box.draggable:hover {
+  border-color: #eab308;
+  box-shadow: 0 0 16px rgba(234,179,8,0.35);
+  transform: scale(1.02);
+}
+.node-box.draggable:active {
+  cursor: grabbing;
+}
+
+/* ── 有效放置目标 ── */
+.node-box.drop-target {
+  border-color: #22c55e !important;
+  box-shadow: 0 0 18px rgba(34,197,94,0.4) !important;
+  animation: dropPulse 1s infinite;
+}
+@keyframes dropPulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(34,197,94,0.3); }
+  50%      { box-shadow: 0 0 24px rgba(34,197,94,0.55); }
+}
+
+/* ── 拖拽中 ── */
+.node-box.dragging {
+  opacity: 0.6;
+  border-style: dashed;
+}
+
+/* ── 4强徽章（W/L） ── */
+.node-box .badge {
+  position: absolute;
+  top: -5px; right: -5px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  font-size: 0.55rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  color: #fff;
+}
+.node-box .badge.w-badge {
+  background: #22c55e;
+}
+.node-box .badge.l-badge {
+  background: #ef4444;
+}
+
+/* ── 底部状态栏 ── */
+.status-bar {
+  padding: 8px 16px;
+  background: rgba(20,20,20,0.9);
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.06);
+  text-align: center;
+  font-size: 0.85rem;
+  color: #aaa;
+}
+
+/* ── 冠军槽位（决赛对决） ── */
+.node-box.champion-slot {
+  border-color: rgba(255, 215, 0, 0.3) !important;
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.12);
+  font-weight: bold;
+  letter-spacing: 1px;
+  background: rgba(32, 26, 0, 0.88);
+}
+.node-box.champion-slot.state-pending {
+  border-style: dashed;
+  border-color: rgba(255, 215, 0, 0.25) !important;
+  color: #b8941d;
+}
+.node-box.champion-slot.draggable {
+  border-color: rgba(255, 215, 0, 0.55) !important;
+  box-shadow: 0 0 18px rgba(255, 215, 0, 0.25);
+}
+.node-box.champion-slot.drop-target {
+  border-color: #ffd700 !important;
+  box-shadow: 0 0 24px rgba(255, 215, 0, 0.5) !important;
+}
+
+/* ── 冠军动画 ── */
+.champion-glow {
+  animation: champGlow 1.5s ease-in-out infinite;
+  border-color: #ffd700 !important;
+  background: rgba(40,30,0,0.95) !important;
+  color: #ffd700 !important;
+  font-weight: 900 !important;
+  font-size: 0.85rem !important;
+  letter-spacing: 2px;
+}
+@keyframes champGlow {
+  0%, 100% { box-shadow: 0 0 12px rgba(255,215,0,0.4); }
+  50%      { box-shadow: 0 0 30px rgba(255,215,0,0.7); }
+}
+
+/* ── 音乐控制栏 ── */
+.music-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: rgba(20,20,20,0.9);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+  gap: 12px;
+}
+.music-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.music-label {
+  color: #888;
+  font-size: 0.82rem;
+  flex-shrink: 0;
+}
+.music-display {
+  color: #22d3ee;
+  font-weight: bold;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.music-display.rolling {
+  animation: rollText 0.08s steps(1) infinite;
+  color: #f97316;
+}
+@keyframes rollText {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+.music-display.selected {
+  color: #22d3ee;
+  text-shadow: 0 0 6px rgba(34,211,238,0.3);
+}
+.music-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.draw-music-btn {
+  padding: 6px 16px;
+  font-size: 0.85rem;
+  border: 1px solid #f97316;
+  border-radius: 6px;
+  background: rgba(249,115,22,0.1);
+  color: #f97316;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: bold;
+}
+.draw-music-btn:hover {
+  background: rgba(249,115,22,0.25);
+  box-shadow: 0 0 12px rgba(249,115,22,0.3);
+}
+.draw-music-btn:active {
+  transform: scale(0.96);
+}
+.start-battle-btn {
+  padding: 6px 20px;
+  font-size: 0.85rem;
+  border: 1px solid #22c55e;
+  border-radius: 6px;
+  background: rgba(34,197,94,0.1);
+  color: #22c55e;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: bold;
+}
+.start-battle-btn:hover:not(:disabled) {
+  background: rgba(34,197,94,0.25);
+  box-shadow: 0 0 14px rgba(34,197,94,0.35);
+}
+.start-battle-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: rgba(255,255,255,0.1);
+  color: #666;
+}
+
+/* ── 比赛模式：隐藏UI，保留背景图 ── */
+body.battle-mode .app-wrapper,
+body.battle-mode .error-bar,
+body.battle-mode .tooltip {
+  display: none !important;
+}
+body.battle-mode {
+  cursor: none;
+}
+/* 当开启"保留背景图"时维持原背景 */
+body.battle-mode.battle-keep-bg {
+  /* 继承 body 的 background-image，不覆盖 */
+}
+/* 默认比赛模式：半透明暗色遮罩（仍保留背景图透过） */
+body.battle-mode::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.35);
+  pointer-events: none;
+  z-index: 0;
+}
+body.battle-mode::after {
+  content: "双击屏幕结束比赛";
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,0.25);
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  pointer-events: none;
+  z-index: 10;
+  animation: fadeHint 4s ease-in-out infinite;
+}
+@keyframes fadeHint {
+  0%, 100% { opacity: 0.15; }
+  50%      { opacity: 0.4; }
+}
+
+/* ── 启动弹窗 ── */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.modal-overlay.closed { display: none; }
+.modal-box {
+  background: #1a1a2e;
+  border: 1px solid rgba(234,179,8,0.3);
+  border-radius: 12px;
+  padding: 28px 32px;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+}
+.modal-title {
+  font-size: 1.2rem; color: #eab308; margin-bottom: 12px;
+}
+.modal-desc {
+  font-size: 0.82rem; color: #aaa; line-height: 1.6;
+  margin-bottom: 20px; text-align: left;
+}
+.modal-desc strong { color: #eab308; }
+.modal-toggle {
+  display: flex; align-items: center; justify-content: center;
+  gap: 14px; margin-bottom: 22px;
+}
+.modal-toggle-label {
+  font-size: 0.95rem; color: #ccc;
+}
+/* 复用 switch 样式（setting.css 中的 .switch） */
+.modal-toggle .switch { position: relative; display: inline-block; width: 48px; height: 26px; }
+.modal-toggle .switch input { opacity: 0; width: 0; height: 0; }
+.modal-toggle .slider {
+  position: absolute; cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #555; border-radius: 26px; transition: 0.3s;
+}
+.modal-toggle .slider::before {
+  content: ""; position: absolute;
+  height: 18px; width: 18px; left: 4px; bottom: 4px;
+  background: #fff; border-radius: 50%; transition: 0.3s;
+}
+.modal-toggle input:checked + .slider { background: #eab308; }
+.modal-toggle input:checked + .slider::before { transform: translateX(22px); }
+.modal-close-btn {
+  background: #eab308; color: #0a0a0a;
+  border: none; border-radius: 6px;
+  padding: 10px 40px; font-size: 0.95rem;
+  font-weight: bold; cursor: pointer;
+  transition: background 0.2s;
+}
+.modal-close-btn:hover { background: #facc15; }
+
+/* ── 响应式 ── */
+@media (max-width: 900px) {
+  .app-wrapper { width: 98vw; }
+  .control-bar { flex-wrap: wrap; gap: 6px; justify-content: center; }
+  .control-bar h1 { font-size: 1.1rem; }
+  .node-box { font-size: 0.62rem; }
+}

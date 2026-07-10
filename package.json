@@ -2,13 +2,13 @@
   "name": "y-stage3",
   "version": "1.0.0",
   "description": "Y.Stage 4比赛系统",
-  "main": "server-lowdb.js",
+  "main": "server.js",
   "bin": {
-    "y-stage3": "server-lowdb.js"
+    "y-stage3": "server.js"
   },
   "scripts": {
-    "start": "node server-lowdb.js",
-    "dev": "nodemon server-lowdb.js",
+    "start": "node server.js",
+    "dev": "nodemon server.js",
     "build": "pkg ."
   },
   "keywords": [],
@@ -29,7 +29,7 @@
   },
   "pkg": {
     "targets": [
-      "node16-win-x64"
+      "node18-win-x64"
     ],
     "outputPath": "dist",
     "assets": [

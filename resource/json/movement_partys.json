@@ -1,4 +1,29 @@
 {
-  "records": [],
-  "lastUpdate": "2025-04-13T12:56:10.432Z"
+  "records": [
+    {
+      "teamName": "1",
+      "isGuessCorrect": true,
+      "duration": 34,
+      "trickName": "雷蛇",
+      "date": "2026-04-25T12:00:17.475Z",
+      "id": 1777118417475
+    },
+    {
+      "teamName": "2",
+      "isGuessCorrect": true,
+      "duration": 40,
+      "trickName": "金刚",
+      "date": "2026-04-25T12:02:17.977Z",
+      "id": 1777118537977
+    },
+    {
+      "teamName": "3",
+      "isGuessCorrect": true,
+      "duration": 61,
+      "trickName": "月读",
+      "date": "2026-04-25T12:05:18.617Z",
+      "id": 1777118718617
+    }
+  ],
+  "lastUpdate": "2026-04-25T12:05:18.625Z"
 }

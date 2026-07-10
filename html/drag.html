@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>对阵树式淘汰赛</title>
+    <link rel="stylesheet" href="../css/drag.css" />
+  </head>
+  <body>
+    <!-- 错误状态条 -->
+    <div id="error-bar" class="error-bar hidden">
+      <span id="error-msg"></span>
+    </div>
+
+    <!-- 工具提示 -->
+    <div id="tooltip" class="tooltip hidden"></div>
+
+    <div class="app-wrapper">
+      <!-- 顶部控制栏 -->
+      <header class="control-bar">
+        <h1>Drag式比赛 <span id="mode-badge" class="mode-badge hidden">双败淘汰</span></h1>
+        <div class="header-right">
+          <div class="source-switch">
+            <button id="switch-player1-btn" class="source-btn active">加组</button>
+            <button id="switch-player2-btn" class="source-btn">内组</button>
+          </div>
+          <div class="source-switch" id="music-source-switch">
+            <button id="switch-music-old-btn" class="source-btn active">1year+</button>
+            <button id="switch-music-new-btn" class="source-btn">1year-</button>
+            <button id="switch-music-ex-btn" class="source-btn">1year+EX</button>
+          </div>
+          <span class="round-label" id="round-label">第1轮</span>
+          <button id="shuffle-btn" class="ctrl-btn shuffle-btn" title="随机排列选手">随机</button>
+          <button id="reset-game-btn" class="ctrl-btn" title="重置比赛">重置</button>
+          <button id="setting-btn" class="ctrl-btn" title="打开设置">设置</button>
+          <button id="home-btn" class="ctrl-btn" title="回到主页">主页</button>
+        </div>
+      </header>
+
+      <!-- 16:9 画布 -->
+      <div id="canvas" class="canvas">
+        <!-- SVG连线层 (Z-index最低) -->
+        <svg id="lines-svg" class="lines-layer"></svg>
+        <!-- 节点层 -->
+        <div id="nodes-layer" class="nodes-layer"></div>
+        <!-- 中轴线 -->
+        <div class="center-axis"></div>
+      </div>
+
+      <!-- 音乐控制栏 -->
+      <div class="music-bar">
+        <div class="music-info">
+          <span class="music-label">当前音乐</span>
+          <span id="music-display" class="music-display">—</span>
+        </div>
+        <div class="music-actions">
+          <button id="draw-music-btn" class="draw-music-btn">抽取音乐</button>
+          <button id="start-battle-btn" class="start-battle-btn" disabled>开始比赛</button>
+        </div>
+      </div>
+
+      <!-- 底部状态栏 -->
+      <footer class="status-bar">
+        <span id="status-hint">拖拽胜者至内侧方框以晋级</span>
+      </footer>
+    </div>
+
+    <!-- 隐藏音乐播放器 -->
+    <audio id="music-player" preload="none"></audio>
+
+    <!-- 启动弹窗 -->
+    <div id="startup-modal" class="modal-overlay">
+      <div class="modal-box">
+        <h2 class="modal-title">对阵树式四强双败赛</h2>
+        <p class="modal-desc">
+          开启后，标准淘汰赛进行到剩余 <strong>4 人</strong> 时，将自动切换为双败淘汰赛制：
+          选手需输两场才被淘汰，败者组获胜者可与胜者组冠军争夺总冠军。
+        </p>
+        <div class="modal-toggle">
+          <span class="modal-toggle-label">四强双败赛</span>
+          <label class="switch">
+            <input type="checkbox" id="modal-double-elim-toggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <button id="modal-close-btn" class="modal-close-btn">进入比赛</button>
+      </div>
+    </div>
+
+    <script src="../js/drag_main.js"></script>
+    <script src="../js/drag_data.js"></script>
+    <script src="../js/drag_bracket.js"></script>
+    <script src="../js/drag_render.js"></script>
+    <script src="../js/drag_drag.js"></script>
+    <script src="../js/drag_music.js"></script>
+  </body>
+</html>
