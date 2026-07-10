@@ -49,7 +49,6 @@ if %errorlevel% equ 0 (
     echo.
     echo 打包失败！请检查上方错误信息。
     echo 提示：旧版 pkg 需要 Node.js 16/18 环境运行。
-    echo       当前 Node %node_version%，请用 nvm 切换到 Node 18。
 )
 
 pause
