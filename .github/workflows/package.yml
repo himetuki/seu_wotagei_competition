@@ -1,0 +1,26 @@
+name: 打包项目 ZIP
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 打包 ZIP（排除 .codebuddy 和音乐）
+        run: |
+          zip -r y-stageX.zip . \
+            -x ".git/*" \
+            -x ".codebuddy/*" \
+            -x "resource/music/*"
+
+      - name: 发布 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: y-stageX.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
