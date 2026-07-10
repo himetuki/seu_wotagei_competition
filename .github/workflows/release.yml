@@ -1,0 +1,29 @@
+name: Build Release
+
+on:
+  push:
+    tags: ['v*']       # 只在你推送版本标签（如 v1.0）时触发
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - run: npm ci
+
+      - name: 打包 exe
+        run: |
+          npx pkg server.js --targets node18-win-x64 --output y-stageX.exe
+
+      - name: 上传到 Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: y-stageX.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
