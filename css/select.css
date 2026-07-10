@@ -145,6 +145,19 @@ button:hover::after {
   box-shadow: 0 7px 20px rgba(0, 0, 0, 0.6), 0 0 15px rgba(168, 85, 247, 0.4);
 }
 
+/* Drag式比赛按钮样式 */
+.drag-btn {
+  background-color: #713f12;
+  border-color: #eab308;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 10px rgba(234, 179, 8, 0.2);
+}
+
+.drag-btn:hover {
+  background-color: #854d0e;
+  transform: translateY(-5px);
+  box-shadow: 0 7px 20px rgba(0, 0, 0, 0.6), 0 0 15px rgba(234, 179, 8, 0.4);
+}
+
 /* 直接抽取音乐按钮样式 */
 .music-draw-btn {
   background-color: #7c2d12;

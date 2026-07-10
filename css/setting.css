@@ -620,6 +620,38 @@ button[type="submit"]:hover,
   transform: translateX(24px);
 }
 
+/* Drag人数设置 */
+.drag-count-setting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.drag-count-setting input[type="number"] {
+  width: 72px;
+  padding: 8px 10px;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: bold;
+  background-color: #2a2a2a;
+  color: #f97316;
+  border: 2px solid rgba(249, 115, 22, 0.4);
+  border-radius: 6px;
+  transition: border-color 0.25s;
+}
+
+.drag-count-setting input[type="number"]:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.3);
+}
+
+.count-hint {
+  color: #ccc;
+  font-size: 1rem;
+}
+
 /* 表单按钮样式优化 */
 .form-buttons button[type="submit"] {
   background-color: #2a2a2a;

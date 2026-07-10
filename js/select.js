@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const group1Button = document.querySelector(".group1-btn");
   const group2Button = document.querySelector(".group2-btn");
   const groupBattleButton = document.querySelector(".group-battle-btn");
+  const dragButton = document.querySelector(".drag-btn");
   const musicDrawButton = document.querySelector(".music-draw-btn");
 
   // 检查按钮是否存在，并在控制台输出调试信息
@@ -11,6 +12,7 @@ document.addEventListener("DOMContentLoaded", function () {
   console.log("一年加组按钮:", group1Button);
   console.log("一年内组按钮:", group2Button);
   console.log("团体赛按钮:", groupBattleButton);
+  console.log("Drag式比赛按钮:", dragButton);
   console.log("直接抽取音乐按钮:", musicDrawButton);
 
   // 修改为跳转到一年内组第二章节页面
@@ -79,6 +81,21 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   } else {
     console.error("找不到团体赛按钮元素");
+  }
+
+  // 为Drag式比赛按钮添加事件
+  if (dragButton) {
+    dragButton.addEventListener("click", function () {
+      window.location.href = "../html/drag.html";
+    });
+
+    dragButton.addEventListener("mousedown", function (event) {
+      if (event.button === 1) {
+        window.location.href = "../html/performance.html";
+      }
+    });
+  } else {
+    console.error("找不到Drag式比赛按钮元素");
   }
 
   // 为直接抽取音乐按钮添加事件

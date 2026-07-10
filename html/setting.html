@@ -211,7 +211,7 @@
             <div class="feature-item">
               <div class="feature-text">
                 <h3>一年加组对战 - 抽取动作</h3>
-                <p>控制“一年加组对战”界面的抽取动作按钮及抽取结果显示区域。</p>
+                <p>控制"一年加组对战"界面的抽取动作按钮及抽取结果显示区域。</p>
               </div>
               <label class="switch">
                 <input type="checkbox" id="toggle-group1-draw-trick" title="一年加组对战抽取动作开关" aria-label="一年加组对战抽取动作开关" checked />
@@ -222,10 +222,41 @@
             <div class="feature-item">
               <div class="feature-text">
                 <h3>一年内组比赛 - 抽取动作</h3>
-                <p>控制“一年内组比赛”界面的抽取动作按钮及当前抽取动作显示。</p>
+                <p>控制"一年内组比赛"界面的抽取动作按钮及当前抽取动作显示。</p>
               </div>
               <label class="switch">
                 <input type="checkbox" id="toggle-group2-draw-trick" title="一年内组比赛抽取动作开关" aria-label="一年内组比赛抽取动作开关" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="feature-item">
+              <div class="feature-text">
+                <h3>Drag式比赛 - 总人数</h3>
+                <p>设置Drag式淘汰赛的参赛总人数（2~32，默认8人，会根据实际选手数量自动调整）。</p>
+              </div>
+              <div class="drag-count-setting">
+                <input type="number" id="drag-total-count" min="2" max="32" value="8" step="2" title="Drag式比赛总人数" aria-label="Drag式比赛总人数" />
+                <span class="count-hint">人</span>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-text">
+                <h3>Drag式比赛 - 比赛模式保留背景图</h3>
+                <p>开启后，进入比赛模式时保留页面背景图，仅隐藏UI控件。</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-drag-keep-bg" title="Drag比赛模式保留背景图开关" aria-label="Drag比赛模式保留背景图开关" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="feature-item">
+              <div class="feature-text">
+                <h3>Drag式比赛 - 对阵树式四强双败赛</h3>
+                <p>开启后，Drag式淘汰赛切换为4人双败淘汰赛制：选手需输两场才被淘汰，败者组获胜者可与胜者组冠军争夺总冠军。</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-drag-double-elim" title="对阵树式四强双败赛开关" aria-label="对阵树式四强双败赛开关" />
                 <span class="slider"></span>
               </label>
             </div>

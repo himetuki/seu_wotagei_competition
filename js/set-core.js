@@ -106,6 +106,9 @@ function cacheDOMElements() {
   // 功能开关元素
   DOM.toggleGroup1DrawTrick = document.getElementById("toggle-group1-draw-trick");
   DOM.toggleGroup2DrawTrick = document.getElementById("toggle-group2-draw-trick");
+  DOM.dragTotalCount = document.getElementById("drag-total-count");
+  DOM.toggleDragKeepBg = document.getElementById("toggle-drag-keep-bg");
+  DOM.toggleDragDoubleElim = document.getElementById("toggle-drag-double-elim");
   DOM.saveFeatureTogglesBtn = document.getElementById("save-feature-toggles-btn");
 }
 
@@ -126,6 +129,24 @@ function bindFeatureToggleEvents() {
     State.hasChanges = true;
   });
 
+  if (DOM.dragTotalCount) {
+    DOM.dragTotalCount.addEventListener("change", () => {
+      State.hasChanges = true;
+    });
+  }
+
+  if (DOM.toggleDragKeepBg) {
+    DOM.toggleDragKeepBg.addEventListener("change", () => {
+      State.hasChanges = true;
+    });
+  }
+
+  if (DOM.toggleDragDoubleElim) {
+    DOM.toggleDragDoubleElim.addEventListener("change", () => {
+      State.hasChanges = true;
+    });
+  }
+
   DOM.saveFeatureTogglesBtn.addEventListener("click", saveFeatureToggles);
 }
 
@@ -139,6 +160,21 @@ function loadFeatureToggles() {
 
   DOM.toggleGroup1DrawTrick.checked = group1Value !== "false";
   DOM.toggleGroup2DrawTrick.checked = group2Value !== "false";
+
+  if (DOM.dragTotalCount) {
+    const dragCount = localStorage.getItem("dragTotalCount");
+    DOM.dragTotalCount.value = dragCount ? parseInt(dragCount) : 8;
+  }
+
+  if (DOM.toggleDragKeepBg) {
+    const keepBg = localStorage.getItem("dragBattleKeepBg");
+    DOM.toggleDragKeepBg.checked = keepBg !== "false";
+  }
+
+  if (DOM.toggleDragDoubleElim) {
+    const doubleElim = localStorage.getItem("dragDoubleElim");
+    DOM.toggleDragDoubleElim.checked = doubleElim === "true";
+  }
 }
 
 function saveFeatureToggles() {
@@ -154,6 +190,35 @@ function saveFeatureToggles() {
     FEATURE_TOGGLE_KEYS.group2DrawTrick,
     String(DOM.toggleGroup2DrawTrick.checked)
   );
+
+  if (DOM.dragTotalCount) {
+    let count = parseInt(DOM.dragTotalCount.value) || 8;
+    count = Math.max(2, Math.min(32, count));
+    count = Math.round(count / 2) * 2;
+    DOM.dragTotalCount.value = count;
+    localStorage.setItem("dragTotalCount", String(count));
+
+    // 同步到服务器
+    fetch("http://localhost:3000/api/drag-settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ totalCount: count }),
+    }).catch(() => {});
+  }
+
+  if (DOM.toggleDragKeepBg) {
+    localStorage.setItem("dragBattleKeepBg", String(DOM.toggleDragKeepBg.checked));
+  }
+
+  if (DOM.toggleDragDoubleElim) {
+    localStorage.setItem("dragDoubleElim", String(DOM.toggleDragDoubleElim.checked));
+    // 同步双败赛状态到服务器
+    fetch("http://localhost:3000/api/drag-settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ doubleElim: DOM.toggleDragDoubleElim.checked }),
+    }).catch(() => {});
+  }
 
   State.hasChanges = false;
   showStatusMessage("功能开关设置已保存", "success");

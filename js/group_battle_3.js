@@ -1,7 +1,6 @@
 /**
  * 团体赛 - 第三大轮（决赛）
- * 1v1赛制，单轮决胜，无复活
- */
+ * 1v1赛制，单轮决胜，无复活 */
 const GBState = {
   phase: "loading",
   round: 3,
@@ -12,6 +11,7 @@ const GBState = {
   undoStack: [],
   musicListNew: [], musicListEx: [],
   round2Data: null,
+  grandFinalSeedGroupIdx: null,
 };
 const DOM = {};
 function cacheDOM() {
@@ -21,6 +21,7 @@ function cacheDOM() {
   DOM.groupsGrid = document.getElementById("groups-grid");
   DOM.musicInfoSection = document.getElementById("music-info-section");
   DOM.currentMusicLib = document.getElementById("current-music-lib");
+  DOM.currentMusicSource = document.getElementById("current-music-source");
   DOM.battleArena = document.getElementById("battle-arena");
   DOM.arenaPlayer1 = document.getElementById("arena-player1");
   DOM.arenaPlayer2 = document.getElementById("arena-player2");
@@ -103,33 +104,31 @@ function setupRound3() {
   Promise.all([
     fetch("../resource/json/player1.json").then((r) => r.json()),
     fetch("../resource/json/player2.json").then((r) => r.json()),
-    fetch("../resource/json/musics_list.json").then((r) => r.json()).catch(() => []),
     fetch("../resource/json/musics_list_ex.json").then((r) => r.json()).catch(() => []),
-  ]).then(([oldData, newData, newList, exList]) => {
+  ]).then(([oldData, newData, exList]) => {
     GBState.oldPlayers = oldData.map((p) => p.name);
     GBState.newPlayers = newData.map((p) => p.name);
     GBState.allPlayers = [...GBState.oldPlayers, ...GBState.newPlayers];
-    GBState.musicListNew = newList;
     GBState.musicListEx = exList;
 
-    // 按胜场排序，确定名次
-    const sorted = [...GBState.groups].sort((a, b) => b.wins - a.wins || a.losses - b.losses);
-    const ranks = sorted.map((g) => GBState.groups.indexOf(g));
-    // 季军赛：第3 vs 第4
-    // 冠亚军赛：第1 vs 第2
+    // 第三大轮固定两场：败者组决赛 -> 总决赛
+    const completed = Array.isArray(r2.completedMatches) ? r2.completedMatches : [];
+    const winnersMatch = completed.find((m) => m.label === "胜者组") || completed[0] || null;
+    const losersMatch = completed.find((m) => m.label === "败者组") || completed[1] || null;
+
     const matches = [];
-    if (ranks.length >= 4) {
-      matches.push({ g1: ranks[2], g2: ranks[3], played: false, label: "季军赛" });
-      matches.push({ g1: ranks[0], g2: ranks[1], played: false, label: "冠亚军赛" });
-    } else if (ranks.length >= 2) {
-      matches.push({ g1: ranks[0], g2: ranks[1], played: false, label: "冠亚军赛" });
+    if (winnersMatch && losersMatch) {
+      const winnersLoser = winnersMatch.winner === winnersMatch.group1 ? winnersMatch.group2 : winnersMatch.group1;
+      const losersWinner = losersMatch.winner;
+      GBState.grandFinalSeedGroupIdx = winnersMatch.winner;
+      matches.push({ g1: losersWinner, g2: winnersLoser, played: false, label: "败者组决赛" });
     }
+
     GBState.bracket.pendingMatches = matches;
     GBState.phase = matches.length > 0 ? "selecting_groups" : "finished";
     renderAll();
   });
 }
-
 let selectedGroupIdxs = [];
 function handleGroupSectionClick(e) {
   const card = e.target.closest(".group-card");
@@ -164,7 +163,7 @@ function confirmGroupSelection() {
   GBState.phase = "selecting_players";
   selectedGroupIdxs = [];
   saveState(); renderAll();
-  showToast("请从两组中各选1名出战选手", "info");
+  showToast("请从两组中各1名出战选手", "info");
 }
 
 function handleMemberClick(groupIdx, playerName, e) {
@@ -203,24 +202,40 @@ function enterReadyPhase() {
 }
 
 function getMusicLibName() {
-  const match = GBState.currentMatch;
-  if (!match.defender || !match.challenger) return "4强赛曲库";
-  const dIsNew = GBState.newPlayers.includes(match.defender.playerName);
-  const cIsNew = GBState.newPlayers.includes(match.challenger.playerName);
-  return (dIsNew && cIsNew) ? "新人赛曲库" : "4强赛曲库";
+  return "四强赛曲库";
+}
+
+function updateMusicInfo(trackName, sourceName) {
+  if (DOM.currentMusicLib) {
+    DOM.currentMusicLib.textContent = trackName || "-";
+  }
+  if (DOM.currentMusicSource) {
+    DOM.currentMusicSource.textContent = sourceName ? "曲库：" + sourceName : "";
+    DOM.currentMusicSource.classList.toggle("hidden", !sourceName);
+  }
 }
 
 function getCurrentMusicLibrary() {
-  const match = GBState.currentMatch;
-  if (!match.defender || !match.challenger) return GBState.musicListEx;
-  const dIsNew = GBState.newPlayers.includes(match.defender.playerName);
-  const cIsNew = GBState.newPlayers.includes(match.challenger.playerName);
-  return (dIsNew && cIsNew) ? GBState.musicListNew : GBState.musicListEx;
+  return GBState.musicListEx;
 }
 
 // ==================== 抽取音乐 ====================
 function handleDrawMusic() {
-  if (GBState.phase !== "ready_to_battle" && GBState.phase !== "music_drawn") return;
+  // 在 battling / music_playing 阶段先停止当前音乐再重新抽取
+  if (GBState.phase === "battling" || GBState.phase === "music_playing") {
+    const player = document.getElementById("music-player");
+    player.pause();
+    player.currentTime = 0;
+    player.src = "";
+    document.body.classList.remove("battle-mode");
+  }
+  if (
+    GBState.phase !== "ready_to_battle" &&
+    GBState.phase !== "music_drawn" &&
+    GBState.phase !== "battling" &&
+    GBState.phase !== "music_playing"
+  )
+    return;
   const lib = getCurrentMusicLibrary();
   if (lib.length === 0) { showToast("音乐列表为空", "error"); return; }
   
@@ -238,8 +253,7 @@ function handleDrawMusic() {
     const flashMusic = lib[randomIdx];
     
     // 更新曲库显示（闪现）
-    DOM.currentMusicLib.textContent = getMusicLibName() + " | " + flashMusic;
-    DOM.currentMusicLib.style.color = "#fbbf24";
+    updateMusicInfo(flashMusic, getMusicLibName());
     
     currentFlash++;
     
@@ -251,13 +265,11 @@ function handleDrawMusic() {
       const finalMusic = lib[finalIdx];
       
       const player = document.getElementById("music-player");
-      player.src = "../resource/musics/1yearplus/" + finalMusic;
+      player.src = "../resource/musics/1yearplus_ex/" + finalMusic;
       GBState.currentMatch.drawnMusic = finalMusic;
       GBState.phase = "music_drawn";
       
-      // 更新最终显示
-      DOM.currentMusicLib.textContent = getMusicLibName() + " | " + finalMusic;
-      DOM.currentMusicLib.style.color = "#fbbf24";
+      updateMusicInfo(finalMusic, getMusicLibName());
       
       saveState(); renderAll();
       DOM.drawMusicBtn.disabled = false;
@@ -266,10 +278,15 @@ function handleDrawMusic() {
   }, flashInterval);
 }
 
-// ==================== 开播 ====================
+// ==================== 开始 ====================
 let battleStartTimer = null;
 
 function handleStartBattle() {
+  // 在 battling / music_playing 阶段，直接重新播放当前音乐（跳过开场动画）
+  if (GBState.phase === "battling" || GBState.phase === "music_playing") {
+    replayBattleMusic();
+    return;
+  }
   if (GBState.phase !== "music_drawn") return;
   document.body.classList.add("battle-mode");
   DOM.battleStartOverlay.classList.remove("hidden");
@@ -279,24 +296,33 @@ function handleStartBattle() {
   setTimeout(() => { DOM.clickToStop.classList.remove("hidden"); }, 1500);
   battleStartTimer = setTimeout(() => { endBattleStart(); }, 4500);
 }
+
 function endBattleStart() {
   if (!document.body.classList.contains("battle-mode")) return;
-  
   // 隐藏动画元素，但保持 battle-mode 以显示背景
   DOM.battleStartOverlay.classList.add("hidden");
   DOM.battleStartText.classList.add("hidden");
   DOM.clickToStop.classList.add("hidden");
   DOM.battleStartText.textContent = "";
-  
+
   const player = document.getElementById("music-player");
   if (player.src) {
     player.play().catch(err => {
       console.error("音乐播放失败:", err);
-      showToast("音乐播放失败，请检查文件", "error");
+      showToast("音乐播放失败，已跳过音频播放", "warning");
+      stopMusicPlaying();
     });
-    GBState.phase = "music_playing";
+    GBState.phase = "battling";
     saveState(); renderAll();
-    showToast("双击屏幕退出播放", "info");
+    showToast("音乐播放中，可直接点胜者或双击停止音乐", "info");
+
+    // 监听音乐播放完毕事件
+    player.onended = () => {
+      player.pause();
+      player.currentTime = 0;
+      document.body.classList.remove("battle-mode");
+      showToast("音乐播放完毕，可继续判定胜者或点击开始比赛重新播放", "info");
+    };
   } else {
     document.body.classList.remove("battle-mode");
     GBState.phase = "battling";
@@ -307,28 +333,62 @@ function endBattleStart() {
 function handleBattleModeClick(e) {
   if (!document.body.classList.contains("battle-mode")) return;
   if (battleStartTimer) { clearTimeout(battleStartTimer); battleStartTimer = null; }
-  if (GBState.phase === "music_drawn" || GBState.phase === "music_playing") {
+  // 仅在开场动画阶段允许单击跳过
+  if (GBState.phase === "music_drawn") {
     endBattleStart();
   }
 }
 
 function handleDoubleClick(e) {
-  if (GBState.phase !== "music_playing") return;
+  if (GBState.phase !== "battling" && GBState.phase !== "music_playing") return;
+  stopMusicPlaying();
+}
+
+function replayBattleMusic() {
+  const player = document.getElementById("music-player");
+  if (!player.src) {
+    showToast("请先抽取音乐", "warning");
+    return;
+  }
+  document.body.classList.add("battle-mode");
+  player.currentTime = 0;
+  player.play().catch((err) => {
+    console.error("音乐播放失败:", err);
+    showToast("音乐播放失败", "warning");
+    document.body.classList.remove("battle-mode");
+  });
+  GBState.phase = "battling";
+  saveState(); renderAll();
+  showToast("重新播放中，可直接点胜者或双击停止", "info");
+
+  player.onended = () => {
+    player.pause();
+    player.currentTime = 0;
+    document.body.classList.remove("battle-mode");
+    showToast("音乐播放完毕，可继续判定胜者或点击开始比赛重新播放", "info");
+  };
+}
+
+function stopMusicPlaying(returnToMusicDrawn = false) {
   const player = document.getElementById("music-player");
   player.pause();
   player.currentTime = 0;
   document.body.classList.remove("battle-mode");
-  GBState.phase = "battling";
+  GBState.phase = returnToMusicDrawn ? "music_drawn" : "battling";
   saveState(); renderAll();
-  showToast("对战开始！请点击胜者", "info");
+  if (returnToMusicDrawn) {
+    showToast("已退出播放，可重新抽取音乐或开始比赛", "info");
+  } else {
+    showToast("音乐已停止，请点击胜者", "info");
+  }
 }
 
-// ==================== 选胜者（1v1单轮决胜） ====================
+// ==================== 选胜者（1v1单轮决胜）====================
 function selectArenaWinner(arenaIdx) {
   if (GBState.phase !== "battling") return;
   const match = GBState.currentMatch;
   if (!match.defender || !match.challenger) return;
-  const p1IsDefender = DOM.arenaRole1.textContent === "守擂者";
+  const p1IsDefender = DOM.arenaRole1.textContent === "选手1";
   let winner, loser;
   if (arenaIdx === 0) { winner = p1IsDefender ? match.defender : match.challenger; loser = p1IsDefender ? match.challenger : match.defender; }
   else { winner = p1IsDefender ? match.challenger : match.defender; loser = p1IsDefender ? match.defender : match.challenger; }
@@ -366,7 +426,7 @@ function playResultAnimations(winner, loser, onComplete) {
 }
 function getArenaElementForPlayer(groupIdx, playerName) {
   const match = GBState.currentMatch;
-  const p1IsDefender = DOM.arenaRole1.textContent === "守擂者";
+  const p1IsDefender = DOM.arenaRole1.textContent === "选手1";
   if (p1IsDefender) {
     if (match.defender && match.defender.groupIdx === groupIdx && match.defender.playerName === playerName) return DOM.arenaPlayer1;
     if (match.challenger && match.challenger.groupIdx === groupIdx && match.challenger.playerName === playerName) return DOM.arenaPlayer2;
@@ -390,7 +450,7 @@ function finishMatch(winnerGroupIdx, loserGroupIdx) {
   pushUndo({ type: "finish_match", winnerGroupIdx, loserGroupIdx });
   GBState.phase = "match_end";
   saveState(); renderAll();
-  showToast(GBState.groups[winnerGroupIdx].id + "组 获胜！", "success");
+  showToast(GBState.groups[winnerGroupIdx].id + "组获胜！", "success");
 }
 
 function handleResetMatch() {
@@ -426,17 +486,50 @@ function handleNextMatch() {
     saveState(); renderAll();
     showToast("请进行下一场对战", "info");
   } else {
-    DOM.nextMatchBtn.classList.add("hidden");
-    DOM.finishBtn.classList.remove("hidden");
-    showToast("全部比赛结束！请点击「比赛结束」查看结果", "success");
+    const hasGrandFinal = GBState.bracket.completedMatches.some((m) => m.label === "总决赛");
+    if (!hasGrandFinal && GBState.grandFinalSeedGroupIdx !== null) {
+      const last = GBState.bracket.completedMatches[GBState.bracket.completedMatches.length - 1];
+      if (last) {
+        GBState.bracket.pendingMatches.push({
+          g1: GBState.grandFinalSeedGroupIdx,
+          g2: last.winner,
+          played: false,
+          label: "总决赛",
+        });
+        GBState.currentMatch = { group1Idx: null, group2Idx: null, defender: null, challenger: null, winner: null, loser: null, duelHistory: [], matchWinnerGroupIdx: null, matchLoserGroupIdx: null };
+        GBState.phase = "selecting_groups";
+        selectedGroupIdxs = [];
+        saveState(); renderAll();
+        showToast("败者组决赛结束，进入总决赛", "success");
+        return;
+      }
+    }
+
+    // 全部比赛结束，自动跳转结果页
+    showToast("全部比赛结束！即将自动跳转结果页", "success");
+    setTimeout(() => {
+      handleFinish();
+    }, 1500);
   }
 }
 
 function handleFinish() {
-  const sorted = [...GBState.groups].sort((a, b) => b.wins - a.wins || a.losses - b.losses);
-  const ranks = sorted.map((g) => g.id);
+  const grand = GBState.bracket.completedMatches.find((m) => m.label === "总决赛");
+  const lb = GBState.bracket.completedMatches.find((m) => m.label === "败者组决赛");
+  let ranks = [];
+  if (grand && lb) {
+    const first = GBState.groups[grand.winner].id;
+    const secondGroupIdx = grand.group1 === grand.winner ? grand.group2 : grand.group1;
+    const second = GBState.groups[secondGroupIdx].id;
+    const thirdGroupIdx = lb.group1 === lb.winner ? lb.group2 : lb.group1;
+    const third = GBState.groups[thirdGroupIdx].id;
+    const rest = GBState.groups.map((g) => g.id).filter((id) => id !== first && id !== second && id !== third);
+    ranks = [first, second, third, ...(rest.length ? [rest[0]] : [])];
+  } else {
+    const sorted = [...GBState.groups].sort((a, b) => b.wins - a.wins || a.losses - b.losses);
+    ranks = sorted.map((g) => g.id);
+  }
   
-  // 保存最终结果
   const finalResult = { 
     round: 3, 
     groups: GBState.groups.map((g) => ({ id: g.id, wins: g.wins, losses: g.losses })), 
@@ -444,7 +537,7 @@ function handleFinish() {
     finalRank: ranks 
   };
   
-  // 保存到 localStorage
+  // 保存到localStorage
   localStorage.setItem("groupBattleFinal", JSON.stringify(finalResult));
   
   // 保存到服务器
@@ -454,7 +547,6 @@ function handleFinish() {
     body: JSON.stringify({ finalResult, currentState: GBState }),
   }).catch(() => {});
   
-  // 跳转到排名展示页面
   window.location.href = "../html/team_rank.html";
 }
 
@@ -507,10 +599,10 @@ function renderStatus() {
     case "selecting_players": hint = "请从两组中各选1名出战选手（再次点击可回归）"; break;
     case "ready_to_battle": hint = "请点击「抽取音乐」"; break;
     case "music_drawn": hint = "请点击「开始比赛」开始对战"; break;
-    case "music_playing": hint = "音乐播放中… 双击屏幕结束播放"; break;
+    case "music_playing": hint = "音乐播放中，双击屏幕结束播放"; break;
     case "battling": hint = "对战开始！请点击胜者  当前曲库：" + getMusicLibName(); break;
     case "selecting_winner_anim": hint = "结果确认中..."; break;
-    case "match_end": hint = "本场结束！"; break;
+    case "match_end": hint = "本场结束"; break;
     default: hint = "...";
   }
   DOM.systemHint.textContent = hint;
@@ -520,9 +612,9 @@ function renderStatus() {
   if (match.defender && match.challenger) {
     const musicLibName = getMusicLibName();
     const drawnMusic = match.drawnMusic || "-";
-    DOM.currentMusicLib.textContent = musicLibName + " | " + drawnMusic;
+    updateMusicInfo(drawnMusic, musicLibName);
   } else {
-    DOM.currentMusicLib.textContent = "-";
+    updateMusicInfo("-", "");
   }
 }
 
@@ -541,7 +633,7 @@ function renderGroups() {
     if (group.status === "eliminated") card.classList.add("eliminated");
     const title = document.createElement("h3");
     title.className = "group-title";
-    title.textContent = "Group " + group.id + " (" + group.wins + "胜" + group.losses + "负)";
+    title.textContent = "Group " + group.id + " (" + group.wins + "胜 " + group.losses + "负)";
     card.appendChild(title);
     const membersDiv = document.createElement("div");
     membersDiv.className = "group-members";
@@ -568,7 +660,6 @@ function renderGroups() {
 
 function canSelectMember(groupIdx, playerName) {
   const match = GBState.currentMatch;
-  // 回归功能：已在对战席的成员允许点击回归
   if (match.defender && match.defender.groupIdx === groupIdx && match.defender.playerName === playerName) return true;
   if (match.challenger && match.challenger.groupIdx === groupIdx && match.challenger.playerName === playerName) return true;
   if (GBState.phase === "selecting_players") {
@@ -612,8 +703,8 @@ function renderArena() {
 function renderActions() {
   const p = GBState.phase;
   const pending = GBState.bracket.pendingMatches.find((m) => !m.played);
-  DOM.drawMusicBtn.classList.toggle("hidden", p !== "ready_to_battle" && p !== "music_drawn");
-  DOM.startBattleBtn.classList.toggle("hidden", p !== "music_drawn");
+  DOM.drawMusicBtn.classList.toggle("hidden", p !== "ready_to_battle" && p !== "music_drawn" && p !== "music_playing" && p !== "battling");
+  DOM.startBattleBtn.classList.toggle("hidden", p !== "music_drawn" && p !== "music_playing" && p !== "battling");
   DOM.clearWinnerBtn.disabled = p !== "battling" && p !== "match_end" && p !== "ready_to_battle" && p !== "music_playing";
   DOM.resetMatchBtn.classList.toggle("hidden", p !== "selecting_players" && p !== "ready_to_battle" && p !== "battling" && p !== "match_end" && p !== "music_drawn" && p !== "music_playing");
   DOM.nextMatchBtn.classList.toggle("hidden", p !== "match_end" || !pending);
@@ -652,3 +743,6 @@ function showToast(message, type) {
   document.body.appendChild(toast);
   setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 2500);
 }
+
+
+

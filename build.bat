@@ -1,16 +1,55 @@
 @echo off
-echo 正在打包Y.Stage 4为独立应用...
+chcp 65001 >nul
+echo ========================================
+echo   Y.Stage X 打包工具（旧版 pkg + Node 18）
+echo ========================================
 
-REM 确保安装了所有依赖
+REM 安装依赖
 call npm install
 
-REM 安装pkg全局工具(如果尚未安装)
-call npm install -g pkg
+REM 设置路径
+set NODE_MIRROR=https://mirrors.huaweicloud.com/nodejs/
+set LOCAL_CACHE=%~dp0.pkg-cache
+set GLOBAL_CACHE=%USERPROFILE%\.pkg-cache
+if not exist "%LOCAL_CACHE%" mkdir "%LOCAL_CACHE%"
 
-REM 使用pkg打包应用
-call pkg . --targets node16-win-x64 --output y-stage3.exe
+REM ===== 同步缓存：项目内 > C盘 =====
+if not exist "%LOCAL_CACHE%\v3.4\fetched-v18.5.0-win-x64" (
+    if exist "%GLOBAL_CACHE%\v3.4\fetched-v18.5.0-win-x64" (
+        xcopy "%GLOBAL_CACHE%\v3.4\fetched-v18.5.0-win-x64" "%LOCAL_CACHE%\v3.4\" /Y /I >nul
+        echo [同步] 从 C盘复制 Node 18.5 缓存
+    )
+)
 
-echo 打包完成！
-echo 生成的可执行文件：y-stage3.exe
+REM ===== 检测缓存 =====
+if not exist "%LOCAL_CACHE%\v3.4\fetched-v18.5.0-win-x64" (
+    echo [下载] 通过 GHProxy 加速下载 Node 18 二进制...
+    if not exist "%LOCAL_CACHE%\v3.4" mkdir "%LOCAL_CACHE%\v3.4"
+    powershell -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://ghproxy.com/https://github.com/vercel/pkg-fetch/releases/download/v3.4/fetched-v18.5.0-win-x64' -OutFile '%LOCAL_CACHE%\v3.4\fetched-v18.5.0-win-x64' -UseBasicParsing" 2>nul
+    if exist "%LOCAL_CACHE%\v3.4\fetched-v18.5.0-win-x64" (
+        echo [完成] Node 18.5 缓存已下载到项目内
+    ) else (
+        echo [提示] 自动下载失败，请手动下载放到 .pkg-cache\v3.4\ 后重试
+        echo         链接: https://ghproxy.com/https://github.com/vercel/pkg-fetch/releases/download/v3.4/fetched-v18.5.0-win-x64
+    )
+) else (
+    echo [缓存] Node 18.5 ^(v3.4^)
+)
+
+set PKG_CACHE_PATH=%LOCAL_CACHE%
+
+echo.
+call npx pkg server.js --targets node18-win-x64 --output y-stageX.exe
+
+if %errorlevel% equ 0 (
+    echo.
+    echo 打包完成！
+    echo y-stageX .exe
+) else (
+    echo.
+    echo 打包失败！请检查上方错误信息。
+    echo 提示：旧版 pkg 需要 Node.js 16/18 环境运行。
+    echo       当前 Node %node_version%，请用 nvm 切换到 Node 18。
+)
 
 pause

@@ -1,67 +1,82 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>团体赛 - 第二大轮</title>
-  <link rel="stylesheet" href="../css/group_battle.css" />
-</head>
-<body>
-  <div class="container" id="main-container">
-    <header><h1>团体赛 - 胜者组/败者组</h1></header>
-    <section id="status-section">
-      <div id="bracket-status">第二大轮</div>
-      <div id="system-hint">加载中...</div>
-    </section>
-    <section id="groups-section">
-      <div class="groups-grid" id="groups-grid"></div>
-    </section>
-    <section id="music-info-section" class="hidden">
-      <div class="music-info"><span>当前曲库：</span><span id="current-music-lib">-</span></div>
-    </section>
-    <section id="battle-arena" class="hidden">
-      <div class="arena-vs">
-        <div class="arena-player" id="arena-player1">
-          <div class="arena-group-label" id="arena-group1-label">-</div>
-          <div class="arena-player-name" id="arena-player1-name">?</div>
-          <div class="arena-role" id="arena-role1">-</div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>团体赛 - 第二大轮</title>
+    <link rel="stylesheet" href="../css/group_battle.css" />
+  </head>
+  <body>
+    <div class="container" id="main-container">
+      <header><h1>团体赛 - 胜者组/败者组</h1></header>
+      <section id="status-section">
+        <div id="bracket-status">第二大轮</div>
+        <div id="system-hint">加载中...</div>
+      </section>
+      <section id="groups-section">
+        <div class="groups-grid" id="groups-grid"></div>
+      </section>
+      <section id="music-info-section" class="hidden">
+        <div class="music-info">
+          <span class="music-info-label">抽到音乐</span>
+          <span id="current-music-lib" class="music-info-track">-</span>
+          <span id="current-music-source" class="music-info-source"></span>
         </div>
-        <div class="vs-divider">VS</div>
-        <div class="arena-player" id="arena-player2">
-          <div class="arena-group-label" id="arena-group2-label">-</div>
-          <div class="arena-player-name" id="arena-player2-name">?</div>
-          <div class="arena-role" id="arena-role2">-</div>
+      </section>
+      <section id="battle-arena" class="hidden">
+        <div class="arena-vs">
+          <div class="arena-player" id="arena-player1">
+            <div class="arena-group-label" id="arena-group1-label">-</div>
+            <div class="arena-player-name" id="arena-player1-name">?</div>
+            <div class="arena-role" id="arena-role1">-</div>
+          </div>
+          <div class="vs-divider">VS</div>
+          <div class="arena-player" id="arena-player2">
+            <div class="arena-group-label" id="arena-group2-label">-</div>
+            <div class="arena-player-name" id="arena-player2-name">?</div>
+            <div class="arena-role" id="arena-role2">-</div>
+          </div>
         </div>
-      </div>
-    </section>
-    <section id="actions-section">
-      <div class="actions">
-        <button id="draw-music-btn" class="hidden">抽取音乐</button>
-        <button id="start-battle-btn" class="hidden">开始比赛</button>
-        <button id="clear-winner-btn" disabled>撤消选择胜者</button>
-        <button id="next-match-btn" class="hidden">进入下一场</button>
-        <button id="reset-match-btn" class="hidden">重置当前对战</button>
-        <button id="next-round-btn" class="hidden">进入第三大轮</button>
-        <button id="prev-round-btn">撤回第一大轮</button>
-      </div>
-    </section>
-    <section id="history-section">
-      <h3 class="section-title">对战记录</h3>
-      <div id="match-history"></div>
-    </section>
-    <section class="navigation">
-      <button id="reset-game-btn">重置对战</button>
-      <button id="home-btn">回到主页面</button>
-    </section>
-    <footer><p>&copy; 2025 Y.Stage-X YUKAORI</p></footer>
-  </div>
-  <div id="battle-start-overlay" class="battle-overlay hidden"></div>
-  <div id="battle-start-text" class="battle-start-text hidden"></div>
-  <div id="click-to-stop" class="click-to-stop hidden">点击任意位置停止</div>
-  <div id="anim-overlay" class="anim-overlay hidden"></div>
-  <div id="kill-effect" class="kill-effect hidden"><div class="kill-text">ELIMINATED</div></div>
-  <div id="win-effect" class="win-effect hidden"><div class="win-text">VICTORY</div><div class="crown">👑</div></div>
-  <audio id="music-player"></audio>
-  <script src="../js/group_battle_2.js"></script>
-</body>
+      </section>
+      <section id="actions-section">
+        <div class="actions">
+          <button id="draw-music-btn" class="hidden">抽取音乐</button>
+          <button id="start-battle-btn" class="hidden">开始比赛</button>
+          <button id="clear-winner-btn" disabled>撤消选择胜者</button>
+          <button id="next-match-btn" class="hidden">进入下一场</button>
+          <button id="reset-match-btn" class="hidden">重置当前对战</button>
+          <button id="next-round-btn" class="hidden">进入第三大轮</button>
+          <button id="prev-round-btn">撤回第一大轮</button>
+        </div>
+      </section>
+      <section id="history-section">
+        <h3 class="section-title">对战记录</h3>
+        <div id="match-history"></div>
+      </section>
+      <section class="navigation">
+        <button id="reset-game-btn">重置对战</button>
+        <button id="home-btn">回到主页</button>
+      </section>
+      <footer><p>&copy; 2025 Y.Stage-X YUKAORI</p></footer>
+    </div>
+    <div id="battle-start-overlay" class="battle-overlay hidden"></div>
+    <div id="battle-start-text" class="battle-start-text hidden"></div>
+    <div id="click-to-stop" class="click-to-stop hidden">点击任意位置停止</div>
+    <div id="anim-overlay" class="anim-overlay hidden"></div>
+    <div id="kill-effect" class="kill-effect hidden">
+      <div class="kill-text">ELIMINATED</div>
+    </div>
+    <div id="win-effect" class="win-effect hidden">
+      <div class="win-text">VICTORY</div>
+      <div class="crown">👑</div>
+    </div>
+    <audio id="music-player"></audio>
+    <script src="../js/gb_common.js"></script>
+    <script src="../js/group_battle_2_main.js"></script>
+    <script src="../js/group_battle_2_data.js"></script>
+    <script src="../js/group_battle_2_match.js"></script>
+    <script src="../js/group_battle_2_battle.js"></script>
+    <script src="../js/group_battle_2_render.js"></script>
+    <script src="../js/group_battle_2_persist.js"></script>
+  </body>
 </html>

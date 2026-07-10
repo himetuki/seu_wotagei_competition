@@ -83,16 +83,20 @@ function loadMusicLists() {
         console.error("加载 musics_list_ex.json 失败:", err);
         return [];
       }),
-  ])
+    ])
     .then(([list1, list2, list3]) => {
+      // mapping:
+      // musics_list.json -> 1yearplus
+      // musics_list_2.json -> 1yearminus
+      // musics_list_ex.json -> 1yearplus_ex
       state.musicLists["1yearminus"] = list2;
       state.musicLists["1yearplus"] = list1;
       state.musicLists["1yearplus-ex"] = list3;
       state.isLoaded = true;
 
       console.log("音乐列表加载完成:");
-      console.log("- 1yearminus:", list1.length, "首");
-      console.log("- 1yearplus:", list2.length, "首");
+      console.log("- 1yearminus:", list2.length, "首");
+      console.log("- 1yearplus:", list1.length, "首");
       console.log("- 1yearplus-ex:", list3.length, "首");
       console.log("完整数据:", state.musicLists);
 
@@ -368,3 +372,4 @@ function showToast(message, type) {
     if (toast.parentNode) toast.parentNode.removeChild(toast);
   }, 2500);
 }
+
