@@ -41,6 +41,7 @@ set PKG_CACHE_PATH=%LOCAL_CACHE%
 
 echo.
 echo [内联] 将网页文件打包到 JS 模块中...
+echo        ^> 生成 server\inlined-assets.js（静态资源）与 server\module-servers.js（模块后端注册表）
 call node build-inline.js
 
 echo.
@@ -52,6 +53,9 @@ if %errorlevel% equ 0 (
     echo.
     echo 打包完成！
     echo y-stageX .exe
+    echo.
+    echo [分发] 将 y-stageX.exe 与 resource\ 文件夹放同一目录即可运行
+    echo        （音乐库、SQLite 等数据保存在 resource\ 中）
 ) else (
     echo.
     echo 打包失败！请检查上方错误信息。

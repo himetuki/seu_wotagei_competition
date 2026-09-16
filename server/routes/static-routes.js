@@ -86,36 +86,18 @@ function setupStaticRoutes(app, APP_ROOT, dataDir) {
     }
   });
 
-  // 首页
+  // 首页（直接服务 home 模块，避免存根跳转）
   app.get("/", (req, res) => {
-    const filePath = joinPath(APP_ROOT, "html", "index.html");
+    const filePath = joinPath(APP_ROOT, "modules", "home", "index.html");
     if (!sendFileSafe(res, filePath)) {
       res.status(404).send("首页不存在");
-    }
-  });
-
-  // HTML 文件的直接路由
-  app.get("/html/:page", (req, res) => {
-    const page = req.params.page;
-    const filePath = joinPath(APP_ROOT, "html", `${page}.html`);
-    if (!sendFileSafe(res, filePath)) {
-      res.status(404).send(`页面 ${page} 不存在`);
-    }
-  });
-
-  // HTML 文件的二级路由
-  app.get("/html/:page.html", (req, res) => {
-    const page = req.params.page;
-    const filePath = joinPath(APP_ROOT, "html", `${page}.html`);
-    if (!sendFileSafe(res, filePath)) {
-      res.status(404).send(`页面 ${page} 不存在`);
     }
   });
 
   // 模糊匹配
   app.use((req, res, next) => {
     if (req.path === "/" || req.path === "" || req.path === "/index") {
-      const filePath = joinPath(APP_ROOT, "html", "index.html");
+      const filePath = joinPath(APP_ROOT, "modules", "home", "index.html");
       if (!sendFileSafe(res, filePath)) {
         next();
       }
@@ -128,3 +110,4 @@ function setupStaticRoutes(app, APP_ROOT, dataDir) {
 }
 
 module.exports = setupStaticRoutes;
+module.exports.sendFileSafe = sendFileSafe;

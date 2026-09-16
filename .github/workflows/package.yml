@@ -3,6 +3,7 @@ name: 构建发布
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -17,23 +18,65 @@ jobs:
         with:
           node-version: 18
 
+      - name: 缓存 pkg-fetch 运行时（加快打包、避免重复下载 Node 18 二进制）
+        uses: actions/cache@v4
+        with:
+          path: ~/.pkg-cache
+          key: ${{ runner.os }}-pkg-cache-node18
+
       - run: npm ci
 
-      - name: 内联静态文件
-        run: node build-inline.js
+      - name: 内联静态文件 + 生成模块 server 注册表
+        run: |
+          node build-inline.js
 
       - name: 打包 exe
         run: npx pkg server.js --targets node18-win-x64 --output y-stageX.exe
 
+      # exe 运行时需要在同目录放置 resource/（sqlite、音乐库等外部数据）
+      - name: 打包运行版 ZIP（exe + 所需数据目录）
+        run: |
+          New-Item -ItemType Directory -Path dist -Force | Out-Null
+          Copy-Item y-stageX.exe dist\
+          Copy-Item -Recurse resource dist\
+          Copy-Item README.md dist\
+          powershell Compress-Archive -Path dist\* -DestinationPath y-stageX-dist.zip
+
       - name: 打包源码 ZIP
         run: |
-          powershell Compress-Archive -Path html,css,js,server,resource,favicon.ico,package.json,build.bat,server.js,README.md,LICENSE -DestinationPath y-stageX-source.zip
+          # 组装干净源码树：排除音乐库/生产数据库/构建生成物（与 .gitignore 一致）
+          $tmp = "src-tmp"
+          Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path "$tmp\resource" -Force | Out-Null
+          $items = @(
+            "modules","server","scripts",
+            "favicon.ico","package.json","package-lock.json",
+            "server.js","build-inline.js","build.bat","install-deps.bat",
+            "README.md","LICENSE","vercel.json"
+          )
+          foreach ($p in $items) { Copy-Item $p "$tmp\" -Recurse -Force }
+          Copy-Item -Recurse "resource\images" "$tmp\resource\" -ErrorAction SilentlyContinue
+          Copy-Item -Recurse "resource\json" "$tmp\resource\" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "$tmp\server\inlined-assets.js","$tmp\server\module-servers.js" -ErrorAction SilentlyContinue
+          powershell Compress-Archive -Path "$tmp\*" -DestinationPath y-stageX-source.zip
+          Remove-Item -Recurse -Force $tmp
+
+      - name: 上传构建产物（供手动下载，不点 tag 也可取）
+        uses: actions/upload-artifact@v4
+        with:
+          name: y-stageX-build
+          path: |
+            y-stageX.exe
+            y-stageX-dist.zip
+            y-stageX-source.zip
 
       - name: 发布 Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
             y-stageX.exe
+            y-stageX-dist.zip
             y-stageX-source.zip
           generate_release_notes: true
         env:

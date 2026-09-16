@@ -1,0 +1,180 @@
+{
+  "modules": [
+    {
+      "id": "home",
+      "name": "主页",
+      "description": "2026 Y.Stage 4 比赛现场入口",
+      "icon": "🏠",
+      "nav": [],
+      "order": 0
+    },
+    {
+      "id": "select",
+      "name": "赛制选择",
+      "description": "选择赛制：单人/团体/Drag",
+      "icon": "⚔️",
+      "nav": [
+        "index",
+        "select"
+      ],
+      "order": 1
+    },
+    {
+      "id": "setting",
+      "name": "设置",
+      "description": "选手/技能/奖励/音乐管理",
+      "icon": "⚙️",
+      "nav": [
+        "index",
+        "select"
+      ],
+      "order": 2
+    },
+    {
+      "id": "battle-group1",
+      "name": "Prof（一年加组）",
+      "description": "一年加组章节赛",
+      "icon": "🏅",
+      "nav": [
+        "select"
+      ],
+      "order": 10
+    },
+    {
+      "id": "battle-group1-2",
+      "name": "一年加组第二章",
+      "description": "一年加组第二章节",
+      "icon": "🎯",
+      "nav": [
+        "select"
+      ],
+      "order": 11
+    },
+    {
+      "id": "battle-group2",
+      "name": "Rookies II（一年内组）",
+      "description": "一年内组章节赛",
+      "icon": "🌱",
+      "nav": [
+        "select"
+      ],
+      "order": 12
+    },
+    {
+      "id": "battle-group2-2",
+      "name": "Rookies I（一年内组第二章）",
+      "description": "一年内组第二章节",
+      "icon": "🎈",
+      "nav": [
+        "select"
+      ],
+      "order": 13
+    },
+    {
+      "id": "group-battle",
+      "name": "Team（团体赛）",
+      "description": "3人团体赛",
+      "icon": "🤝",
+      "nav": [
+        "select"
+      ],
+      "order": 14
+    },
+    {
+      "id": "drag",
+      "name": "Drag式比赛",
+      "description": "对阵树式四强双败赛",
+      "icon": "🏆",
+      "nav": [
+        "select"
+      ],
+      "order": 15
+    },
+    {
+      "id": "music-draw",
+      "name": "音乐抽取",
+      "description": "直接抽取音乐",
+      "icon": "🎵",
+      "nav": [
+        "select"
+      ],
+      "order": 16
+    },
+    {
+      "id": "music-import",
+      "name": "音乐导入",
+      "description": "批量导入音乐文件",
+      "icon": "🎼",
+      "nav": [],
+      "order": 40
+    },
+    {
+      "id": "performance",
+      "name": "演出",
+      "description": "演出/中键快捷页面",
+      "icon": "🎤",
+      "nav": [],
+      "order": 20
+    },
+    {
+      "id": "rank",
+      "name": "选手排名",
+      "description": "选手排名页",
+      "icon": "📊",
+      "nav": [
+        "index"
+      ],
+      "order": 21
+    },
+    {
+      "id": "ranking",
+      "name": "排行榜",
+      "description": "排行榜（战绩展示）",
+      "icon": "📈",
+      "nav": [
+        "index"
+      ],
+      "order": 22
+    },
+    {
+      "id": "team-rank",
+      "name": "团体排名",
+      "description": "团体赛排名",
+      "icon": "🏅",
+      "nav": [
+        "index"
+      ],
+      "order": 23
+    },
+    {
+      "id": "games",
+      "name": "游戏中心",
+      "description": "光棒猴的小游戏",
+      "icon": "🎮",
+      "nav": [
+        "index"
+      ],
+      "order": 30
+    },
+    {
+      "id": "moving-sth",
+      "name": "定时搬化棒",
+      "description": "在规定时间内完成化棒移动挑战",
+      "icon": "⏱️",
+      "nav": [
+        "games"
+      ],
+      "order": 1
+    },
+    {
+      "id": "movement-teaching",
+      "name": "体态传技",
+      "description": "不用手来传达技的信息",
+      "icon": "👐",
+      "nav": [
+        "games"
+      ],
+      "order": 2
+    }
+  ]
+}

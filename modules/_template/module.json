@@ -1,0 +1,8 @@
+{
+  "id": "__MODULE_ID__",
+  "name": "__MODULE_NAME__",
+  "description": "模块说明",
+  "icon": "🧩",
+  "nav": ["select"],
+  "order": 50
+}

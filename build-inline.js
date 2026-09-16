@@ -8,9 +8,16 @@ const path = require("path");
 const ROOT = __dirname;
 const OUT = path.join(ROOT, "server", "inlined-assets.js");
 
-const dirs = ["html", "css", "js", "resource/images", "favicon.ico"];
+// html/ 旧跳转存根已随迁移删除，不再内联
+const dirs = ["css", "js", "modules", "resource/images", "favicon.ico"];
 
 const assets = {};
+
+function isServerSubdir(dir) {
+  // modules/<id>/server 为后端代码，由 pkg 打包，不内联进静态资源
+  const parts = dir.split(/[\\/]/);
+  return parts.includes("server");
+}
 
 function walk(dir, base) {
   const full = path.join(ROOT, dir);
@@ -26,6 +33,7 @@ function walk(dir, base) {
   for (const entry of entries) {
     const rel = path.join(dir, entry.name);
     if (entry.isDirectory()) {
+      if (isServerSubdir(rel)) continue; // 跳过 server 目录
       walk(rel, base);
     } else if (entry.isFile()) {
       const key = rel.replace(/\\/g, "/");
@@ -44,6 +52,12 @@ for (const dir of dirs) {
   walk(dir, dir);
 }
 
+// pkg 兼容：sql.js 的 wasm 以 base64 内联，供 server/sqlite-store.js 以 wasmBinary 初始化
+const sqlWasmPath = path.join(ROOT, "node_modules", "sql.js", "dist", "sql-wasm.wasm");
+if (fs.existsSync(sqlWasmPath)) {
+  assets["sql-wasm.wasm"] = { data: fs.readFileSync(sqlWasmPath).toString("base64"), isBinary: true };
+}
+
 const mimeMap = {
   ".html": "text/html",
   ".css": "text/css",
@@ -57,6 +71,7 @@ const mimeMap = {
   ".ico": "image/x-icon",
   ".mp3": "audio/mpeg",
   ".wav": "audio/wav",
+  ".wasm": "application/wasm",
 };
 
 // 生成 JS 模块
@@ -113,3 +128,41 @@ lines.push("module.exports = { assets, getAsset, getMime };");
 
 fs.writeFileSync(OUT, lines.join("\n"), "utf8");
 console.log(`✓ 已生成: ${OUT} (${Object.keys(assets).length} 个文件)`);
+
+// ===== 生成模块 server 注册表 =====
+// 用「静态 require」引用各模块的 server/db.js 与 server/routes.js，
+// 使 pkg 在依赖图分析时自动内嵌这些文件（pkg 的 scripts/assets 通配在此环境不可靠）。
+// module-loader 在 pkg 模式下改从此注册表读取模块后端。
+const MODULE_SERVERS_OUT = path.join(ROOT, "server", "module-servers.js");
+const msLines = [];
+msLines.push("// 自动生成（build-inline.js），请勿手动编辑");
+msLines.push("// 模块 server 端文件注册表：静态 require 使 pkg 打包时自动内嵌");
+msLines.push("const entries = {");
+let mods = [];
+try {
+  const raw = JSON.parse(fs.readFileSync(path.join(ROOT, "modules", "modules.json"), "utf8"));
+  mods = Array.isArray(raw) ? raw : raw.modules || [];
+} catch (e) {
+  mods = [];
+}
+for (const mod of mods) {
+  const id = mod && mod.id;
+  if (!id) continue;
+  const dbPath = path.join(ROOT, "modules", id, "server", "db.js");
+  const routesPath = path.join(ROOT, "modules", id, "server", "routes.js");
+  const hasDb = fs.existsSync(dbPath);
+  const hasRoutes = fs.existsSync(routesPath);
+  if (!hasDb && !hasRoutes) continue;
+  msLines.push(`  ${JSON.stringify(id)}: {`);
+  if (hasDb) {
+    msLines.push(`    db: require(${JSON.stringify(path.join("..", "modules", id, "server", "db.js").replace(/\\/g, "/"))}),`);
+  }
+  if (hasRoutes) {
+    msLines.push(`    routes: require(${JSON.stringify(path.join("..", "modules", id, "server", "routes.js").replace(/\\/g, "/"))}),`);
+  }
+  msLines.push(`  },`);
+}
+msLines.push("};");
+msLines.push("module.exports = { entries };");
+fs.writeFileSync(MODULE_SERVERS_OUT, msLines.join("\n"), "utf8");
+console.log(`✓ 已生成: ${MODULE_SERVERS_OUT} (${(mods.filter((m) => m && m.id)).length} 个模块)`);

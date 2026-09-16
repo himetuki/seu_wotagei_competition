@@ -73,9 +73,40 @@ function getAudioFiles(dir) {
   }
 }
 
-// 更新JSON文件
+// database.js 内置 def 名集合：这些列表只走 dbManager（SQLite），不落 json 文件
+const DB_MANAGED_NAMES = new Set([
+  "winners",
+  "settings",
+  "statistics",
+  "player1",
+  "player2",
+  "tricks",
+  "tricks_for_group2",
+  "musics_list",
+  "musics_list_ex",
+  "award",
+]);
+
+// 判断某 json 文件是否属于 db 管理的列表（其数据源由 dbManager 提供）
+function isDbManagedName(jsonFile) {
+  return DB_MANAGED_NAMES.has(path.basename(jsonFile, ".json"));
+}
+
+// 更新 JSON 文件或数据库
 function updateJsonFile(audioFiles, jsonFile) {
   try {
+    const dbName = path.basename(jsonFile, ".json");
+
+    // db 管理的列表（musics_list / musics_list_ex 等）：仅写 dbManager，不生成 json 文件，
+    // 消除"文件与数据库双写不一致"。
+    if (isDbManagedName(jsonFile)) {
+      dbManager.get(dbName).setState(audioFiles).write();
+      serverLog(`已更新数据库: ${dbName}`, "info");
+      return true;
+    }
+
+    // 非 db 的纯数据文件（musics_list_2 / games_musics / musics_free 等）：
+    // 被前端模块直接 fetch，保留原有 json 文件写入逻辑不动。
     const jsonPath = path.join(process.cwd(), "resource", "json", jsonFile);
 
     // 确保目录存在
@@ -87,14 +118,6 @@ function updateJsonFile(audioFiles, jsonFile) {
     // 写入JSON文件
     fs.writeFileSync(jsonPath, JSON.stringify(audioFiles, null, 2), "utf8");
     serverLog(`已更新JSON文件: ${jsonFile}`, "info");
-
-    // 如果该JSON也在数据库中维护，更新数据库
-    const dbName = path.basename(jsonFile, ".json");
-    if (dbManager.exists(dbName)) {
-      const db = dbManager.get(dbName);
-      db.setState(audioFiles).write();
-      serverLog(`已更新数据库: ${dbName}`, "info");
-    }
 
     return true;
   } catch (error) {

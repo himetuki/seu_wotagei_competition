@@ -290,7 +290,11 @@ node_modules/
 # Build outputs
 y-stageX.exe
 server/inlined-assets.js
+server/module-servers.js
 .pkg-cache/
+
+# 运行时数据（sql.js 自动生成，不入库）
+resource/sqlite/
 
 # Visual Studio 6 build log
 *.plg

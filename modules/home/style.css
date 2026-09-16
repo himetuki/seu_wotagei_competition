@@ -1,0 +1,201 @@
+/* 完全重置所有元素的边距和填充 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* 基础样式设置 - 优化背景处理 */
+html,
+body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  position: fixed;
+  font-family: Arial, sans-serif;
+}
+
+/* 将背景图直接应用于body */
+body {
+  background-image: url("/resource/images/bg_index.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.8); /* 深色背景 */
+}
+
+/* 重新设计容器样式，确保无缝对齐 */
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100vw;
+  position: absolute;
+  top: 0;
+  left: 0;
+  text-align: center;
+}
+
+/* header 样式 */
+header {
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 25px 40px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  animation: fadeIn 2s;
+  max-width: 90%;
+}
+
+/* h1 样式 */
+header h1 {
+  font-size: 3em;
+  margin-bottom: 15px;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+/* p 样式 */
+header p {
+  font-size: 1.5em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* main 样式 */
+main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+#nav-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  width: min(560px, 94vw);
+}
+
+/* 按钮通用样式 - 二级入口（等宽宫格） */
+button,
+.nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 54px;
+  padding: 12px 16px;
+  font-size: 1.05em;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease,
+    background-color 0.18s ease, box-shadow 0.18s ease;
+  background-color: #1c1f26;
+  color: #e8ebf2;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.nav-btn:hover {
+  background-color: #262a34;
+  border-color: rgba(255, 255, 255, 0.22);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+.nav-btn:focus-visible {
+  outline: 2px solid #58c1ff;
+  outline-offset: 2px;
+}
+
+.btn-icon {
+  flex: none;
+  font-size: 1.3em;
+  line-height: 1;
+}
+
+.btn-label {
+  line-height: 1.2;
+}
+
+/* 一级入口（赛制选择，全宽突出） */
+.start-btn {
+  grid-column: 1 / -1;
+  background-color: #2563eb;
+  border-color: transparent;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+}
+
+.start-btn .btn-icon {
+  font-size: 1.5em;
+}
+
+.start-btn:hover {
+  background-color: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(37, 99, 235, 0.5);
+}
+
+/* footer 样式 */
+footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 12px 0;
+  z-index: 10;
+}
+
+footer p {
+  margin: 0;
+  font-size: 0.9em;
+}
+
+/* 淡入动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 媒体查询确保在小屏幕上正确显示 */
+@media (max-width: 768px) {
+  header h1 {
+    font-size: 2.2em;
+  }
+
+  header p {
+    font-size: 1.2em;
+  }
+
+  button,
+  .nav-btn {
+    padding: 10px 14px;
+    font-size: 1em;
+  }
+
+  #nav-buttons {
+    gap: 12px;
+  }
+}
+
+/* 减弱动态偏好 */
+@media (prefers-reduced-motion: reduce) {
+  button {
+    transition: none;
+  }
+  button:hover {
+    transform: none;
+  }
+  header {
+    animation: none;
+  }
+}

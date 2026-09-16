@@ -41,9 +41,8 @@ if "%NEED_INSTALL%"=="0" (
     exit /b 0
 )
 
-REM 设置 npm 淘宝镜像加速下载
+REM 使用阿里云镜像加速（仅本次安装生效，不修改全局 npm 配置）
 echo [镜像] 使用阿里云镜像加速...
-call npm config set registry https://registry.npmmirror.com
 echo.
 
 if exist "node_modules" (
@@ -54,7 +53,7 @@ if exist "node_modules" (
 echo.
 
 REM 安装依赖
-call npm install
+call npm install --registry=https://registry.npmmirror.com
 
 if %errorlevel% equ 0 (
     REM 记录快照，供下次对比

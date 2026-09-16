@@ -2,7 +2,7 @@
 
 ## 0. 项目概述
 
-WOTA艺（荧光棒舞蹈）对战平台。基于 **HTML + CSS + JS + Node.js(Express) + lowdb** 的多页面应用 (MPA)。
+WOTA艺（荧光棒舞蹈）对战平台。基于 **HTML + CSS + JS + Node.js(Express) + SQLite(sql.js)** 的多页面应用 (MPA)。
 
 **核心原则：每个新功能 = 独立的 HTML 文件 + 对应的复数 JS 模块 + 对应的 CSS 文件，即插即用。**
 
@@ -12,34 +12,49 @@ WOTA艺（荧光棒舞蹈）对战平台。基于 **HTML + CSS + JS + Node.js(Ex
 
 ```
 Y.Stage3/
-├── html/                    # 所有 HTML 页面
-│   ├── index.html           # 主页
-│   ├── select.html          # 赛制选择页（导航枢纽）
-│   ├── setting.html         # 全局设置（选手/技能/奖励管理）
-│   └── games/               # 小游戏子目录
-├── css/                     # 所有 CSS 样式（与 HTML 一一对应）
-├── js/                      # 所有 JS 逻辑
-│   ├── gb_common.js         # 3人团体赛共用工具（纯函数、Toast、动画）
-│   └── bg1/                 # battle-group1 子模块目录
+├── modules/                    # ★ 模块化核心：一个功能模块 = 一个自包含文件夹
+│   ├── modules.json            # 模块注册清单（单一事实来源，服务端自动加载）
+│   ├── _template/              # 新模块脚手架模板（含注释）
+│   ├── <模块id>/               # 如 home / select / drag / group-battle ...
+│   │   ├── module.json         # 模块元信息（id/name/nav/order）
+│   │   ├── index.html          # 页面（相对引用同目录资源）
+│   │   ├── style.css
+│   │   ├── app.js              #（可拆多个：main/data/battle/... 按既有约定）
+│   │   └── server/             # 可选：模块后端
+│   │       ├── routes.js       # 可选：Express 路由（app 为参）
+│   │       └── db.js           # 可选：数据库定义（存为 SQLite docs 文档）
 ├── resource/
-│   ├── json/                # 数据文件（选手、音乐、赛程状态）
-│   └── images/              # 背景图等静态资源
-├── server/                  # Node.js 后端
-│   ├── server.js            # Express 主入口
-│   ├── database.js          # lowdb 数据库定义
-│   ├── music-scanner.js     # 音乐文件扫描
+│   ├── json/                   # 纯数据文件（选手、音乐列表快照等；非数据库）
+│   ├── sqlite/                 # ★ SQLite 数据库文件（y-stage.sqlite，业务数据落盘处）
+│   ├── images/                 # 背景图等静态资源
+│   └── musics/                 # 音乐库（扫描后自动生成 musics_list*.json 数据文件）
+├── server/
+│   ├── server.js               # Express 主入口
+│   ├── module-loader.js        # 模块加载器（读 modules.json、注册模块路由/数据库）
+│   ├── sqlite-store.js         # SQLite 文档存储引擎 + lowdb 兼容适配层
+│   ├── database.js             # 数据库定义与管理器（dbManager，落盘 SQLite）
+│   ├── music-scanner.js        # 音乐文件扫描
 │   └── routes/
-│       └── game-routes.js   # 所有 API 路由（POST/GET 进度、设置）
+│       ├── index.js            # 路由集成（含模块路由）
+│       ├── module-routes.js    # /api/modules 清单 + /m/:id 页面服务
+│       └── ...                 # 共享路由（api/game/config/static...），随迁移瘦身
+├── scripts/
+│   └── new-module.js           # 模块脚手架：node scripts/new-module.js <id> "<名称>" [--server]
 ├── node_modules/
 ├── package.json
-├── build.bat                # 构建脚本
-├── install-deps.bat         # 依赖安装脚本
+├── server.js                   # 服务端主入口
+├── build-inline.js             # 构建辅助：静态资源 + 模块 server 注册表内联
+├── build.bat                   # 构建脚本（exe）
+├── install-deps.bat            # 依赖安装脚本
 └── .gitignore
 ```
 
 ---
 
 ## 2. 添加新模式 / 新功能的完整步骤
+
+> ⚠ 新功能请优先使用第 6 章**模块化方案**（modules/ 自包含文件夹，零改共享文件）。
+> 本章为早期 MPA 页面方案（html/css/js 平铺），模块化改造后仅作历史参考：页面应放 modules/<id>/ 内，资源用同目录相对路径，共享资源用 /resource/ 绝对路径。
 
 ### 2.1 创建 HTML 页面
 
@@ -371,6 +386,8 @@ document.addEventListener("dblclick", (e) => {
 
 ## 4. 命名约定
 
+> 新模块结构命名：模块目录 `modules/<模块id>/`（id 用小写+连字符），页面文件统一 `index.html` / `style.css` / `app.js`（可拆分 `xxx_main/data/battle/render/persist.js`）。下表为模块内代码/资源的通用命名规则：
+
 | 类别 | 规则 | 示例 |
 |------|------|------|
 | HTML 文件 | 小写+下划线 | `group_battle.html` |
@@ -389,8 +406,86 @@ document.addEventListener("dblclick", (e) => {
 ## 5. 注意事项
 
 1. **不要修改已存在的共用文件**（如 `gb_common.js`、`select.html`）除非必要。新增功能尽量自包含。
-2. **API 使用 `http://localhost:3000`** 作为 base URL，生产环境需替换。
+2. **前端 API 一律使用 origin 相对路径**（`/api/...`、`/resource/...`），兼容任意部署环境（本地、预览代理、生产同域等）；不要写死 `http://localhost:3000`（服务端代码内部仍可用 `process.env.PORT`）。
 3. **`node_modules/` 已在 `.gitignore` 中**，不要提交。
-4. **`drag.js`、`group_battle.js` 等单体文件是旧版备份**，实际加载的是拆分后的模块。修改时两边都要同步。
-5. **Server 端数据存储在 `resource/json/` 下**（lowdb 生成的 JSON 文件），不需要手动编辑。
+4. **（已废弃）`drag.js`、`group_battle.js` 等单体备份文件**：模块化改造后已全部删除，仅保留拆分后的前端模块（放置于各 `modules/<id>/` 内）。
+5. **Server 端业务数据存储在 `resource/sqlite/y-stage.sqlite`**（SQLite 单文件，sql.js WASM 支撑），经 `dbManager` 读写，不需要手动编辑；模块可用 `dbManager.sql(sql, params)` 执行原生 SQL。`resource/json/` 仅存放纯数据文件（如 `musics_list_2.json`、`games_musics.json`、`musics_free.json`、`tricks_for_game.json`）。
 6. **Windows 环境下路径用正斜杠 `/`**，与 Web 标准一致。
+7. **模块化改造已完成**：`css/` `js/` `html/` 目录已全部删除，`legacy` 跳转机制已移除，模块一律通过 `/m/<id>/` 访问。新功能一律走 `modules/`（见第 6 章）。
+
+---
+
+## 6. ★ 模块化开发指南（新功能 / 新页面请优先使用）
+
+> 项目已模块化。**添加一个功能 = 添加一个自包含文件夹，不需要修改任何共享文件。**
+
+### 6.1 模块契约
+
+```
+modules/<模块id>/
+├── module.json         # 元信息（必填）
+├── index.html          # 页面（必填，相对引用同目录 style.css / app.js）
+├── style.css           # 样式（可选）
+├── app.js              # 前端逻辑（可拆多个，按第 2.2 节约定：main/data/battle/render/persist）
+└── server/             # 后端（可选，二者都不存在则纯前端模块）
+    ├── routes.js       # Express 路由：module.exports = (app, ctx) => {...}
+    └── db.js           # 数据库定义：[{ name, defaultValue }] 或 { databases: [...] }（落盘 SQLite docs）
+```
+
+`module.json` 字段：
+
+| 字段 | 说明 |
+|------|------|
+| `id` | 模块唯一 id（小写/数字/连字符），URL 为 `/m/<id>` |
+| `name` | 显示名称 |
+| `description` | 一句话说明 |
+| `icon` | 导航图标（emoji 或短文本） |
+| `nav` | 显示在哪些导航页：`["index"]` / `["select"]` / `["games"]`，空数组则不显示 |
+| `order` | 导航排序（小在前） |
+
+### 6.2 三步创建一个新模块
+
+1. **脚手架**：
+
+   ```cmd
+   node scripts/new-module.js my-feature "我的功能" [--server]
+   ```
+
+   生成 `modules/my-feature/` 并自动注册进 `modules/modules.json`。
+   纯前端不带 `--server`；需要后端 API 时加 `--server`（生成 routes.js/db.js 示例）。
+
+2. **填充逻辑**：编辑 `index.html` / `app.js`（/ `server/routes.js` / `server/db.js`）。
+   - 页面内资源用**同目录相对路径**（`style.css`、`app.js`），共享资源用**绝对路径**（`/resource/images/...`、`/resource/json/...`、`/resource/musics/...`）。
+   - 模块后端路由 `routes.js` 由模块加载器注入共享设施（**无需 require 相对路径**）：
+
+     ```js
+     module.exports = (app, { dbManager, serverLog }) => {
+       app.get("/api/my-feature/ping", (req, res) => res.json({ ok: true }));
+     };
+     ```
+
+   - 模块数据库定义 `db.js`（存为 SQLite 文档，落盘 `resource/sqlite/y-stage.sqlite`；需要真实 SQL 时用 `dbManager.sql(sql, params)`）。
+
+3. **验证**：重启 `node server.js` → 日志出现 `模块加载` → 访问 `/m/my-feature`；
+   需要出现在导航时确认 `nav` 字段正确，导航页自动渲染。
+
+### 6.3 导航如何工作
+
+- `GET /api/modules` 返回全部模块清单（含 id/name/icon/nav/order/route）。
+- `home`、`select`、`games` 三个导航页从前端 `fetch` 该接口**动态渲染按钮**。
+- 新增/修改模块只需动 `modules.json` + 模块文件夹，导航零代码改动。
+
+### 6.4 常用模块示例（迁移参考样板）
+
+- `modules/drag/`：完整样板（前端多文件 + server/routes.js + server/db.js）。
+- `modules/select/`：动态导航 + 中键点击行为。
+- `modules/_template/`：最小可运行骨架（含注释）。
+
+### 6.5 模块开发检查单
+
+- [ ] `module.json` 的 `id` 全局唯一、`nav` 正确
+- [ ] 页面内无 `../` 引用（共享资源一律 `/resource/...` 或服务端 `/api/...`）
+- [ ] 后端 API 前缀含模块 id（如 `/api/my-feature-xxx`），避免与其他模块冲突
+- [ ] 数据库名以模块为前缀（如 `my-feature-process`）
+- [ ] 持久化沿用第 3.2 节模式（localStorage + server API 双写）
+- [ ] 重启 `node server.js` 无模块加载错误，核心流程（抽音乐/开始/保存/重置）可走通

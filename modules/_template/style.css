@@ -1,0 +1,56 @@
+body {
+  margin: 0;
+  font-family: "Microsoft YaHei", sans-serif;
+  background-color: #14161c;
+  color: #e6e8ee;
+}
+
+/* 顶部控制栏 */
+.control-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  background: #1d2027;
+  border-bottom: 1px solid #333;
+}
+
+.control-bar h1 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.header-right {
+  display: flex;
+  gap: 8px;
+}
+
+.ctrl-btn {
+  padding: 6px 14px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #262a33;
+  color: #e6e8ee;
+  cursor: pointer;
+}
+
+.ctrl-btn:hover {
+  background: #343a47;
+}
+
+.main-area {
+  padding: 24px;
+  min-height: 70vh;
+}
+
+.status-hint {
+  color: #8a93a5;
+}
+
+.status-bar {
+  padding: 8px 18px;
+  background: #1d2027;
+  border-top: 1px solid #333;
+  color: #8a93a5;
+  font-size: 13px;
+}

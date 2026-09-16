@@ -28,6 +28,15 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
+// 定义 sqlite 存储目录
+const sqliteDir = joinPath(APP_ROOT, "resource", "sqlite");
+if (!fs.existsSync(sqliteDir)) {
+  fs.mkdirSync(sqliteDir, { recursive: true });
+}
+
+// sqlite 数据库文件路径
+const sqliteFile = joinPath(sqliteDir, "y-stage.sqlite");
+
 // 服务端日志函数
 const serverLog = (message, type = "info") => {
   const timestamp = new Date().toISOString();
@@ -77,6 +86,8 @@ module.exports = {
   joinPath,
   APP_ROOT,
   dataDir,
+  sqliteDir,
+  sqliteFile,
   handle404,
   handleErrors,
   serverLog,

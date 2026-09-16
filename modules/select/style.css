@@ -1,0 +1,319 @@
+/* ============================================================
+ * select 模块 — 赛制选择页（分组卡片网格）
+ * 设计基调：暗色舞台感，延续既有的赛制配色；空间/层级优先
+ * ============================================================ */
+
+:root {
+  /* 间距刻度 */
+  --space-xs: 6px;
+  --space-sm: 10px;
+  --space-md: 16px;
+  --space-lg: 28px;
+  --space-xl: 44px;
+
+  /* 表面与文字 */
+  --bg-panel: rgba(15, 15, 15, 0.82);
+  --text-strong: #f2f4f8;
+  --text-main: #dfe3ec;
+  --text-muted: #9aa3b2;
+  --line: rgba(255, 255, 255, 0.1);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --focus-ring: #58c1ff;
+  --radius-md: 12px;
+  --radius-sm: 10px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  font-family: "Microsoft YaHei", Arial, sans-serif;
+}
+
+body {
+  background-image: url("/resource/images/bg_index.jpg");
+  background-color: rgba(0, 0, 0, 0.85);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: var(--space-xl) var(--space-md);
+  color: var(--text-main);
+}
+
+/* 主容器 */
+.container {
+  width: 100%;
+  max-width: 780px;
+  background-color: var(--bg-panel);
+  padding: var(--space-lg) var(--space-lg) var(--space-xl);
+  border-radius: 16px;
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(6px);
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* 头部 */
+header {
+  margin-bottom: var(--space-lg);
+}
+
+header h1 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  letter-spacing: 0.06em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+}
+
+.subtitle {
+  margin-top: var(--space-xs);
+  font-size: 0.92rem;
+  color: var(--text-muted);
+}
+
+/* 分组 */
+.mode-group {
+  margin-top: var(--space-lg);
+}
+
+.mode-group:first-of-type {
+  margin-top: 0;
+}
+
+.group-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.group-label::after {
+  content: "";
+  flex: 1;
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.2), transparent);
+}
+
+/* 卡片网格 */
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 20px;
+}
+
+/* 卡片 */
+.mode-card {
+  --card-accent: #3a3f4a;
+  --card-glow: rgba(150, 160, 180, 0.25);
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background-color: rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease,
+    background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.mode-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--line-strong);
+  background-color: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--card-glow),
+    0 0 18px var(--card-glow);
+}
+
+.mode-card:active {
+  transform: translateY(0);
+}
+
+.mode-card:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* 图标块 */
+.card-icon {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  border-radius: var(--radius-sm);
+  background: var(--card-accent);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.35);
+}
+
+/* 文字区 */
+.card-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.card-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-strong);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-desc {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* —— 各赛制配色（沿用原有色系） —— */
+.card--g1 { --card-accent: #0f766e; --card-glow: rgba(16, 185, 129, 0.3); }      /* Prof 绿 */
+.card--g1-alt { --card-accent: #047857; --card-glow: rgba(52, 211, 153, 0.28); }   /* 一年加组第二章 深绿 */
+.card--g2 { --card-accent: #0c4a6e; --card-glow: rgba(14, 165, 233, 0.3); }        /* Rookies II 蓝 */
+.card--g2-alt { --card-accent: #075985; --card-glow: rgba(56, 189, 248, 0.28); }   /* Rookies I 天蓝 */
+.card--team { --card-accent: #5b0e8a; --card-glow: rgba(168, 85, 247, 0.3); }      /* Team 紫 */
+.card--drag { --card-accent: #713f12; --card-glow: rgba(234, 179, 8, 0.3); }       /* Drag 金 */
+.card--music { --card-accent: #7c2d12; --card-glow: rgba(249, 115, 22, 0.3); }     /* Music 橙 */
+.card--neutral {
+  --card-accent: #4b4f58;
+  --card-glow: rgba(168, 162, 158, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+} /* 设置 灰（提亮） */
+
+/* 底部设置通栏入口（独立于赛制分组） */
+.mode-group--footer {
+  margin-top: var(--space-xl);
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-lg);
+}
+
+.setting-footer-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 16px;
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-strong);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  transition: transform 0.18s ease, background-color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.setting-footer-btn .btn-icon {
+  flex: none;
+  font-size: 1.2em;
+  line-height: 1;
+}
+
+.setting-footer-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.setting-footer-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* 空态 */
+.empty-hint {
+  padding: var(--space-lg) 0;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+/* 页脚 */
+footer {
+  margin-top: var(--space-xl);
+  text-align: center;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.8rem;
+}
+
+/* 屏幕阅读器隐藏 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 减弱动态偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .mode-card {
+    transition: none;
+  }
+  .mode-card:hover {
+    transform: none;
+  }
+  .container {
+    animation: none;
+  }
+}
+
+/* 小屏 */
+@media (max-width: 520px) {
+  .container {
+    padding: var(--space-lg) var(--space-md);
+  }
+  header h1 {
+    font-size: 1.7rem;
+  }
+}

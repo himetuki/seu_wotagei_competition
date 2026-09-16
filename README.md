@@ -8,7 +8,7 @@
 
 本地运行的服务器，使用`node server.js`或双击`y-stageX.exe`运行。
 
-release 中的压缩包即为整个项目，依赖已全部下载在压缩包里。好像有 lowdb 什么的，出错的时候建议会弄的人自己找找错（因为我不会）。
+release 中的压缩包即为整个项目（y-stageX.exe 已内联全部网页资源，数据保存在同目录 resource/ 中；另附源码包）。数据库已从 lowdb 迁移到 SQLite（resource/sqlite/y-stage.sqlite），项目已模块化：新增功能只需在 modules/ 下新建自包含模块文件夹。
 
 # Y.Stage X 比赛系统使用指南 (简易版)
 
