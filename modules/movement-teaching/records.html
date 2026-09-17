@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>体态传技记录 - Y.Stage</title>
+    <link rel="preload" as="image" href="/resource/images/bg_index.jpg" />
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="records.css" />
   </head>
@@ -20,14 +21,14 @@
             <h2>游戏记录</h2>
             <div class="header-actions">
               <button id="refresh-btn" class="action-btn" title="刷新记录列表">
-                <span class="icon">🔄</span>
+                <span class="icon"></span>
               </button>
               <button
                 id="clear-all-btn"
                 class="action-btn danger"
                 title="清空所有记录"
               >
-                <span class="icon">🗑️</span>
+                <span class="icon"></span>
               </button>
               <div class="search-container">
                 <input
@@ -36,7 +37,7 @@
                   placeholder="搜索队伍名称..."
                 />
                 <button id="search-btn" class="action-btn">
-                  <span class="icon">🔍</span>
+                  <span class="icon"></span>
                 </button>
               </div>
             </div>
@@ -100,8 +101,10 @@
       </div>
     </template>
 
-    <!-- 加载JS模块 -->
-    <script src="m-w-h_records_data.js"></script>
-    <script src="m-w-h_records_ui.js"></script>
+    <!-- 前端插件挂载点（P4：页面 UI 由 /web/front.json 声明的 front/plugin.js 装配） -->
+    <div id="plugin-root" hidden></div>
+
+    <!-- 前端内核（ESM bundle：装配 front.json 插件 → ctx.ui.render） -->
+    <script type="module" src="/web/kernel.js"></script>
   </body>
 </html>

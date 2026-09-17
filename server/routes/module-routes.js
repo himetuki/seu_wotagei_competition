@@ -10,14 +10,15 @@
  * 因此必须把精确的 /m/:id 放在资源通配之前注册。
  */
 const path = require("path");
-const { APP_ROOT, serverLog } = require("../utils");
-const { getModules, getModule } = require("../module-loader");
+const paths = require("../paths.cjs");
+const { serverLog } = require("../utils");
+const registry = require("../module-registry.cjs");
 const { sendFileSafe } = require("./static-routes");
 
 function setupModuleRoutes(app) {
   // 模块清单接口（供导航页动态渲染）
   app.get("/api/modules", (req, res) => {
-    const list = getModules().map((m) => ({
+    const list = registry.listModules().map((m) => ({
       id: m.id,
       name: m.name,
       description: m.description || "",
@@ -32,12 +33,12 @@ function setupModuleRoutes(app) {
   // /m/<id> 模块页面入口
   // 无尾斜杠 → 302 补尾斜杠（保证相对资源解析正确）；带尾斜杠 → 直接服务 index.html
   app.get("/m/:id", (req, res) => {
-    const mod = getModule(req.params.id);
+    const mod = registry.getModule(req.params.id);
     if (!mod) {
       return res.status(404).send(`模块 ${req.params.id} 不存在`);
     }
     if (req.path.endsWith("/")) {
-      const filePath = path.join(APP_ROOT, "modules", mod.id, "index.html");
+      const filePath = path.join(paths.modulesDir(), mod.id, "index.html");
       if (!sendFileSafe(res, filePath)) {
         return res.status(404).send(`模块页面 ${mod.id} 不存在`);
       }
@@ -48,10 +49,23 @@ function setupModuleRoutes(app) {
 
   // 服务模块资源（splat 为空 → index.html）
   app.get("/m/:id/*", (req, res, next) => {
-    const mod = getModule(req.params.id);
+    const mod = registry.getModule(req.params.id);
     if (!mod) return next();
     const rest = req.params[0] || "";
-    const filePath = path.join(APP_ROOT, "modules", mod.id, rest || "index.html");
+    // F5 路径穿越防护（第一道）：rest 自 URL 逐段解码，含 ".." 点段（/ 或 \ 分隔，如
+    // /m/drag/../../server/database.js、%2e%2e、..%5c 变体）一律拒绝。
+    if (rest.split(/[\\/]/).includes("..")) {
+      return res.status(403).send("Forbidden");
+    }
+    // F5 防护（第二道）：resolve 规范化后强制位于 modules/<id>/ 之内
+    //（path.relative 判定跨盘符安全：异盘结果为绝对路径）。startsWith("..") 精确化为
+    // 段首 ".."（P3 复验备注），"..foo" 这类合法同名目录不再被误杀。
+    const moduleDir = path.join(paths.modulesDir(), mod.id);
+    const filePath = path.resolve(moduleDir, rest || "index.html");
+    const relToModule = path.relative(moduleDir, filePath);
+    if (relToModule === ".." || relToModule.startsWith(".." + path.sep) || path.isAbsolute(relToModule)) {
+      return res.status(403).send("Forbidden");
+    }
     if (!sendFileSafe(res, filePath)) {
       res.status(404).send(`模块资源 ${rest || "index.html"} 不存在`);
     }

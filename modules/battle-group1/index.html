@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prof对战</title>
+    <link rel="preload" as="image" href="/resource/images/bg.jpg" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -20,11 +21,12 @@
         </section>
 
         <section id="players-section">
+          <!-- 选手卡点击由前端插件以 addEventListener+signal 绑定（原内联 onclick 已移除） -->
           <div class="players">
-            <div class="player" id="player1" onclick="setWinner('player1')">
+            <div class="player" id="player1">
               <h3 id="player1-name"></h3>
             </div>
-            <div class="player" id="player2" onclick="setWinner('player2')">
+            <div class="player" id="player2">
               <h3 id="player2-name"></h3>
             </div>
           </div>
@@ -84,11 +86,10 @@
       </main>
     </div>
 
-    <!-- 模块化加载JS文件 -->
-    <script src="bg1-core.js"></script>
-    <script src="bg1-ui.js"></script>
-    <script src="bg1-data.js"></script>
-    <script src="bg1-game.js"></script>
-    <script src="bg1-events.js"></script>
+    <!-- 前端插件挂载点（P4：页面 UI 由 /web/front.json 声明的 front/plugin.js 装配） -->
+    <div id="plugin-root" hidden></div>
+
+    <!-- 前端内核（ESM bundle：装配 front.json 插件 → ctx.ui.render） -->
+    <script type="module" src="/web/kernel.js"></script>
   </body>
 </html>

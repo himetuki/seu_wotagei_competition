@@ -2,12 +2,12 @@
  * 音乐文件路由模块
  * 处理音乐文件的上传、扫描和管理
  */
-const express = require("express");
-const router = express.Router();
+const { Router } = require("../http/express-compat"); // y-router Express 兼容出口（HTTP 层切换）
+const router = Router();
 const path = require("path");
 const fs = require("fs");
 const multer = require("multer");
-const { serverLog } = require("../utils");
+const { serverLog, safeBasename, safeJoin } = require("../utils");
 const musicScanner = require("../music-scanner");
 
 // 设置上传的存储选项
@@ -32,7 +32,7 @@ const storage = multer.diskStorage({
         return cb(new Error(`未找到组别: ${group}`));
       }
 
-      const uploadDir = path.join(process.cwd(), config.dir);
+      const uploadDir = musicScanner.resolveMusicDir(config.dir);
 
       // 确保目录存在
       if (!fs.existsSync(uploadDir)) {
@@ -108,7 +108,7 @@ router.post("/check_music_files", (req, res) => {
       });
     }
 
-    const dir = path.join(process.cwd(), config.dir);
+    const dir = musicScanner.resolveMusicDir(config.dir);
     const existingFiles = [];
 
     for (const file of files) {
@@ -174,7 +174,7 @@ router.post("/upload_music", (req, res) => {
               return cb(new Error(`未找到组别: ${uploadGroup}`));
             }
 
-            const uploadDir = path.join(process.cwd(), config.dir);
+            const uploadDir = musicScanner.resolveMusicDir(config.dir);
 
             // 确保目录存在
             if (!fs.existsSync(uploadDir)) {
@@ -452,7 +452,7 @@ router.get("/music_files", (req, res) => {
       });
     }
 
-    const dir = path.join(process.cwd(), config.dir);
+    const dir = musicScanner.resolveMusicDir(config.dir);
     let files = [];
 
     // 确保目录存在
@@ -495,6 +495,16 @@ router.post("/move_to_recycle", (req, res) => {
       });
     }
 
+    // 只接受纯文件名：filename 来自请求体，含目录成分（../ 等）一律拒绝，
+    // 防其逃逸出音乐目录读写任意文件
+    const safeName = safeBasename(filename);
+    if (!safeName) {
+      return res.status(400).json({
+        success: false,
+        error: "非法文件名",
+      });
+    }
+
     const config = musicScanner.MUSIC_DIRS.find((c) => c.dir.includes(group));
 
     if (!config) {
@@ -504,23 +514,21 @@ router.post("/move_to_recycle", (req, res) => {
       });
     }
 
-    // 源文件路径
-    const sourcePath = path.join(process.cwd(), config.dir, filename);
+    // 源文件路径（safeName 已剥离目录成分，safeJoin 再断言未越出该音乐目录）
+    const musicDir = musicScanner.resolveMusicDir(config.dir);
+    const sourcePath = safeJoin(musicDir, safeName);
 
     // 检查源文件是否存在
     if (!fs.existsSync(sourcePath)) {
       return res.status(404).json({
         success: false,
-        error: `文件不存在: ${filename}`,
+        error: `文件不存在: ${safeName}`,
       });
     }
 
     // 确保回收文件夹存在
-    const recycleDir = path.join(
-      process.cwd(),
-      "resource",
-      "musics",
-      "musics_free"
+    const recycleDir = safeJoin(
+      musicScanner.resolveMusicDir(path.join("resource", "musics", "musics_free"))
     );
     if (!fs.existsSync(recycleDir)) {
       fs.mkdirSync(recycleDir, { recursive: true });
@@ -528,7 +536,7 @@ router.post("/move_to_recycle", (req, res) => {
 
     // 目标文件路径 (添加时间戳避免重名)
     const timestamp = new Date().getTime();
-    const targetPath = path.join(recycleDir, `${timestamp}_${filename}`);
+    const targetPath = safeJoin(recycleDir, `${timestamp}_${safeName}`);
 
     // 移动文件 (先复制后删除)
     fs.copyFileSync(sourcePath, targetPath);

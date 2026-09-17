@@ -5,6 +5,11 @@
   box-sizing: border-box;
 }
 
+/* 图片加载前的深色兜底底：body 最终 background-color 被下方 rgba(0,0,0,0.8) 覆盖为半透明，需不透明底色垫底防白闪 */
+html {
+  background-color: #0a0a0a;
+}
+
 body {
   font-family: "Arial", sans-serif;
   background-color: #121212;

@@ -15,42 +15,42 @@ let _initPromise = null;
 
 /**
  * 加载 sql.js 的 sql-wasm.wasm，返回初始化好的 initSqlJs 工厂。
- * 非 pkg：读 node_modules 里的 wasm 二进制。
- * pkg：尝试从打包时内联的 assets 里解 base64。
+ *
+ * wasm 定位（P7 bundle 打包）：按候选顺序取第一个存在的文件——
+ *   1. Y_STAGE_SQL_WASM env（显式指定，应急/特殊布局用）
+ *   2. <app 根>/sql-wasm.wasm            —— bundle 便携形态（make-portable 外置资产）
+ *   3. <app 根>/node_modules/sql.js/dist/sql-wasm.wasm —— dev 源码形态
+ * dev 下候选 3 与原 require.resolve 解析结果为同一路径，行为零变化；
+ * 移除 require.resolve 是因为 esbuild 打包会改写/求值它，外置资产方案更稳。
  */
+function locateWasmBinary() {
+  const paths = require("./paths.cjs");
+  const candidates = [
+    process.env.Y_STAGE_SQL_WASM,
+    path.join(paths.resolvePaths().appRoot, "sql-wasm.wasm"),
+    path.join(paths.resolvePaths().appRoot, "node_modules", "sql.js", "dist", "sql-wasm.wasm"),
+  ].filter(Boolean);
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) return fs.readFileSync(p);
+    } catch (e) { /* 尝试下一候选 */ }
+  }
+  throw new Error(
+    "sql-wasm.wasm 未找到（候选: " + candidates.join(", ") + "；dev 请先 npm install，" +
+    "bundle 形态确认 app/sql-wasm.wasm 存在，或用 Y_STAGE_SQL_WASM 显式指定）"
+  );
+}
+
 async function loadSqlJs() {
   if (_sqlOOT) return _sqlOOT;
   if (_initPromise) return _initPromise;
 
   _initPromise = (async () => {
-    let wasmBinary;
+    const wasmBinary = locateWasmBinary();
 
-    if (process.pkg) {
-      // pkg 打包模式：虚拟文件系统不含原生 wasm，需用打包时内联的 base64
-      let inlined = null;
-      try {
-        // eslint-disable-next-line global-require
-        inlined = require("./inlined-assets");
-      } catch (e) {
-        inlined = null;
-      }
-      if (inlined && typeof inlined.getAsset === "function") {
-        const asset = inlined.getAsset("sql-wasm.wasm");
-        if (asset && asset.data) {
-          wasmBinary = Buffer.from(asset.data, "base64");
-        }
-      }
-    } else {
-      // 非 pkg：直接读本项目 node_modules 中的 wasm
-      wasmBinary = fs.readFileSync(require.resolve("sql.js/dist/sql-wasm.wasm"));
-    }
-
-    // 只有拿到 wasmBinary 才传 wasmBinary；否则走默认 locateFile
     // eslint-disable-next-line global-require
     const initSqlJs = require("sql.js");
-    const SQL = await initSqlJs(
-      wasmBinary ? { wasmBinary } : undefined
-    );
+    const SQL = await initSqlJs({ wasmBinary });
     return SQL;
   })();
 

@@ -186,8 +186,37 @@ header h1 {
 }
 
 .rank-medal {
-  font-size: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   animation: medal-bounce 0.8s ease-out;
+}
+
+/* 名次配色：复用 .rank-position 的金/银/铜色值，保持既有色彩语义 */
+.rank-medal.medal-gold {
+  color: #ffd700;
+  filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.6));
+}
+
+.rank-medal.medal-silver {
+  color: #c0c0c0;
+  filter: drop-shadow(0 0 10px rgba(192, 192, 192, 0.45));
+}
+
+.rank-medal.medal-bronze {
+  color: #cd7f32;
+  filter: drop-shadow(0 0 10px rgba(205, 127, 50, 0.45));
+}
+
+.rank-medal.medal-plain {
+  color: #9ca3af;
+}
+
+/* 标题内联奖杯：与 h1 文字基线对齐 */
+header h1 .title-icon {
+  display: inline-flex;
+  vertical-align: -0.12em;
+  margin: 0 0.12em;
 }
 
 @keyframes medal-bounce {

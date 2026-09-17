@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>体态传技设置 - Y.Stage</title>
+    <link rel="preload" as="image" href="/resource/images/bg_index.jpg" />
     <link rel="stylesheet" href="style.css" />
     <!-- 添加设置页面特定样式 -->
     <link rel="stylesheet" href="settings.css" />
@@ -40,14 +41,14 @@
 
             <div class="metronome-controls">
               <button id="test-metronome-btn" class="settings-btn glow-btn">
-                <span class="icon">▶</span> 试听
+                <span class="icon"></span> 试听
               </button>
               <button
                 id="stop-metronome-btn"
                 class="settings-btn glow-btn"
                 disabled
               >
-                <span class="icon">■</span> 停止
+                <span class="icon"></span> 停止
               </button>
             </div>
           </div>
@@ -127,8 +128,10 @@
       </footer>
     </div>
 
-    <!-- 加载JavaScript文件 -->
-    <script src="movement_without_hands_data.js"></script>
-    <script src="movement_without_hands_settings.js"></script>
+    <!-- 前端插件挂载点（P4：页面 UI 由 /web/front.json 声明的 front/plugin.js 装配） -->
+    <div id="plugin-root" hidden></div>
+
+    <!-- 前端内核（ESM bundle：装配 front.json 插件 → ctx.ui.render） -->
+    <script type="module" src="/web/kernel.js"></script>
   </body>
 </html>

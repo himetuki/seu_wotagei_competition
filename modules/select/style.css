@@ -37,6 +37,11 @@ body {
   font-family: "Microsoft YaHei", Arial, sans-serif;
 }
 
+/* 兜底底色：背景图未就绪时露出深色，避免白/灰闪烁（不改变 body 的半透明叠加层） */
+html {
+  background-color: #0a0a0a;
+}
+
 body {
   background-image: url("/resource/images/bg_index.jpg");
   background-color: rgba(0, 0, 0, 0.85);

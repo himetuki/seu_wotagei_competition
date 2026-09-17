@@ -1,230 +1,311 @@
 # Y.Stage X 比赛系统
 
-来自 Yukari
+**来自 Yukari，为东南大学异度沸腾动漫社 WOTA 艺团而写。**
 
-这是 AI 写的，专用于东南大学异度沸腾动漫社 WOTA 艺团团内 WOTA 艺赛事
+本项目由 AI 辅助编写，专用于团内 WOTA 艺赛事：管理选手、技能、音乐，支持一年加组、一年内组、团体赛、对阵树等赛制。作者水平有限，请多包涵。
 
-此项目用于保存文件，对外莫有说法，毕竟我也不懂代码，全是 AI 写的。
+如果你是比赛现场的使用者，请看"快速开始"与"使用说明"；如果你是开发者，请看"项目文件结构"与"技术架构"——技术部分的内容是经过核对的。
 
-本地运行的服务器，使用`node server.js`或双击`y-stageX.exe`运行。
+***
 
-release 中的压缩包即为整个项目（y-stageX.exe 已内联全部网页资源，数据保存在同目录 resource/ 中；另附源码包）。数据库已从 lowdb 迁移到 SQLite（resource/sqlite/y-stage.sqlite），项目已模块化：新增功能只需在 modules/ 下新建自包含模块文件夹。
+## 快速开始（普通用户）
 
-# Y.Stage X 比赛系统使用指南 (简易版)
+### Release 里的文件怎么选
 
-## 一、软件简介
+每个版本的 Release 会发布便携包，解压即用：
 
-Y.Stage X 是一个专为异度沸腾 WOTA 艺团设计的比赛管理软件。
+| 文件                     | 内容                                                     | 给谁用              |
+| ---------------------- | ------------------------------------------------------ | ---------------- |
+| `YStage3-Portable.zip` | **便携运行包**：`node/` 运行时 + `app/` 应用核心 + `plugins/` 插件组件层 + `resource/` 数据目录 | 普通用户，**唯一分发形态**  |
 
-它的主要功能包括：
+> 没有 `resource/` 文件夹也没关系：首次运行会**自动创建**所需的目录结构（见"使用说明"）。便携包只是把这些目录提前帮你带齐了。
 
-- 管理比赛选手信息
-- 管理比赛技能和音乐数据
-- 多种赛制支持（一年加组、一年内组、团体赛、对阵树式淘汰赛）
-- 统计比赛结果
-- 提供比赛记录和成绩查看功能
-- 模块化游戏设计
+### 方式一：直接运行（推荐）
 
-## 二、如何启动系统
+1. 下载 `YStage3-Portable.zip`，解压到一个**专用文件夹**里
+2. 双击 `启动YStage.bat`
+3. 首次运行会自动生成缺失的 `resource/` 目录结构，几秒后即可在浏览器访问 <http://localhost:3000>
+4. 用完后关闭窗口即可
 
-### 【初学者推荐方法】直接运行程序
+> 若端口 3000 被占用，程序会自动改用 3001、3002……，并在窗口打印 `服务器运行在 http://localhost:xxxx`，访问打印出的地址即可。
 
-1. 在 Y.Stage3 文件夹中找到 y-stageX.exe 文件
-2. 双击这个文件
-3. 稍等片刻，系统会自动启动
+### 方式二：从终端启动（开发者）
 
-### 【进阶方法】从文件夹直接启动
+从源码运行。**首次（或 fresh clone 后）需要先安装依赖并构建内核产物**（产物在 `.gitignore` 中，不随仓库分发）：
 
-1. 在 Y.Stage3 文件夹上点击鼠标右键
-2. 选择"在终端中打开"选项
-3. 在打开的窗口中输入：`node server.js`
-4. 按回车键，当看到"服务器已启动，运行在 http://localhost:3000"的提示时，说明启动成功了
+```bash
+npm install       # 安装依赖
+npm run build     # 生成 server/cordis/kernel.cjs 与 web/dist/kernel.js
+node server.js    # 或 npm start；开发热重启用 npm run dev（nodemon）
+```
 
-### 【麻烦方法】通过命令窗口启动
+看到 `服务器运行在 http://localhost:3000` 即表示启动成功（端口被占用自动顺延）；启动日志出现 `[cordis] 装配完成` 且错误为 0 即插件装配正常。
 
-1. 按下键盘上的 Win 键(Windows 图标键)和 R 键
-2. 在弹出的小窗口中输入 `cmd` 后按回车键
-3. 输入 `cd 空格`，然后输入 Y.Stage3 文件夹的位置，例如：  
-   `cd d:\Code\HTML\Y.Stage3`
-4. 按回车键后，再输入：`node server.js`
-5. 按回车键，当看到"服务器已启动，运行在 http://localhost:3000"的提示时，说明启动成功了
+日常改动是否需要重新构建：
 
-## 三、如何使用系统
+- 只改模块文件（`modules/<id>/` 的 `plugin.js`、`front/`、页面）：**无需构建**，重启服务即生效（前端插件刷新页面即可）
+- 改 `web/` 内核源码：`npm run build:web`
+- 改 `server/cordis/` 装配层：`npm run build:kernel`
 
-1. 确保系统已经启动（看到上面提到的提示信息）
-2. 打开浏览器（推荐使用 Chrome 或 Edge 最新版本）
-3. 在浏览器的地址栏中输入：`http://localhost:3000`
-4. 按回车键，就能看到 Y.Stage X 的主页面了
-5. 在启动系统的命令窗口中：
-   - 输入 `help` 或 `h` 或 `?` 可以查看帮助信息
-   - 输入 `exit` 或 `q` 可以正常退出系统
-   - 按 `Ctrl+C` 键可以强制退出系统
-   - 输入 `t` 或 `test` 可以测试系统是否能正常保存数据
+### 停止与自检
 
-## 四、系统的主要功能
+- 正常退出：`Ctrl+C`，或在终端输入 `q` / `exit`
 
-### 1. 【比赛系统】
+- 数据自检：输入 `t` / `test`，可确认本机能否正常读写数据库（比赛前建议跑一遍）
 
-- 一年加组比赛：包括第一章节和第二章节
-- 一年内组比赛：包括上半场和下半场
-- 团体赛：支持多轮淘汰制团体对战
-- Drag式比赛（对阵树式淘汰赛）：支持拖动晋级，可选四强双败淘汰赛制
+***
 
-​**​ 提示 ​**​
+## 使用说明
 
-- 如果一年加组比赛成员＞ 8 人，建议先将一年内组选手替换为一年加组选手，然后在一年内组上半场界面进行一年加组 N 进 8 的比赛
-- 可以使用设置界面的"选手管理"功能中的以 txt 文件批量导入选手功能，快速添加选手，所以要提前准备好选手名单
-- 选手名单的 txt 文件格式：一行一个选手的名字，不需要分隔符（或者说换行符就是分隔符），文件名可以随意命名，文件后缀必须是.txt
+### 首次启动后的数据导入
 
-### 2. 【小游戏】
+程序自带空数据启动后，选手、技能、音乐等全部在**网页界面**里导入，通常不需要直接编辑文件：
 
-- ​**​ 定时搬化棒 ​**​：计时挑战游戏
-  - 该游戏考验选手的思维能力（乐）
-- ​**​ 体态传技 ​**​：不使用手来演绎技，将之传递下去的游戏
-  - 该游戏考验选手对技的熟悉程度以及对体态的理解
-- ​**​ 建议添加游戏 ​**​："抢棒敲猜技"
-  - 两两组队，两队 PK，选手 AB 一组，选手 CD 一组。A 和 C 站在场上桌子一旁，桌子上放置了一根化棒。然后主持人为 A 和 C 各自发出一个技的指令。然后 A 和 C 需要在音乐播放瞬间抢夺化棒，抢到的选手还需要在音乐副歌部分仅以单手（另一只手和下盘不准动）演绎出这个技。由队友 B 或 D 来猜这个技。猜对了就算成功。除此之外还有演绎加分（由评委来评定）。
+- **导入选手**：主页 → 设置中心 → 选手管理。支持 txt 批量导入：文件一行一个选手名字，后缀 `.txt`，无需分隔符
 
-### 3. 【赛制选择】
+- **导入技能**：设置中心 → 技能管理
 
-从主页进入"赛制选择"页面，可以选择以下模式：
+- **导入奖励**：设置中心 → 奖励管理
 
-- 一年加组（Prof 对战）
-- 一年内组（Rookies II 对战）
-- 团体赛（三轮淘汰制）
-- Drag式比赛（对阵树式淘汰赛，可选双败赛制）
-- 直接抽取音乐（三曲库）
+- **导入音乐**：设置中心 → 音乐管理，或"音乐导入"页面批量导入；也可以直接把音乐文件放进 `resource/musics/<组别目录>`（如 `1yearplus`、`1yearminus`、`1yearplus_ex`、`games_musics`、`musics_free`），再刷新页面
 
-### 4. 【设置中心】
+> 音乐文件格式建议 mp3 / wav，文件名尽量避免特殊字符。
 
-- 选手管理：添加新选手、修改选手信息、删除选手
-- 技能管理：添加新技能、修改技能信息、删除技能
-- 奖励管理：设置比赛的奖励内容
-- 音乐管理：导入和管理比赛用的音乐
+### 一场比赛怎么跑
 
-### 5. 【成绩查看】
+1. **赛前准备**：在设置中心导入选手、技能、音乐；打开各赛制页面确认数据正确
+2. **抽签/编排**：在赛制页面（一年加组 / 一年内组 / 团体赛 / Drag 式）完成分组与对阵
+3. **抽取音乐**：点击"抽取音乐"，随机滚动结束后确认曲目
+4. **开始比赛**：点击"开始比赛"播放音乐，进入比赛模式；双击任意位置可停止播放
+5. **判定胜负**：比赛结束后点击胜者，系统自动计分并推进轮次
+6. **查看结果**：比赛结束后到排名、排行榜、团体排名页面查看成绩
+7. **备份数据**：比赛结束后复制整个 `resource/` 文件夹保存
 
-- 查看比赛结果和获奖选手名单
-  - 一年加组第二章节选定决赛胜者后，将自动跳转到排名及赛程记录界面，该界面会显示记录选手的排名和赛程信息
-  - 一年内组下半场计分结束后，点击进入排名界面按钮将跳转到排名界面，然后需要手动选择各排名选手
+### 备份与恢复
 
-## 五、重要文件在哪里
+- 全部数据都在 `resource/` 文件夹里（选手、赛程、SQLite 数据库、音乐）
 
-系统所有的数据都保存在以下文件中：
+- **备份**：复制整个 `resource/` 文件夹即可
 
-1. ​**​ 选手数据 ​**​：保存在 `resource/json` 文件夹下的
-   - `player1.json`（一年加组选手）
-   - `player2.json`（一年内组选手）
-   - `winners.json`（获奖选手）
+- **恢复**：把备份的 `resource/` 放回程序同目录，覆盖同名文件即可
 
-2. ​**​ 技能数据 ​**​：保存在 `resource/json` 文件夹下的
-   - `tricks.json`（一年加组技能）
-   - `tricks_for_group2.json`（一年内组技能）
-   - `tricks_for_game.json`（小游戏技能）
+- **重要比赛前**：请备份，并在备用电脑上跑一遍 `t` 自检
 
-3. ​**​ 音乐数据 ​**​：保存在 `resource/json` 文件夹下的
-   - `musics_list.json`（一年加组第一章节音乐）
-   - `musics_list_ex.json`（一年加组第二章节音乐）
-   - `musics_list_2.json`（一年内组音乐）
-   - `games_musics.json`（小游戏音乐）
+***
 
-4. ​**​ 设置数据 ​**​：保存在 `resource/json` 文件夹下的
-   - `settings.json`（系统设置）
+## 功能一览
 
-5. ​**​ 比赛记录 ​**​：保存在系统数据库中，部分也会保存在浏览器中
-   - `battle-group1-process.json`（一年加组第一章节比赛记录）
-   - `battle-group1-2-process.json`（一年加组第二章节比赛记录）
-   - `battle-group2-process.json`（一年内组上半场比赛记录）
-   - `battle-group2-2-process.json`（一年内组下半场比赛记录）
-   - `drag-process.json`（Drag式比赛记录）
-   - `drag-settings.json`（Drag式比赛设置）
-   - `group-battle-process.json`（团体赛记录）
+- **一年加组（Prof）**：第一章节、第二章节
 
-6. **​ 其他数据 ​**​：保存在 `resource/json` 文件夹下的
-   - `award.json`（一年内组奖品数据）
+- **一年内组（Rookies II / Rookies I）**：上半场、下半场
 
-7. ** 游戏相关 **：保存在 `resource/json` 文件夹下的
-   - `game_2_process.json`（游戏《体态传技》记录）
-   - `game_2_setting.json`（游戏《体态传技》设置）
+- **团体赛（Team）**：3 人团体、多轮淘汰
 
-## 六、常见问题解答
+- **Drag 式比赛**：对阵树拖拽晋级，可开启四强双败
 
-​**​ 问：系统无法启动，提示"端口 3000 被占用"怎么办？​**​  
-答：这说明你电脑上有其他程序正在使用 3000 端口。你可以：
+- **音乐抽取**：三个曲库直接抽
 
-1.  关闭其他可能在使用这个端口的程序（如其他网站服务）
-2.  重启电脑后再尝试启动系统
+- **小游戏**：定时搬化棒、体态传技（不用手演绎技，考验对技的理解）
 
-​**​ 问：页面显示"无法连接到服务器"是什么原因？​**​  
-答：请检查：
+- **排名**：选手排名、排行榜、团体排名
 
-1.  系统是否已经启动（命令窗口是否显示成功启动的信息）
-2.  尝试刷新页面（按 F5 键）
-3.  如果还不行，尝试重启系统
+- **设置中心**：选手 / 技能 / 奖励 / 音乐统一管理
 
-​**​ 问：保存数据时出现错误怎么办？​**​  
-答：
+- **音乐导入**：批量把音乐文件加入对应曲库
 
-1.  确保没有其他程序正在打开或使用这些数据文件
-2.  检查你的电脑是否有权限修改这些文件
-3.  如果是在比赛中，可以先记录下信息，结束后再修复
+- **插件管理**（`/m/plugin-manager/`，面向管理员）：不修改代码即可启用/停用功能模块、编辑插件配置、热重载；改动即时落盘，重启后保持
 
-​**​ 问：音乐无法播放怎么解决？​**​  
-答：
+另有一些玩法建议（如"抢棒敲猜技"小游戏）保存在社团内部，需要时可由开发同学添加到系统中。
 
-1.  检查音乐文件是否已经放在了正确的文件夹中  
-    (`resource/musics/1yearplus`，`resource/musics/1yearminus`，`resource/musics/1yearplus_ex`，`resource/musics/games_musics`)
-2.  确认音乐文件是 MP3 格式的
-3.  检查文件名是否包含特殊字符
-4.  刷新页面后再试一次
+***
 
-​**​ 问：如何修改音乐数据？​**​  
-答：
+## 项目文件结构
 
-1.  将 MP3 文件放入对应的音乐文件夹中
-2.  使用系统的"音乐导入"功能导入音乐
-3.  导入后需要刷新页面才能看到新添加的音乐
-4.  尽量使用 MP3 格式的音乐文件，其他格式可能出问题
+```
+Y.Stage3/
+├── modules/                  # ★ 功能模块：每个功能 = 一对插件 + 三份清单条目
+│   ├── modules.json          # 页面元数据清单（导航页/管理页的显示名单）
+│   └── <模块id>/             # 如 home、select、drag、group-battle、plugin-manager …
+│       ├── plugin.js         # 后端插件（CJS）：数据库定义 + 路由 + 页面元数据注册
+│       ├── index.html        # 页面：静态骨架 + #plugin-root 装载点 + /web/kernel.js 内核标签
+│       ├── style.css
+│       └── front/            # 前端插件（原生 ESM）
+│           ├── plugin.js     # 插件入口：ctx.ui.register({ key, component })
+│           └── view*.js      # 组件实现（可拆多文件）
+├── web/                      # 前端内核
+│   ├── kernel.mjs            # 内核入口（esbuild → dist/kernel.js，浏览器 ESM bundle）
+│   ├── icons.mjs             # 共享图标基座（Tabler Icons 内置子集，icon / iconEl / ICON_NAMES）
+│   ├── front.json            # 前端装配清单（enabled:false 的插件代码不下载）
+│   └── dist/kernel.js        # 构建产物（gitignored，npm run build:web 生成）
+├── resource/                 # ★ 运行数据（首次运行自动生成骨架）
+│   ├── json/                 # 纯数据文件（音乐列表快照等）
+│   ├── sqlite/               # SQLite 数据库（y-stage.sqlite，业务数据落盘处）
+│   ├── images/               # 背景图等静态资源
+│   └── musics/               # 音乐库（按组别分子目录，启动时自动扫描）
+├── server/                   # ★ 服务端
+│   ├── http/                 # y-router：自研路由器（替代 Express），路由表项可运行时热插拔
+│   ├── cordis/               # cordis 插件内核：装配器 loader、内置服务、装配自检
+│   ├── plugins.json          # 后端装配清单（enabled 开关；禁用即路由/页面 404，数据保留）
+│   ├── module-loader.js      # 清单读取器 + 投影器
+│   ├── paths.cjs             # 路径解析中枢（开发/便携双模式）
+│   ├── sqlite-store.js       # SQLite 文档存储引擎（lowdb 兼容）
+│   ├── database.js           # 数据库管理器（dbManager）
+│   ├── music-scanner.js      # 音乐文件扫描
+│   └── routes/               # 共享路由（模块页面 / 共享 API / 静态资源）
+├── scripts/
+│   ├── new-module.js         # 新模块脚手架（自动生成一对插件骨架并追加三份清单）
+│   ├── make-portable.js      # 便携式打包（组装 YStage3-Portable/，可选 --zip）
+│   └── endpoint-diff.js      # HTTP 行为基线录制/回放（重构回归关口）
+├── server.js                 # 服务端主入口（npm start / node server.js）
+├── build.bat                 # Windows 一键打包（构建 → 便携包 + zip）
+├── install-deps.bat          # Windows 一键安装依赖
+├── package.json              # 项目配置与依赖清单
+└── .gitignore
+```
 
-## 七、数据备份建议
+需要了解的部分：
 
-1. 重要比赛前，备份整个 `resource/json` 文件夹  
-   (可以简单地复制这个文件夹到其他地方)
+- **模块**：`modules/<id>/` 是一个自包含功能单元（一对插件：后端 `plugin.js` + 前端 `front/plugin.js`），配合三份清单（`modules/modules.json`、`server/plugins.json`、`web/front.json`）生效；新增功能无需改动共享代码
 
-2. 比赛开始前，测试一遍所有功能，确保系统正常工作
+- **数据**：`resource/` 是全部运行数据所在，`resource/musics/` 下的各组目录即各曲库；首次运行由程序自动创建
 
-3. 不要在比赛过程中清除浏览器数据，否则可能丢失一部分记录
+- **自动生成的文件**（无需手动管理）：`server/cordis/kernel.cjs`（cordis 内核，`npm run build:kernel`）、`web/dist/kernel.js`（前端内核，`npm run build:web`）、`YStage3-Portable/`（打包产物）、`resource/sqlite/`（数据库）；均在 `.gitignore` 中
 
-4. 比赛结束后，及时备份所有数据文件
+- **构建脚本**：开发者修改代码后运行 `npm run build` → `node scripts/make-portable.js`（或直接 `build.bat`）即可重新出包
 
-⚠️ ​**​ 重要提示 ​**​：在进行大改动前，建议先备份整个 Y.Stage3 文件夹，以防数据丢失！
+***
 
-## 八、系统特点
+## 技术架构
 
-1. 所有数据都保存在本地文件中，便于备份和恢复
+### 整体结构
 
-2. 系统界面美观易用，适合各类比赛场景
+服务端为**无框架的 Node 原生 http + 自研 y-router**（`server/http/`），入口 `server.js`；所有功能模块由 **cordis 插件内核**（`server/cordis/`）装配，启停/热重载即时生效：
 
-3. 启动后会显示"数据库初始化成功"的提示，这表示一切正常
+- `server/http/`：y-router 路由器（路由表项运行时增删，插件卸载即物理移除其路由）+ Express 风格兼容垫片（`(req, res, next)` 中间件生态沿用：cors / body-parser / multer）
 
-4. 界面采用模块化设计，容易理解和操作
+- `server/cordis/`：cordis@4.0.0-rc.9 插件内核（esbuild 打包为 CJS 内核），loader 按 `server/plugins.json` 装配各模块插件；`ctx.server / ctx.db / ctx.modules` 为内置服务
 
-5. 每个赛制/功能为独立页面，新增功能只需添加 HTML+JS+CSS 文件，即插即用
+- `server/paths.cjs`：路径解析中枢，开发模式与便携模式（`Y_STAGE_PLUGINS_DIR` / `Y_STAGE_RESOURCE_DIR` 环境变量）共用一套代码
 
-6. 系统由 AI（Copilot / CodeBuddy）与 Himetuki_Yukari 共同开发，代码结构清晰，方便维护
+- `server/sqlite-store.js`：SQLite 文档存储引擎（sql.js WASM），对外暴露与 lowdb 兼容的读写接口
 
-⚠️ ​**​ 注意 ​**​：系统需要在本地运行，不支持远程访问。如果尝试从其他电脑访问，可能会导致数据无法保存。
+- `server/database.js`：`dbManager`，统一管理全部业务数据库，落盘 `resource/sqlite/y-stage.sqlite`
 
-## 九、联系方式
+- `server/music-scanner.js`：启动时扫描 `resource/musics/` 并更新音乐列表
 
-如有问题或建议，请联系 2025 Y.Stage-X YUKAORI：
+- `server/routes/`：共享路由分层（模块页面 `/m/:id`、共享 API、静态资源）
 
-👤 QQ: 3664518772
+- 前端：每页加载 `/web/kernel.js`（cordis 浏览器内核 + `ctx.ui/api/state` 服务），页面内容由该模块的前端插件装配进 `#plugin-root`；`web/front.json` 控制前端插件启停（禁用的插件代码不下载）
 
-🌐 WOTA 艺 wiki: https://wotagei.huijiwiki.com/
+### 模块化设计
 
-​**​ 更新时间 ​**​：2026 年 7 月 10 日
+每个功能 = `modules/` 下的**一对插件**，称为一个"模块"：
 
----
+```
+modules/<模块id>/
+├── plugin.js           # 后端插件（CJS）
+│                       #   ctx.db.define([...])                      数据库定义
+│                       #   ctx.server.route((app, {dbManager,...})=>{}) 路由
+│                       #   ctx.modules.registerPage({...})            页面元数据
+├── index.html          # 页面：静态骨架 + #plugin-root + /web/kernel.js
+├── style.css
+└── front/              # 前端插件（原生 ESM，不经打包直接加载）
+    ├── plugin.js       #   ctx.ui.register({ key, component })
+    └── view*.js        #   组件实现（事件监听传 { signal }，组件返回 cleanup）
+```
 
-祝您使用愉快！来自 team 异度沸腾【姬月由佳莉/姫月ユカリ】
+- 模块元数据声明在后端插件的 `registerPage`（与 `modules/modules.json` 条目逐字段一致）；`nav` 字段决定模块出现在哪个导航页（`index` / `select` / `games`）；导航由 `GET /api/modules` 动态渲染，新增模块无需改动共享代码
+
+- 三份装配清单（`modules/modules.json` + `server/plugins.json` + `web/front.json`）是模块生效的唯一依据；`enabled:false` 即不挂载——后端路由与页面 404、前端代码不下载，SQLite 数据保留
+
+- 模块后端路由被注入共享设施（`dbManager`、`serverLog`、`dataDir`），接口前缀建议包含模块 id（如 `/api/drag-...`），避免模块间冲突
+
+- 页面地址统一为 `/m/<id>/`（唯一例外：`/` 与 `/m/home/` 同为首页）
+
+- 生成脚手架：`node scripts/new-module.js my-feature "我的功能" [--server]`（自动追加三份清单条目）
+
+- 插件管理页 `/m/plugin-manager/`（本身也是插件）：启停后端插件（即时热重载，请求排空保证在途请求安全完成）、编辑 config、前端插件开关（刷新后生效）
+
+### 数据存储
+
+- 业务数据保存在 **SQLite**：`resource/sqlite/y-stage.sqlite`（由 sql.js WASM 读写，服务端自动管理，无需安装数据库）
+
+- `resource/json/` 仅存放纯数据文件（如音乐列表快照），`resource/musics/` 存放音乐文件（启动时自动扫描生成索引）
+
+- 前端保存采用"本地 + 服务器"双写，单次请求失败也有兜底
+
+### 运行机制细节
+
+- **端口自动回退**：3000 被占用时自动尝试 3001、3002……（最多 10 次），实际端口打印在控制台
+
+- **路径解码**：静态资源路由对请求路径做百分号解码，支持中文/日文文件名（如音乐文件）
+
+- **音频分片**：支持 HTTP Range 分片响应，可流式播放与拖动进度
+
+- **keep-alive 调优**：空闲超时调至 65 秒，避免页面长时间无操作后的保存请求被中止
+
+- **API 相对路径**：前端统一使用 `/api/...`、`/resource/...`，部署到任意端口或环境无需修改代码
+
+- **请求排空**：热重载插件时先停止接收该插件的新请求（短暂 503，带 Retry-After），等在途请求全部完成后才切换；比赛进行中的保存不会因热重载丢失
+
+### 打包与发布
+
+- **便携式打包**（bundle 形态，唯一分发形态）：`node scripts/make-portable.js`（`build.bat` = `npm run build` + 此脚本 `--zip`）组装 `YStage3-Portable/`——`node/`（复制构建机 Node 运行时）、`app/`（esbuild 单文件 `server.bundle.cjs` 含全部生产依赖 + 外置 `sql-wasm.wasm` + `web/` 整树静态（含 `icons.mjs` 等共享资产），**无 node_modules**）、`plugins/`（plugins.json / front.json / 全部模块代码，**可写、可热替换**）、`resource/`（现状数据）；目录内附 `说明.txt`；`--loose` 可产出源码调试形态
+
+- 插件路径经 `Y_STAGE_PLUGINS_DIR`、数据路径经 `Y_STAGE_RESOURCE_DIR`、app 根经 `Y_STAGE_APP_ROOT` 环境变量注入：插件层与应用层分离，**清单与 config 的改动即时落盘、重启保持**；bundle 形态下外置插件参与真实模块缓存，管理页热重载改盘即生效
+
+- 插件热替换：改 `plugins/` 下的文件 → `/m/plugin-manager/` 对该插件热重载（改盘即生效，无需重启）；新模块在 `plugins/plugins.json` 追加条目后重启
+
+- GitHub Actions（`.github/workflows/package.yml`）：推送 `v*` 标签或手动触发即可自动构建，产出 `YStage3-Portable.zip` 工件并随 Release 发布
+
+### 说明
+
+- 前端统一使用 origin 相对路径（`/api/...`、`/resource/...`），未在代码中写死端口
+
+- 音频走 HTTP Range 分片，支持流式播放与进度拖动
+
+- 许可证：**AGPL-3.0**（详见 LICENSE；核心义务：若将修改后的版本作为网络服务提供，须向使用该服务的用户提供源码）
+
+- 第三方资产：内置图标来自 **Tabler Icons**（MIT），来源、版本与许可全文见 `THIRD-PARTY-NOTICES.md`
+
+***
+
+## 常见问题
+
+**问：双击 `启动YStage.bat` 后没有自动打开浏览器？**
+答：手动访问终端里打印的地址（默认 <http://localhost:3000）。窗口是服务进程，关闭即停止服务。>
+
+**问：没有** **`resource/`** **文件夹，程序能运行吗？**
+答：能。首次运行会自动创建 `resource/` 及所需子目录，之后在网页界面导入选手、技能、音乐即可开始使用。
+
+**问：报"端口被占用"怎么办？**
+答：程序会自动改用下一空闲端口并在终端打印新地址，直接访问新地址即可。若连续多个端口均被占用，请关闭部分占用端口的程序后重试。
+
+**问：数据存在哪里？如何备份？**
+答：全部在 `resource/` 目录（SQLite 在 `resource/sqlite/`，音乐在 `resource/musics/`）。比赛前复制整个 `resource/` 文件夹即为完整备份。**重要比赛前请备份，并在备用电脑上跑一遍** **`t`** **自检。**
+
+**问：音乐无法播放？**
+答：将音乐放入 `resource/musics/` 对应组别目录（`1yearplus`、`1yearminus`、`1yearplus_ex`、`games_musics` 等），再到"音乐导入"页面导入，最后刷新页面。文件名建议避免特殊字符，格式建议 mp3 / wav。
+
+**问：如何新增功能模块？**
+答：运行 `node scripts/new-module.js <id> "名称"` 生成一对插件脚手架并自动追加三份清单条目；目录约定与插件规范详见 `AGENTS.md`。
+
+**问：某个功能页面 404 了？**
+答：可能该插件被停用了。到 `/m/plugin-manager/` 查看状态并重新启用即可；停用不影响已保存的数据。
+
+**问：可以部署到公网远程使用吗？**
+答：不建议。系统面向本地比赛现场设计，远程访问可能导致数据保存异常，请仅在现场局域网使用。
+
+***
+
+## 联系方式
+
+问题或建议请联系 2025 Y.Stage-X YUKAORI：
+
+- QQ: 3664518772
+
+- WOTA 艺 wiki: <https://wotagei.huijiwiki.com/>
+
+> 如果遇到问题，请先备份 `resource/` 文件夹，再与我们联系。祝比赛顺利，享受音乐和荧光棒。
+
+来自 team 异度沸腾【姬月由佳莉 / 姫月ユカリ】

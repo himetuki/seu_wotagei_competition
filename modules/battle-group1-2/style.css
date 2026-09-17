@@ -301,23 +301,29 @@ section {
   position: relative;
 }
 
-.bracket-player.winner::after {
-  content: "✓";
-  position: absolute;
-  right: 8px;
-  color: #9aff9a;
-}
-
+/* 状态图标：原 ::after 文本符号（对勾/叉号）改为真实内联 SVG 节点，
+   由 createMatchCard 在判定 winner/loser 后注入 .bracket-mark */
 .bracket-player.loser {
   text-decoration: line-through;
   opacity: 0.6;
   position: relative;
 }
 
+.bracket-player.winner::after,
 .bracket-player.loser::after {
-  content: "✗";
+  content: none;
+}
+
+.bracket-mark {
   position: absolute;
   right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  /* 颜色继承 .bracket-player.winner / .loser 的 color（currentColor） */
+}
+
+.bracket-player.loser .bracket-mark {
   color: #ff6464;
 }
 
@@ -541,13 +547,27 @@ button:active {
   text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
 }
 
+/* 胜者奖杯：原 ::before emoji 改为真实内联 SVG（.winner-badge），显隐由 .winner 类驱动 */
 .winner::before {
-  content: "🏆";
+  content: none;
+}
+
+.winner-badge {
+  display: none;
   position: absolute;
   top: -20px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 24px;
+  pointer-events: none;
+  /* 颜色继承 .winner 的 color（currentColor），不写死 */
+}
+
+.winner .winner-badge {
+  display: block;
+}
+
+.winner .winner-badge .y-icon {
+  display: block;
   animation: winner-scale 1.5s infinite;
 }
 
@@ -571,6 +591,11 @@ button:active {
   z-index: 1000;
   animation: winner-announcement 1s forwards;
   box-shadow: 0 0 30px rgba(255, 215, 0, 0.7);
+}
+
+/* 冠军横幅内联奖杯图标：与 36px 文字基线对齐 */
+.winner-announcement .y-icon {
+  vertical-align: -0.15em;
 }
 
 /* 最终获胜者公告增强样式 */

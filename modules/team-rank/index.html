@@ -4,12 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>团体赛最终排名</title>
+  <link rel="preload" as="image" href="/resource/images/bg.jpg" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>🏆 团体赛最终排名 🏆</h1>
+      <h1><span class="title-icon" data-icon="trophy"></span>团体赛最终排名<span class="title-icon" data-icon="trophy"></span></h1>
     </header>
 
     <section id="rank-display">
@@ -23,6 +24,8 @@
     <footer><p>&copy; 2025 Y.Stage-X YUKAORI</p></footer>
   </div>
 
-  <script src="team_rank.js"></script>
+  <!-- 前端插件挂载点（team-rank 页面 UI 绑定既有静态骨架，此节点仅作 kernel 装配锚点） -->
+  <div id="plugin-root" hidden></div>
+  <script type="module" src="/web/kernel.js"></script>
 </body>
 </html>

@@ -2,9 +2,13 @@
 
 ## 0. 项目概述
 
-WOTA艺（荧光棒舞蹈）对战平台。基于 **HTML + CSS + JS + Node.js(Express) + SQLite(sql.js)** 的多页面应用 (MPA)。
+WOTA艺（荧光棒舞蹈）对战平台。基于 **Node.js（内置 http + 自研 y-router）+ cordis 插件内核 + SQLite(sql.js)** 的多页面应用 (MPA)，无 Express 依赖（自研路由提供 Express 同面注册 API，(req,res,next) 风格中间件经兼容垫片沿用）。
 
-**核心原则：每个新功能 = 独立的 HTML 文件 + 对应的复数 JS 模块 + 对应的 CSS 文件，即插即用。**
+**核心原则：万物皆插件。每个功能模块 = 一对插件（后端 `modules/<id>/plugin.js` + 前端 `modules/<id>/front/plugin.js`）+ 三份清单条目，独立页面形态不变（`/m/<id>/` 即开即用），双端同核（后端内核装配 HTTP/数据库/元数据，前端内核装配页面 UI）。**
+
+- **后端**：Node 内置 http + y-router（`server/http/`），路由表项运行时增删（插件启停 = 路由物理热插拔）；插件内核 cordis@4.0.0-rc.9（精确锁定），装配清单 `server/plugins.json`。
+- **前端**：每页一个内核标签 `<script type="module" src="/web/kernel.js">`，装配清单 `web/front.json`，页面 UI 由各模块的 `front/plugin.js` 组件装配进 `#plugin-root`。
+- **导航/管理**：导航页按钮由 `GET /api/modules` 动态渲染；`/m/plugin-manager/` 提供插件启停/config 编辑/热重载。
 
 ---
 
@@ -12,341 +16,79 @@ WOTA艺（荧光棒舞蹈）对战平台。基于 **HTML + CSS + JS + Node.js(Ex
 
 ```
 Y.Stage3/
-├── modules/                    # ★ 模块化核心：一个功能模块 = 一个自包含文件夹
-│   ├── modules.json            # 模块注册清单（单一事实来源，服务端自动加载）
-│   ├── _template/              # 新模块脚手架模板（含注释）
-│   ├── <模块id>/               # 如 home / select / drag / group-battle ...
-│   │   ├── module.json         # 模块元信息（id/name/nav/order）
-│   │   ├── index.html          # 页面（相对引用同目录资源）
-│   │   ├── style.css
-│   │   ├── app.js              #（可拆多个：main/data/battle/... 按既有约定）
-│   │   └── server/             # 可选：模块后端
-│   │       ├── routes.js       # 可选：Express 路由（app 为参）
-│   │       └── db.js           # 可选：数据库定义（存为 SQLite docs 文档）
+├── modules/                    # ★ 功能模块 = 一对插件 + 页面资产
+│   ├── modules.json            # 页面元数据清单（19 条，单一显示名单来源）
+│   ├── _template/              # 旧脚手架模板（仅历史参考；新模块用 scripts/new-module.js 生成）
+│   └── <模块id>/               # 如 home / select / drag / plugin-manager ...
+│       ├── plugin.js           # 后端插件（CJS）：db.define + server.route + modules.registerPage
+│       ├── index.html          # 页面：静态骨架 DOM + #plugin-root + /web/kernel.js 内核标签
+│       ├── style.css
+│       ├── front/
+│       │   ├── plugin.js       # 前端插件（原生 ESM，不打包）：ctx.ui.register({ key, component })
+│       │   └── view*.js        # 组件实现（可拆多文件，同目录相对 import）
+├── web/
+│   ├── kernel.mjs              # 前端内核入口（esbuild → dist/kernel.js，浏览器 ESM bundle）
+│   ├── ui.mjs / api.mjs / state.mjs / loader.mjs   # 内置服务 + 装配清单纯逻辑（含 *.test.js）
+│   ├── icons.mjs               # ★ 共享图标基座（Tabler 内联 SVG 子集；icon/iconEl/ICON_NAMES，含 icons.test.js）
+│   ├── front.json              # ★ 前端装配清单（{ provider, plugins: [{ target, enabled }] }）
+│   └── dist/kernel.js          # 构建产物（gitignored，npm run build:web 生成）
+├── server/
+│   ├── plugins.json            # ★ 后端装配清单（{ provider, plugins: [{ target, enabled, config?, provides? }] }）
+│   ├── http/                   # y-router HTTP 层（无 Express）
+│   │   ├── index.js            # createApp()：listen 返回真 http.Server
+│   │   ├── router.js           # 路由匹配 + per-plugin scope（createScope/removeScope 物理热插拔）
+│   │   ├── shim.js             # req/res Express 兼容垫片（cors/body-parser/multer 沿用）
+│   │   ├── static.js           # 静态服务（含 /web/kernel.js → web/dist/kernel.js 别名）
+│   │   └── express-compat.js
+│   ├── cordis/                 # 插件内核（cordis@4.0.0-rc.9，精确锁定）
+│   │   ├── create-root.cjs     # 后端 root 打包入口（esbuild → kernel.cjs）
+│   │   ├── kernel.cjs          # 构建产物（gitignored，npm run build:kernel 生成）
+│   │   ├── loader.js           # 装配器：读 plugins.json → 分类 → 顺序挂载 + assembly 服务
+│   │   ├── selfcheck.cjs       # 装配自检 A1-A6（node server.js --test-cordis）
+│   │   └── services/           # 内置服务 ctx.server / ctx.db / ctx.modules（含 *.test.js）
+│   ├── database.js             # dbManager + SQLite 文档存储（落盘 resource/sqlite/y-stage.sqlite）
+│   ├── sqlite-store.js         # SQLite 存储引擎 + lowdb 兼容适配层
+│   ├── module-loader.js        # modules.json 清单读取器 + 投影器（供 module-registry 兜底源与 selfcheck A3）
+│   ├── module-registry.cjs     # /api/modules 元数据源开关（插件模式指向 ctx.modules）
+│   ├── paths.cjs               # ★ 路径解析中枢（dev/portable 双模式；env 覆盖 plugins/resource 层）
+│   ├── music-scanner.js        # 音乐文件扫描
+│   ├── run-unit-tests.js       # 单测统一入口（10 个 *.test.js 子进程运行）
+│   └── routes/                 # 共享路由（api / game / config / static / music / module-routes ...）
+├── scripts/
+│   ├── new-module.js           # ★ 模块脚手架（生成一对插件骨架 + 追加三份清单）
+│   ├── endpoint-diff.js        # HTTP 行为基线录制/回放（--record / --compare）
+│   ├── make-portable.js        # ★ 便携式打包（默认 bundle 形态；--loose 源码形态；--zip 出压缩包）
+│   └── endpoint-baseline.json  # 基线快照
 ├── resource/
 │   ├── json/                   # 纯数据文件（选手、音乐列表快照等；非数据库）
-│   ├── sqlite/                 # ★ SQLite 数据库文件（y-stage.sqlite，业务数据落盘处）
+│   ├── sqlite/                 # SQLite 数据库（y-stage.sqlite，业务数据落盘处，运行时生成）
 │   ├── images/                 # 背景图等静态资源
 │   └── musics/                 # 音乐库（扫描后自动生成 musics_list*.json 数据文件）
-├── server/
-│   ├── server.js               # Express 主入口
-│   ├── module-loader.js        # 模块加载器（读 modules.json、注册模块路由/数据库）
-│   ├── sqlite-store.js         # SQLite 文档存储引擎 + lowdb 兼容适配层
-│   ├── database.js             # 数据库定义与管理器（dbManager，落盘 SQLite）
-│   ├── music-scanner.js        # 音乐文件扫描
-│   └── routes/
-│       ├── index.js            # 路由集成（含模块路由）
-│       ├── module-routes.js    # /api/modules 清单 + /m/:id 页面服务
-│       └── ...                 # 共享路由（api/game/config/static...），随迁移瘦身
-├── scripts/
-│   └── new-module.js           # 模块脚手架：node scripts/new-module.js <id> "<名称>" [--server]
-├── node_modules/
-├── package.json
 ├── server.js                   # 服务端主入口
-├── build-inline.js             # 构建辅助：静态资源 + 模块 server 注册表内联
-├── build.bat                   # 构建脚本（exe）
-├── install-deps.bat            # 依赖安装脚本
-└── .gitignore
+├── dist-server/                # 构建产物（gitignored，npm run build:server 生成的服务端 bundle）
+├── build.bat                   # 一键打包：build:kernel → build:web → build:server → make-portable → YStage3-Portable/（+zip）
+└── package.json
 ```
 
 ---
 
-## 2. 添加新模式 / 新功能的完整步骤
+## 2. 历史：旧 MPA 平铺方案（已废弃）
 
-> ⚠ 新功能请优先使用第 6 章**模块化方案**（modules/ 自包含文件夹，零改共享文件）。
-> 本章为早期 MPA 页面方案（html/css/js 平铺），模块化改造后仅作历史参考：页面应放 modules/<id>/ 内，资源用同目录相对路径，共享资源用 /resource/ 绝对路径。
+早期方案是 `html/ css/ js/` 平铺多页面 + Express（模块经 `server/routes.js + server/db.js` 注册）。全面插件化改造后这些目录与单体备份文件（`drag.js`、`group_battle.js` 等）均已删除，legacy 跳转机制已移除。
 
-### 2.1 创建 HTML 页面
-
-在 `html/` 下新建 `新功能名.html`。
-
-标准 HTML 骨架：
-
-```html
-<!doctype html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>新功能名称</title>
-    <link rel="stylesheet" href="../css/新功能.css" />
-  </head>
-  <body>
-    <!-- 错误状态条 -->
-    <div id="error-bar" class="error-bar hidden">
-      <span id="error-msg"></span>
-    </div>
-
-    <div class="app-wrapper">
-      <!-- 顶部控制栏 -->
-      <header class="control-bar">
-        <h1>新功能名称</h1>
-        <div class="header-right">
-          <!-- 选手组切换按钮（如需） -->
-          <div class="source-switch">
-            <button id="switch-player1-btn" class="source-btn active">加组</button>
-            <button id="switch-player2-btn" class="source-btn">内组</button>
-          </div>
-          <!-- 曲库切换 -->
-          <div class="source-switch">
-            <button id="switch-music-old-btn" class="source-btn active">1year+</button>
-            <button id="switch-music-new-btn" class="source-btn">1year-</button>
-            <button id="switch-music-ex-btn" class="source-btn">1year+EX</button>
-          </div>
-          <span class="round-label" id="round-label">第1轮</span>
-          <button id="shuffle-btn" class="ctrl-btn">随机</button>
-          <button id="reset-game-btn" class="ctrl-btn">重置</button>
-          <button id="setting-btn" class="ctrl-btn">设置</button>
-          <button id="home-btn" class="ctrl-btn">主页</button>
-        </div>
-      </header>
-
-      <!-- 主内容区域（根据功能自定义） -->
-      <div id="main-area" class="main-area">
-        <!-- 你的核心 UI 在这里 -->
-      </div>
-
-      <!-- 音乐控制栏 -->
-      <div class="music-bar">
-        <div class="music-info">
-          <span class="music-label">当前音乐</span>
-          <span id="music-display" class="music-display">—</span>
-        </div>
-        <div class="music-actions">
-          <button id="draw-music-btn" class="draw-music-btn">抽取音乐</button>
-          <button id="start-battle-btn" class="start-battle-btn" disabled>开始比赛</button>
-        </div>
-      </div>
-
-      <!-- 底部状态栏 -->
-      <footer class="status-bar">
-        <span id="status-hint">就绪</span>
-      </footer>
-    </div>
-
-    <!-- 隐藏音乐播放器 -->
-    <audio id="music-player" preload="none"></audio>
-
-    <!-- JS 模块（按依赖顺序加载） -->
-    <script src="../js/新功能_main.js"></script>
-    <script src="../js/新功能_data.js"></script>
-    <script src="../js/新功能_battle.js"></script>
-    <script src="../js/新功能_render.js"></script>
-    <script src="../js/新功能_persist.js"></script>
-  </body>
-</html>
-```
-
-### 2.2 创建 JS 模块（模块化拆分方案）
-
-按功能拆分为多个文件，**按依赖顺序**在 HTML 中加载：
-
-| 加载顺序 | 文件命名 | 职责 |
-|----------|----------|------|
-| 1 | `xxx_main.js` | 全局 State 定义、DOM 缓存、`DOMContentLoaded` 初始化、事件绑定、工具函数 |
-| 2 | `xxx_data.js` | 加载选手/数据（fetch JSON）、加载音乐列表、加载设置 |
-| 3 | `xxx_battle.js` | 核心比赛/游戏逻辑、音乐抽取、比赛模式（battle mode） |
-| 4 | `xxx_render.js` | 所有 DOM 渲染函数、状态更新 |
-| 5 | `xxx_persist.js` | 撤销(undo)、重置(reset)、localStorage 存取、server API 同步 |
-
-**简单功能**可以合并为单文件。复杂功能（如团体赛）可进一步拆分为 `_match.js`（匹配）、`_drag.js`（拖拽）等。
-
-**如果有共用逻辑**，提取到独立文件（参考 `gb_common.js`），在需要它的 HTML 中优先加载。
-
-#### State 定义模板
-
-```js
-const State = {
-  playerSource: "player1",       // 选手来源
-  allPlayers: [],                // 所有选手
-  music: {
-    oldList: [], newList: [], exList: [],
-    current: null,
-  },
-  musicSource: "old",            // 当前曲库
-  battleKeepBg: true,            // 比赛模式保留背景
-  phase: "playing",              // "playing" | "complete"
-  undoStack: [],                 // 撤销栈
-  // 你的自定义状态
-};
-```
-
-#### 初始化模板
-
-```js
-document.addEventListener("DOMContentLoaded", () => {
-  // 1. 加载设置
-  const keepBg = localStorage.getItem("xxxBattleKeepBg");
-  if (keepBg !== null) State.battleKeepBg = keepBg !== "false";
-
-  // 2. 绑定事件
-  document.getElementById("shuffle-btn").addEventListener("click", shufflePlayers);
-  document.getElementById("reset-game-btn").addEventListener("click", handleReset);
-  document.getElementById("home-btn").addEventListener("click",
-    () => { window.location.href = "../html/index.html"; });
-  document.getElementById("setting-btn").addEventListener("click",
-    () => { window.location.href = "../html/setting.html"; });
-  document.getElementById("draw-music-btn").addEventListener("click", drawMusic);
-  document.getElementById("start-battle-btn").addEventListener("click", startBattle);
-
-  // 3. 加载数据 → 尝试恢复存档 → 渲染
-  Promise.all([loadPlayers(), loadMusic()])
-    .then(() => {
-      loadLocalState();   // 尝试从 localStorage 恢复
-      if (State.nodes.length === 0) initNewGame();
-      renderAll();
-    });
-});
-```
-
-### 2.3 创建 CSS 文件
-
-在 `css/` 下新建 `新功能.css`。参考现有的 `drag.css` 或 `group_battle.css`，核心样式：
-
-- `body`: 背景图 (`background-image: url("../resource/images/bg.jpg")`)
-- `.control-bar` / `.header-right` / `.ctrl-btn`: 顶部控制栏
-- `.music-bar` / `.draw-music-btn` / `.start-battle-btn`: 音乐控制栏
-- `.status-bar`: 底部状态提示
-- `body.battle-mode .app-wrapper { display: none !important; }`: 比赛模式隐藏 UI
-- 响应式 `@media (max-width: 900px)`
-
-### 2.4 注册导航入口（三个页面都需要）
-
-根据用户目标，在以下三个页面中添加进入新功能的按钮：
-
-#### select.html（赛制选择页）
-
-在 `html/select.html` 中添加按钮：
-
-```html
-<button class="nav-btn 新功能-btn">新功能名称</button>
-```
-
-在 `js/select.js` 中添加跳转逻辑：
-
-```js
-document.querySelector(".新功能-btn").addEventListener("click", () => {
-  window.location.href = "../html/新功能.html";
-});
-```
-
-#### index.html（主页）
-
-在 `html/index.html` 中添加按钮：
-
-```html
-<button class="feature-btn" onclick="location.href='html/新功能.html'">新功能名称</button>
-```
-
-或参照 `js/index.js` 的现有模式添加事件监听。
-
-#### setting.html（设置页）
-
-如果是全局功能（跨赛制），在 `html/setting.html` 中添加入口按钮，并在 `js/set-core.js` 绑定跳转。
-
-**注意**：三个页面的导航按钮**不是全部必须添加**，根据功能性质判断：
-- 赛制类 → `select.html`
-- 工具/辅助类 → `index.html` 或 `setting.html`
-- 全局通用 → 三个都加
-
-### 2.5 添加设置项（如需）
-
-在 `html/setting.html` 中添加对应的设置控件，使用 `localStorage` 存储，key 命名规则为 `功能前缀+设置名`，如 `dragTotalCount`、`dragDoubleElim`。
-
-在 `js/set-core.js` 中添加 DOM 绑定、事件监听、初始化读取。
-
-### 2.6 添加 Server API（如需持久化）
-
-在 `server/database.js` 中注册新数据库：
-
-```js
-{ name: "新功能-process",  defaultValue: { phase: "idle", ... } },
-{ name: "新功能-settings", defaultValue: { totalCount: 8 } },
-```
-
-在 `server/routes/game-routes.js` 中添加路由：
-
-```js
-// ========== 新功能 ==========
-app.post("/api/新功能-process", (req, res) => {
-  getDB("新功能-process").setState({ ...req.body, lastUpdate: new Date().toISOString() }).write();
-  res.status(200).send("保存成功");
-});
-
-app.get("/api/新功能-process", (req, res) => {
-  res.json(getDB("新功能-process").getState());
-});
-
-app.post("/api/clear-新功能-process", (req, res) => {
-  getDB("新功能-process").setState({ phase: "idle", ... }).write();
-  res.status(200).send("清除成功");
-});
-
-app.get("/api/新功能-settings", (req, res) => {
-  res.json(getDB("新功能-settings").getState());
-});
-
-app.post("/api/新功能-settings", (req, res) => {
-  getDB("新功能-settings").setState({ ...req.body }).write();
-  res.status(200).send("保存成功");
-});
-```
-
-前端 JS 中使用：
-
-```js
-const API_URL = "http://localhost:3000/api/新功能-process";
-const API_CLEAR_URL = "http://localhost:3000/api/clear-新功能-process";
-
-function getPersisted() { /* 返回 State 的可序列化子集 */ }
-
-function saveState() {
-  const data = getPersisted();
-  localStorage.setItem("新功能State", JSON.stringify(data));
-  fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...data, lastUpdate: new Date().toISOString() }),
-  }).catch(() => {});
-}
-
-function loadLocalState() {
-  const raw = localStorage.getItem("新功能State");
-  if (raw) restoreState(JSON.parse(raw));
-}
-
-function loadStateFromServer() {
-  return fetch(API_URL)
-    .then(r => r.json())
-    .then(data => {
-      if (data && data.nodes && data.nodes.length > 0) {
-        restoreState(data);
-        return true;
-      }
-      return false;
-    }).catch(() => false);
-}
-```
-
-### 2.7 数据文件
-
-如需加载静态数据（选手列表、音乐列表等），将 JSON 文件放在 `resource/json/` 下：
-
-- `player1.json` / `player2.json` — 选手名单（格式: `[{ "name": "选手名" }]`）
-- `musics_list.json` / `musics_list_2.json` / `musics_list_ex.json` — 音乐列表
+**新功能一律按第 6 章插件契约开发**；旧约定中仍然有效的部分（State 模板、持久化双写、undo 快照栈、音乐抽取与比赛模式）保留在第 3 章——它们现在是前端插件组件内部的实现约定。
 
 ---
 
-## 3. 通用功能实现参考
+## 3. 通用功能实现参考（前端插件内的实现约定）
 
 ### 3.1 音乐随机抽取 + 比赛模式
 
-所有赛制页面都需要这两个功能，参考 `drag_music.js` 或 `group_battle_battle.js`：
+所有赛制类模块的组件内实现这两个功能，参考 `modules/drag/front/view.js` 或 `modules/moving-sth/front/game.js`：
 
 ```js
 let musicRolling = null;
 let lastDrawnMusic = null;
-let lastDrawnMusicSource = null;
 let battleActive = false;
 
 function drawMusic() {
@@ -364,128 +106,344 @@ function exitBattle() {
   // 移除 battle-mode → 恢复 UI
 }
 
-// 双击退出比赛
+// 双击退出比赛（监听记得传 { signal }，cleanup 里统一解绑）
 document.addEventListener("dblclick", (e) => {
   if (battleActive) exitBattle();
-});
+}, { signal });
 ```
 
-### 3.2 持久化模式
+比赛模式隐藏 UI 的样式约定：`body.battle-mode .app-wrapper { display: none !important; }`。
 
-**保存**：每次操作后调用 `saveState()`
+### 3.2 持久化模式（双写：localStorage + server API）
 
-**恢复**：页面加载时 `loadStateFromServer()` → 失败则 `loadLocalState()` → 都没有则 `initNewGame()`
+**保存**：每次操作后调用 `saveState()`（localStorage + `POST /api/<模块前缀>-process` 双写）。
+**恢复**：组件初始化时 `loadStateFromServer()` → 失败则 `loadLocalState()` → 都没有则 `initNewGame()`。
+**重置**：`handleReset()` 清除 localStorage + 调用 clear API + 重建初始状态。
 
-**重置**：`handleReset()` 清除 localStorage + 调用 server clear API + 重建初始状态
+```js
+const API_URL = "/api/<模块前缀>-process";        // origin 相对路径，勿写死 host
+const API_CLEAR_URL = "/api/clear-<模块前缀>-process";
 
-### 3.3 撤销 (Undo)
+function saveState() {
+  const data = getPersisted(); // 返回 State 的可序列化子集
+  localStorage.setItem("<模块前缀>State", JSON.stringify(data));
+  fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...data, lastUpdate: new Date().toISOString() }),
+  }).catch(() => {});
+}
+```
+
+组件内也可用内核服务 `ctx.api.get/post/del`（自动 JSON 序列化、非 2xx 抛错带 status）。
+
+### 3.3 State 定义模板
+
+```js
+const State = {
+  playerSource: "player1",       // 选手来源
+  allPlayers: [],                // 所有选手
+  music: { oldList: [], newList: [], exList: [], current: null },
+  musicSource: "old",            // 当前曲库
+  battleKeepBg: true,            // 比赛模式保留背景
+  phase: "playing",              // "playing" | "complete"
+  undoStack: [],                 // 撤销栈
+  // 你的自定义状态
+};
+```
+
+初始化时序（组件体内执行，替代旧 `DOMContentLoaded`）：加载设置 → 绑定事件（`{ signal }`）→ `Promise.all([loadPlayers(), loadMusic()])` → 尝试恢复存档 → 渲染。
+
+### 3.4 撤销 (Undo)
 
 在每次改变状态前 push 快照到 `State.undoStack`，双击已操作的元素触发回滚。
 
 ---
 
-## 4. 命名约定
-
-> 新模块结构命名：模块目录 `modules/<模块id>/`（id 用小写+连字符），页面文件统一 `index.html` / `style.css` / `app.js`（可拆分 `xxx_main/data/battle/render/persist.js`）。下表为模块内代码/资源的通用命名规则：
+## 4. 命名约定与图标规范
 
 | 类别 | 规则 | 示例 |
 |------|------|------|
-| HTML 文件 | 小写+下划线 | `group_battle.html` |
-| CSS 文件 | 与 HTML 同名 | `group_battle.css` |
-| JS 模块 | `{功能前缀}_{模块职责}.js` | `group_battle_render.js` |
-| JS 单体备份 | 与 HTML 同名 | `drag.js`（完整版，不加载，仅备份） |
+| 模块目录 | 小写+连字符 | `modules/music-draw/` |
+| 后端插件 | 固定名 `plugin.js`（CJS） | `modules/drag/plugin.js` |
+| 前端插件 | 固定名 `front/plugin.js`（原生 ESM） | `modules/drag/front/plugin.js` |
+| 前端组件 | `front/view*.js`（可拆多文件，同目录相对 import） | `modules/drag/front/view.js` |
 | localStorage key | 功能+描述 | `dragBattleState2_player1` |
 | API 端点 | `/api/{功能前缀}-{资源}` | `/api/drag-process` |
-| 数据库名 | 与 API 对应 | `drag-process` |
+| 数据库名 | 与 API 对应（模块前缀） | `drag-process` |
 | CSS class | 小写+连字符 | `.node-box`, `.state-pending` |
 | HTML id | 小写+连字符 | `draw-music-btn` |
 | JS 变量/函数 | camelCase | `drawMusic`, `State.allPlayers` |
+| 清单条目 target | `modules/<模块id>` | `modules/music-draw` |
+| 图标名 | 小写+连字符，必须是 `ICON_NAMES` 成员 | `home`, `device-gamepad-2` |
+
+### 4.1 图标规范（唯一来源 `web/icons.mjs`）
+
+全项目 UI 图标统一由 `web/icons.mjs` 提供：Tabler Icons 的**本地内置子集**（MIT，运行期零依赖、无 CDN、无网络请求，离线局域网可用），许可见根目录 `THIRD-PARTY-NOTICES.md`。
+
+```js
+import { icon, iconEl, ICON_NAMES } from "/web/icons.mjs";
+// icon(name, { size = 20, class, stroke = 1.75, label })  → SVG 字符串；未知名字返回 ""
+// iconEl(name, opts)                                      → 真实 SVGElement；无 DOM 环境或未知名字返回 null
+// ICON_NAMES                                              → 已内置图标名（冻结数组，当前 61 枚，字典序）
+```
+
+```js
+// ① 装饰性图标（旁边有文字）——不停用屏幕阅读器
+btn.innerHTML = `${icon("plus", { size: 18 })}<span>新增选手</span>`;
+
+// ② 图标即唯一语义——必须给 label
+cell.append(iconEl("trash", { label: "删除该行" }));
+
+// ③ 颜色跟随父元素（stroke="currentColor"，无需在 JS 指定颜色）
+statusEl.innerHTML = icon("circle-check", { size: 16 }) + " 已保存";
+
+// ④ 模块元数据（modules.json 与 plugin.js 两处必须一致，值为图标名而非 emoji）
+ctx.modules.registerPage({ id: "my-feature", icon: "puzzle", ... });
+```
+
+- **禁止新增 emoji 图标**：新代码一律经 `icon()` / `iconEl()` 渲染线条 SVG，不再出现 emoji 表情当图标（含 CSS 伪元素 `content:"…"`——图标改由真实 DOM 节点承载）。
+- **禁止各自内联复制 SVG path**：不得在模块内自建图标字典或粘贴 Tabler path（多份事实来源必然漂移）。
+- **缺图标先补基座**：把准确的 Tabler path 追加进 `web/icons.mjs` 的 `ICON_PATHS`（自动并入 `ICON_NAMES`），再跑 `node web/icons.test.js` 守门（需求清单、SVG 规格、下游引用自检）。
+- **`label` 语义**：图标是唯一语义来源（无相邻文字）时传 `label`（渲染 `role="img"` + `aria-label`）；有可见文字说明时留空（渲染 `aria-hidden="true"`，避免屏幕阅读器重复朗读）。
 
 ---
 
 ## 5. 注意事项
 
-1. **不要修改已存在的共用文件**（如 `gb_common.js`、`select.html`）除非必要。新增功能尽量自包含。
-2. **前端 API 一律使用 origin 相对路径**（`/api/...`、`/resource/...`），兼容任意部署环境（本地、预览代理、生产同域等）；不要写死 `http://localhost:3000`（服务端代码内部仍可用 `process.env.PORT`）。
-3. **`node_modules/` 已在 `.gitignore` 中**，不要提交。
-4. **（已废弃）`drag.js`、`group_battle.js` 等单体备份文件**：模块化改造后已全部删除，仅保留拆分后的前端模块（放置于各 `modules/<id>/` 内）。
-5. **Server 端业务数据存储在 `resource/sqlite/y-stage.sqlite`**（SQLite 单文件，sql.js WASM 支撑），经 `dbManager` 读写，不需要手动编辑；模块可用 `dbManager.sql(sql, params)` 执行原生 SQL。`resource/json/` 仅存放纯数据文件（如 `musics_list_2.json`、`games_musics.json`、`musics_free.json`、`tricks_for_game.json`）。
+1. **不要修改内核与共享设施**（`web/kernel.mjs`、`web/ui.mjs`、`server/http/`、`server/cordis/`、`server/database.js` 等）。新增功能一律自包含于 `modules/<id>/`；**唯一例外**是缺图标时向 `web/icons.mjs` 追加准确 path（见 4.1，改后跑 `web/icons.test.js`）。
+2. **前端 API 一律使用 origin 相对路径**（`/api/...`、`/resource/...`、`/web/...`），兼容任意部署环境（本地、预览代理、生产同域）；不要写死 `http://localhost:3000`（服务端代码内部仍可用 `process.env.PORT`）。
+3. **★ 三份清单同步追加铁律**：新模块必须同时在 `modules/modules.json`、`server/plugins.json`、`web/front.json` 追加条目（脚手架自动完成）。漏 `plugins.json` → 后端不挂载（路由/页面 404）；漏 `front.json` → 前端不装配（页面渲染占位）。`enabled:false` = 不挂载但 SQLite 数据保留；未列出 = 不挂载。
+4. **构建产物 gitignored，克隆/新环境需先构建**：`server/cordis/kernel.cjs`、`web/dist/kernel.js`、`dist-server/server.bundle.cjs` 分别由 `npm run build:kernel`、`npm run build:web`、`npm run build:server` 生成；分发打包走 `build.bat`（= build + `node scripts/make-portable.js --zip`，产出 bundle 形态便携目录 `YStage3-Portable/`；pkg 单文件 exe 已于 P6b 退役）。
+5. **Server 端业务数据存储在 `resource/sqlite/y-stage.sqlite`**（SQLite 单文件，sql.js WASM 支撑），经 `dbManager` 读写，不需要手动编辑；插件内用 `ctx.db.get/define/sql/exists` 访问。`resource/json/` 仅存放纯数据文件（如 `musics_list_2.json`、`games_musics.json`、`musics_free.json`、`tricks_for_game.json`）。
 6. **Windows 环境下路径用正斜杠 `/`**，与 Web 标准一致。
-7. **模块化改造已完成**：`css/` `js/` `html/` 目录已全部删除，`legacy` 跳转机制已移除，模块一律通过 `/m/<id>/` 访问。新功能一律走 `modules/`（见第 6 章）。
+7. **模块一律通过 `/m/<id>/` 访问**（无尾斜杠会 302 补齐，保证页面内相对资源解析正确）；唯一例外是 home：`/` 与 `/index.html` 同样服务首页，前端内核将两者归一为 home 模块装配
+8. **`node_modules/` 已在 `.gitignore` 中**，不要提交。
 
 ---
 
-## 6. ★ 模块化开发指南（新功能 / 新页面请优先使用）
+## 6. ★ 插件化开发指南（新功能 / 新页面唯一途径）
 
-> 项目已模块化。**添加一个功能 = 添加一个自包含文件夹，不需要修改任何共享文件。**
+> **添加一个功能 = 添加一对插件 + 三份清单条目，不需要修改任何共享文件。**
 
-### 6.1 模块契约
+### 6.1 模块插件契约（目录形态）
 
 ```
 modules/<模块id>/
-├── module.json         # 元信息（必填）
-├── index.html          # 页面（必填，相对引用同目录 style.css / app.js）
-├── style.css           # 样式（可选）
-├── app.js              # 前端逻辑（可拆多个，按第 2.2 节约定：main/data/battle/render/persist）
-└── server/             # 后端（可选，二者都不存在则纯前端模块）
-    ├── routes.js       # Express 路由：module.exports = (app, ctx) => {...}
-    └── db.js           # 数据库定义：[{ name, defaultValue }] 或 { databases: [...] }（落盘 SQLite docs）
+├── plugin.js          # 后端插件（CJS，必须）：module.exports = { name, inject, apply(ctx) }
+├── index.html         # 页面（必须）：静态骨架 DOM + #plugin-root + /web/kernel.js
+├── style.css          # 样式（可选，页面同目录相对引用）
+└── front/
+    ├── plugin.js      # 前端插件（原生 ESM，必须）：export default { name, inject, apply(ctx) }
+    └── view*.js       # 组件实现（可拆多文件，同目录相对 import）
 ```
 
-`module.json` 字段：
+后端 `inject` 白名单：`server` / `db` / `modules` / `assembly`，以及清单条目 `provides` 声明的服务（插件间依赖）。前端 `inject` 白名单：`ui` / `api` / `state`。**inject 拼写错误会让 fiber 永久挂起（装配死锁）**，内核在挂载前校验，非法服务名直接跳过该插件并在 `/api/plugins` 报 error。
 
-| 字段 | 说明 |
-|------|------|
-| `id` | 模块唯一 id（小写/数字/连字符），URL 为 `/m/<id>` |
-| `name` | 显示名称 |
-| `description` | 一句话说明 |
-| `icon` | 导航图标（emoji 或短文本） |
-| `nav` | 显示在哪些导航页：`["index"]` / `["select"]` / `["games"]`，空数组则不显示 |
-| `order` | 导航排序（小在前） |
+### 6.2 后端插件契约 `modules/<id>/plugin.js`
 
-### 6.2 三步创建一个新模块
+```js
+module.exports = {
+  name: "my-feature",
+  inject: ["db", "server", "modules"],        // 纯前端模块可仅 ["modules"]
+  apply(ctx) {
+    // ---- 数据库定义（SQLite 文档存储，落盘 resource/sqlite/y-stage.sqlite） ----
+    ctx.db.define([
+      { name: "my-feature-process", defaultValue: { phase: "idle" } },
+    ]);                                       // ctx.db 还有 get(name) / sql(q, p) / exists(name)
 
-1. **脚手架**：
+    // ---- 路由注册（必须在 apply 同步窗口内调用；scope 生命周期 = 本插件 fiber，
+    //      管理页停用该插件时路由被物理移除、立即 404） ----
+    ctx.server.route((app, { dbManager, serverLog, dataDir }) => {
+      app.get("/api/my-feature/ping", (req, res) => res.json({ ok: true }));
+      // (req,res,next) 风格与 Express 一致；中间件（multer 等）沿用
+    });
+
+    // ---- 页面元数据（必须与 modules/modules.json 中本模块条目逐字段一致） ----
+    ctx.modules.registerPage({
+      id: "my-feature",
+      name: "我的功能",
+      description: "一句话说明",
+      icon: "puzzle",                           // 图标名，须 ∈ web/icons.mjs 的 ICON_NAMES（见 4.1）
+      nav: ["select"],                          // "index" / "select" / "games"，空数组不显示
+      order: 50,                                // 导航排序（小在前）
+    });
+
+    // 插件卸载时同步注销页面元数据
+    ctx.effect(() => () => ctx.modules.unregister("my-feature"));
+  },
+};
+```
+
+页面元数据的单一来源是 `modules/modules.json`（导航页与管理页的显示名单），`registerPage` 是其运行时声明处，两处必须逐字段一致。其中 `icon` 是**图标名字符串**（取自 `web/icons.mjs` 的 `ICON_NAMES`，如 `puzzle`），不是 emoji——详见 4.1 图标规范。
+
+### 6.3 前端插件契约 `modules/<id>/front/plugin.js`
+
+```js
+// 原生 ESM，浏览器直接 import（URL: /m/<id>/front/plugin.js），
+// 不要 import 内核或 Node 模块；apply 阶段只 register，DOM 操作统一在 component 内。
+export default {
+  name: "my-feature-front",
+  inject: ["ui", "api"],                       // 白名单 ui / api / state
+  apply(ctx) {
+    ctx.ui.register({
+      key: "my-feature",                       // ★ 必须 = 模块 id（内核按 /m/<id>/ 路径查组件）
+      component(el, meta, ctx) {               // el = #plugin-root；meta = front.json 条目 config（无则 null）
+        const controller = new AbortController();
+        const { signal } = controller;
+
+        el.innerHTML = `<section class="my-feature-page">...</section>`;
+        el.querySelector("button").addEventListener("click", onClick, { signal });
+
+        return () => controller.abort();       // cleanup：内核重渲染/卸载前调用
+      },
+    });
+  },
+};
+```
+
+页面 UI 的图标统一 import 共享基座（origin 相对路径，不经打包）：
+
+```js
+import { icon, iconEl } from "/web/icons.mjs";
+
+// ① 装饰性图标（旁边有文字）——不停用屏幕阅读器
+btn.innerHTML = `${icon("plus", { size: 18 })}<span>新增选手</span>`;
+
+// ② 图标即唯一语义——必须给 label
+cell.append(iconEl("trash", { label: "删除该行" }));
+
+// ③ 颜色跟随父元素（stroke="currentColor"，无需在 JS 指定颜色）
+statusEl.innerHTML = icon("circle-check", { size: 16 }) + " 已保存";
+```
+
+完整约定（禁 emoji、禁内联复制 SVG path、缺图标补基座、`label` 语义）见 4.1 图标规范。
+
+前端内核服务：`ctx.ui`（register/unregister/render）、`ctx.api`（get/post/del，origin 相对路径）、`ctx.state`（跨插件内存键值，`set` 时广播 `state:changed` 事件，`ctx.on` 订阅）。
+
+页面 `index.html` 只需最小骨架（也可像 `modules/drag/` 一样放置静态骨架 DOM 由组件复用；多页面模块如 `moving-sth` 每页都有内核标签，组件内按 DOM 标记分发）：
+
+```html
+<body>
+  <!-- 页面内容（可选静态骨架） -->
+  <div id="plugin-root" hidden></div>
+  <script type="module" src="/web/kernel.js"></script>
+</body>
+```
+
+`enabled:false` 的前端条目不 import、代码不下载（效果等同不注入 script）。
+
+### 6.4 三份装配清单（单一装配事实来源）
+
+| 清单 | 作用 | 条目格式 |
+|------|------|----------|
+| `modules/modules.json` | 页面元数据（导航/管理页显示名单） | `{ id, name, description, icon, nav, order }`（`icon` = `ICON_NAMES` 中的图标名） |
+| `server/plugins.json` | 后端装配（provider: y-router/sqlite） | `{ target: "modules/<id>", enabled, config?, provides? }` |
+| `web/front.json` | 前端装配（provider: dom） | `{ target: "modules/<id>", enabled, config? }` |
+
+语义：`enabled:false` 不挂载（后端路由/页面 404、前端代码不下载，SQLite 数据保留）；未列出 = 不挂载；`config` 作为插件配置传入（后端为 `apply(ctx, config)` 第二参，前端为组件 `meta`）。新模块**三份都要追加**——直接用脚手架，别手改。
+
+### 6.5 三步创建一个新模块
+
+1. **脚手架**（自动生成一对插件骨架并追加三份清单，条目已存在则跳过并提示）：
 
    ```cmd
-   node scripts/new-module.js my-feature "我的功能" [--server]
+   node scripts/new-module.js my-feature "我的功能"
+   node scripts/new-module.js my-feature "我的功能" --server   :: plugin.js 附带 db.define + server.route 模板
    ```
 
-   生成 `modules/my-feature/` 并自动注册进 `modules/modules.json`。
-   纯前端不带 `--server`；需要后端 API 时加 `--server`（生成 routes.js/db.js 示例）。
+2. **填充逻辑**：编辑 `front/plugin.js`（/ `front/view.js`）写页面 UI；需要后端时编辑 `plugin.js`（改 `inject` 为 `["db","server","modules"]`，参照 6.2 注释模板）。页面内资源用**同目录相对路径**（`style.css`、`front/...`），共享资源用**绝对路径**（`/resource/...`、`/api/...`、`/web/...`）。
 
-2. **填充逻辑**：编辑 `index.html` / `app.js`（/ `server/routes.js` / `server/db.js`）。
-   - 页面内资源用**同目录相对路径**（`style.css`、`app.js`），共享资源用**绝对路径**（`/resource/images/...`、`/resource/json/...`、`/resource/musics/...`）。
-   - 模块后端路由 `routes.js` 由模块加载器注入共享设施（**无需 require 相对路径**）：
+3. **验证**：重启 `node server.js` → 日志出现 `[cordis] 装配完成` → 访问 `/m/my-feature/`；打开 `/m/plugin-manager/` 确认插件已列出且已挂载；跑 `node scripts/endpoint-diff.js --compare` 确认未破坏 HTTP 行为基线。
 
-     ```js
-     module.exports = (app, { dbManager, serverLog }) => {
-       app.get("/api/my-feature/ping", (req, res) => res.json({ ok: true }));
-     };
-     ```
+### 6.6 插件管理页 `/m/plugin-manager/`
 
-   - 模块数据库定义 `db.js`（存为 SQLite 文档，落盘 `resource/sqlite/y-stage.sqlite`；需要真实 SQL 时用 `dbManager.sql(sql, params)`）。
+本身就是插件。列表展示双端全部条目（kind / enabled / mounted / config / error）；操作生效时机：
 
-3. **验证**：重启 `node server.js` → 日志出现 `模块加载` → 访问 `/m/my-feature`；
-   需要出现在导航时确认 `nav` 字段正确，导航页自动渲染。
+| API | 作用 | 生效时机 |
+|-----|------|----------|
+| `GET /api/plugins` | 装配快照（后端条目 + 前端条目） | — |
+| `POST /api/plugins/:id/toggle` | 启用/禁用后端插件 | 即时（挂载/路由物理 404） |
+| `POST /api/plugins/:id/reload` | 热重载（排空 → 逐出缓存 → 重挂） | 即时（真实文件改盘即生效，无需重启） |
+| `GET / POST /api/plugins/:id/config` | 读/写清单 config（写后热重装） | 即时 |
+| `POST /api/plugins/front/:id/toggle` | 前端插件开关 | 刷新页面后生效 |
 
-### 6.3 导航如何工作
+> 排空语义（P6a）：toggle / reload / config 写触发的卸载一律先停新——排空期命中该插件路由的请求立即 503 `{"error":"plugin <id> is reloading"}` + `Retry-After: 1`，等在飞请求完成后才 dispose 重挂（disable 则排空后路由物理移除、后续 404 为正确语义）；排空超时默认 15s（环境变量 `Y_STAGE_DRAIN_TIMEOUT_MS` 可覆盖），超时 warn 后强制继续卸载。
 
-- `GET /api/modules` 返回全部模块清单（含 id/name/icon/nav/order/route）。
-- `home`、`select`、`games` 三个导航页从前端 `fetch` 该接口**动态渲染按钮**。
-- 新增/修改模块只需动 `modules.json` + 模块文件夹，导航零代码改动。
+### 6.7 导航如何工作
 
-### 6.4 常用模块示例（迁移参考样板）
+- `GET /api/modules` 返回全部启用模块清单（含 `id/name/description/icon/nav/order/route`，`route` 为 `/m/<id>/`）。
+- `home`、`select`、`games` 三个导航页（本身也是模块）前端 `fetch` 该接口**动态渲染按钮**。
+- 新增/修改模块只需动三份清单 + 模块文件夹，导航零代码改动。
 
-- `modules/drag/`：完整样板（前端多文件 + server/routes.js + server/db.js）。
-- `modules/select/`：动态导航 + 中键点击行为。
-- `modules/_template/`：最小可运行骨架（含注释）。
+### 6.8 模块开发检查单
 
-### 6.5 模块开发检查单
+- [ ] `plugin.js` 契约正确：CJS 导出 `{ name, inject, apply }`；路由在 apply 同步窗口内经 `ctx.server.route` 注册
+- [ ] `inject` 全部在白名单内（后端 `server/db/modules/assembly` + 清单 `provides`；前端 `ui/api/state`）
+- [ ] 三份清单条目已同步追加（`modules.json` + `plugins.json` + `front.json`，字段与 `registerPage` 逐字段一致）
+- [ ] `registerPage` / `modules.json` 的 `icon` 为 `web/icons.mjs` 的 `ICON_NAMES` 成员；页面图标一律 `icon()` / `iconEl()`，无 emoji、无内联复制 SVG path（见 4.1）
+- [ ] 前端插件 `key` = 模块 id；事件监听传 `{ signal }`，组件返回 cleanup
+- [ ] 后端路由全部经 `app.get/post(...)` 带路径前缀注册（**禁止 `scope.use(fn)` 无路径中间件**——热重载排空按路径模式拦截，pathless 层无锚点）
+- [ ] 重启后 `/m/plugin-manager/` 可见本插件且「已挂载」无 error
+- [ ] `node scripts/endpoint-diff.js --compare` 不破坏既有 HTTP 行为基线
 
-- [ ] `module.json` 的 `id` 全局唯一、`nav` 正确
-- [ ] 页面内无 `../` 引用（共享资源一律 `/resource/...` 或服务端 `/api/...`）
-- [ ] 后端 API 前缀含模块 id（如 `/api/my-feature-xxx`），避免与其他模块冲突
-- [ ] 数据库名以模块为前缀（如 `my-feature-process`）
-- [ ] 持久化沿用第 3.2 节模式（localStorage + server API 双写）
-- [ ] 重启 `node server.js` 无模块加载错误，核心流程（抽音乐/开始/保存/重置）可走通
+---
+
+## 7. 验证与测试
+
+| 命令 | 用途 |
+|------|------|
+| `node server.js --test` | 数据库操作回归测试（6 项，结果输出在控制台） |
+| `node server.js --test-cordis` | cordis 装配自检 A1-A6（装配零错误/数据库基线/元数据投影/探针插件/inject 白名单/manager 管理链路），测完自动退出 |
+| `node server/run-unit-tests.js` | 单元测试统一入口（10 个 `*.test.js`：paths 1 个 + http 层 4 个 + cordis services 3 个 + web loader 1 个 + web icons 1 个） |
+| `node scripts/endpoint-diff.js --record` | 在当前服务上录制端点行为基线（35 用例 → `scripts/endpoint-baseline.json`；仅行为有意变更时重录，其余场合 --compare 必须不重录直绿） |
+| `node scripts/endpoint-diff.js --compare` | 起服后重放用例逐字节对比基线，全绿退出码 0（HTTP 层改动的合并关口） |
+
+---
+
+## 8. 便携式打包与插件热替换（P6b 引入，P7 起默认 bundle 形态）
+
+**pkg 单文件 exe 已退役**（Vercel 停维护 + 快照虚拟文件系统导致清单不可写）；分发形态为便携目录，应用核心以 **esbuild 单文件 bundle** 交付（`app/` 内无 node_modules）。dev 源码模式完全不变（`node server.js` 跑源码树）。
+
+### 8.1 便携布局与构建
+
+```
+YStage3-Portable/
+├── node/node.exe        # 运行时（复制构建机 process.execPath，免安装 Node）
+├── app/                 # 应用程序核心（bundle 形态，无 node_modules）
+│   ├── server.bundle.cjs      # 应用 + 全部生产依赖的 esbuild 单文件（含 kernel.cjs 内容）
+│   ├── server.bundle.cjs.map  # sourcemap（外置，可删）
+│   ├── sql-wasm.wasm          # 唯一外置二进制资产（SQLite 引擎用）
+│   ├── web/                   # 前端静态整树复制（dist/ 内核产物 + icons.mjs 等共享资产；排除 *.test.js 与 front.json）
+│   └── favicon.ico
+├── plugins/             # ★ 插件组件层（可写、可热替换）
+│   ├── plugins.json     # 后端装配清单（真实文件，toggle/config 即时落盘）
+│   ├── front.json       # 前端装配清单
+│   └── modules/<id>/…   # 全部模块
+├── resource/            # 数据层：sqlite/、musics/、json/、images/
+├── 启动YStage.bat       # 注入 env → app 目录 → ..\node\node.exe server.bundle.cjs
+└── 说明.txt
+```
+
+构建：`build.bat`（= `npm install` + `npm run build`（含 `build:server`）+ `node scripts/make-portable.js --zip`）。产物目录整体拷走即用；升级 = 替换 `app/`，`plugins/` 与 `resource/` 原地保留。
+
+- `npm run build:server`：`esbuild server.js --bundle --platform=node --format=cjs --sourcemap=external --outfile=dist-server/server.bundle.cjs`（不 minify）。bundle 内唯一动态 require 是 loader 的外置插件加载（运行期绝对路径，esbuild 原样保留为原生 require）→ 外置插件参与真实 `require.cache`，reload 语义不变。
+- `node scripts/make-portable.js --loose`：调试用旧形态——app/ 放全源码树 + node_modules（排除顶层 devDeps），以 `server.js` 启动。
+
+### 8.2 dev/portable 双模式（server/paths.cjs）
+
+| 路径 | dev 默认（不设 env） | portable（启动 bat 注入 env） |
+|------|----------------------|-------------------------------|
+| 后端清单 | `<根>/server/plugins.json` | `$Y_STAGE_PLUGINS_DIR/plugins.json` |
+| 前端清单 | `<根>/web/front.json` | `$Y_STAGE_PLUGINS_DIR/front.json` |
+| 模块目录 | `<根>/modules/` | `$Y_STAGE_PLUGINS_DIR/modules/` |
+| 数据层 | `<根>/resource/` | `$Y_STAGE_RESOURCE_DIR/` |
+| app 根 | `__dirname` 推导（`<根>`） | `$Y_STAGE_APP_ROOT`（bundle 形态 bat 注入 `app/`） |
+
+`Y_STAGE_PLUGINS_DIR` / `Y_STAGE_RESOURCE_DIR` 任一设置即进入便携布局；dev 默认值与历史布局逐字节一致（`server/paths.test.js` 铁门用例锁定）。wasm 定位候选：`Y_STAGE_SQL_WASM` env → `<app根>/sql-wasm.wasm`（bundle）→ `<app根>/node_modules/sql.js/dist/`（dev）。
+
+### 8.3 插件热替换三步
+
+1. 直接修改 `plugins/` 下的文件（改 `modules/<id>/plugin.js` 逻辑、增删模块目录）；
+2. 打开 `/m/plugin-manager/` 对该插件**热重载**（排空在飞 → require 缓存逐出 → 重挂，改盘即生效无需重启）；bundle 形态下外置插件参与真实模块缓存，语义与源码形态一致；已列模块的启停用 toggle，新模块先在 `plugins.json` 追加条目再重启；
+3. 清单与 config 的全部改动即时落盘 `plugins/*.json`，重启后保持。

@@ -472,6 +472,16 @@ button[type="submit"]:hover,
   font-size: 1.1em;
 }
 
+/* Tabler 内联 SVG 图标基座（P10b：emoji → icons.mjs） */
+.y-icon {
+  vertical-align: middle;
+}
+
+.edit-btn .y-icon,
+.delete-btn .y-icon {
+  display: block;
+}
+
 .import-hint {
   font-size: 0.85em;
   color: #aaa;

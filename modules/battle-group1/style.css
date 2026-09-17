@@ -400,13 +400,29 @@ button:active {
   text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
 }
 
+/* 胜者奖杯：原 ::before emoji 改为真实内联 SVG 节点（由组件注入 .winner-badge），
+   显隐仍由 .winner 类驱动，逻辑零改动 */
 .winner::before {
-  content: "🏆";
+  content: none;
+}
+
+.winner-badge {
+  display: none;
   position: absolute;
   top: -20px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 24px;
+  pointer-events: none;
+  /* 颜色继承 .winner 的 color（currentColor），不写死 */
+}
+
+.winner .winner-badge {
+  display: block;
+}
+
+/* 脉冲动画放在内层 svg，避免与定位用 transform 相互覆盖 */
+.winner .winner-badge .y-icon {
+  display: block;
   animation: winner-scale 1.5s infinite;
 }
 

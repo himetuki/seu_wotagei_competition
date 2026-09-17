@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>演出</title>
+  </head>
+  <body>
+    <!-- 演出页（select 页中键快捷入口）。迁移前即为空页面（0 字节占位），
+         行为保持空白；骨架待演出功能落地时填充 -->
+
+    <!-- 前端插件挂载点（P4：页面 UI 由 /web/front.json 声明的 front/plugin.js 装配） -->
+    <div id="plugin-root" hidden></div>
+
+    <!-- 前端内核（ESM bundle：装配 front.json 插件 → ctx.ui.render） -->
+    <script type="module" src="/web/kernel.js"></script>
+  </body>
+</html>

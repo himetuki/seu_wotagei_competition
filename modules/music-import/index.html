@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Y.Stage 4 - 音乐导入管理</title>
+    <link rel="preload" as="image" href="/resource/images/bg_index.jpg" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -86,7 +87,7 @@
               class="action-btn"
               title="刷新文件列表"
             >
-              <span class="icon">🔄</span>
+              <span class="icon"></span>
             </button>
           </h3>
           <div class="music-files-container">
@@ -126,10 +127,10 @@
       </footer>
     </div>
 
-    <!-- 模块化导入JS文件 -->
-    <script src="music_core.js"></script>
-    <script src="music_ui.js"></script>
-    <script src="music_import.js"></script>
-    <script src="music_api.js"></script>
+    <!-- 前端插件挂载点（P4：页面 UI 由 /web/front.json 声明的 front/plugin.js 装配） -->
+    <div id="plugin-root" hidden></div>
+
+    <!-- 前端内核（ESM bundle：装配 front.json 插件 → ctx.ui.render） -->
+    <script type="module" src="/web/kernel.js"></script>
   </body>
 </html>

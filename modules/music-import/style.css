@@ -416,6 +416,15 @@ main {
   transform: rotate(180deg);
 }
 
+/* Tabler 内联 SVG 图标基座（P10b：emoji → icons.mjs） */
+.y-icon {
+  vertical-align: middle;
+}
+
+.action-btn .y-icon {
+  display: block;
+}
+
 /* 状态消息 */
 .status-message {
   position: fixed;

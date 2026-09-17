@@ -678,8 +678,10 @@ footer {
 }
 
 .crown {
-  font-size: 80px;
+  display: flex;
+  justify-content: center;
   margin-top: 10px;
+  color: #ffd700; /* 原皇冠 emoji 的金色语义（currentColor 传给内联 SVG） */
   animation: crown-bounce 1.5s ease-out forwards;
   filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8));
 }

@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Y.Stage 4</title>
+    <link rel="preload" as="image" href="/resource/images/bg_index.jpg" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -20,6 +21,8 @@
         <p>&copy; 2025 Y.Stage-X YUKAORI</p>
       </footer>
     </div>
-    <script src="app.js"></script>
+    <!-- 前端插件挂载点（select 页面 UI 绑定既有静态骨架，此节点仅作 kernel 装配锚点） -->
+    <div id="plugin-root" hidden></div>
+    <script type="module" src="/web/kernel.js"></script>
   </body>
 </html>

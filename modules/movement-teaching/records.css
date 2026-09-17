@@ -147,6 +147,15 @@ tr:not(.loading-row):hover {
   color: #ff6b6b;
 }
 
+/* Tabler 内联 SVG 图标基座（P10b：emoji / 对错标记 → icons.mjs） */
+.y-icon {
+  vertical-align: middle;
+}
+
+.record-actions .y-icon {
+  display: block;
+}
+
 .loading-row td {
   text-align: center;
   padding: 30px;

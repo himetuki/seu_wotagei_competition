@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Y.Stage 4 - 设置</title>
+    <link rel="preload" as="image" href="/resource/images/bg_index.jpg" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -51,7 +52,7 @@
               <div class="import-section" id="drop-area">
                 <div class="import-header">
                   <label for="import-players-file" class="import-label">
-                    <span class="import-icon">📄</span>
+                    <span class="import-icon"></span>
                     以TXT文件批量导入选手
                   </label>
                   <input type="file" id="import-players-file" class="hidden-file-input" accept=".txt" />
@@ -128,7 +129,7 @@
               <div class="import-section" id="trick-drop-area">
                 <div class="import-header">
                   <label for="import-tricks-file" class="import-label">
-                    <span class="import-icon">📄</span>
+                    <span class="import-icon"></span>
                     以TXT文件批量导入技能
                   </label>
                   <input type="file" id="import-tricks-file" class="hidden-file-input" accept=".txt" />
@@ -287,11 +288,8 @@
       </div>
     </div>
 
-    <!-- 模块化导入JS文件 -->
-    <script src="set-core.js"></script>
-    <script src="set-players.js"></script>
-    <script src="set-tricks.js"></script>
-    <script src="set-awards.js"></script>
-    <script src="set-ui.js"></script>
+    <!-- 前端插件挂载点 + 内核装配（P3d 插件化：front.json → /m/setting/front/plugin.js） -->
+    <div id="plugin-root" hidden></div>
+    <script type="module" src="/web/kernel.js"></script>
   </body>
 </html>

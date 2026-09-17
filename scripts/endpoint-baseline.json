@@ -1,0 +1,478 @@
+{
+  "meta": {
+    "recordedAt": "2026-09-17T05:41:16.620Z",
+    "httpLayer": "y-router+cordis",
+    "node": "v24.19.0",
+    "port": 3210
+  },
+  "cases": [
+    {
+      "name": "POST /api/test/reset",
+      "method": "POST",
+      "url": "/api/test/reset",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "f8fce66b64b4452df135dfdab1413bae78fcd9662d92af477bd954d22fe84516",
+      "bodyLen": 132,
+      "preview": "{\"success\":true,\"operation\":\"reset\",\"data\":{\"timestamp\":\"<TS>\",\"message\":\"测试数据库已重置\",\"items\":[]}}"
+    },
+    {
+      "name": "GET /api/test/read",
+      "method": "GET",
+      "url": "/api/test/read",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "89ca5acb0f64f249bb738d62e1673c37ee13fe3062418a7475670d7e48f8a097",
+      "bodyLen": 131,
+      "preview": "{\"success\":true,\"operation\":\"read\",\"data\":{\"timestamp\":\"<TS>\",\"message\":\"测试数据库已重置\",\"items\":[]}}"
+    },
+    {
+      "name": "GET /api/test/status",
+      "method": "GET",
+      "url": "/api/test/status",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "76c2359442938ef27c4e9741956ff69594dee0ffb450a00c4ee62b5fccc246bd",
+      "bodyLen": 293,
+      "preview": "{\"success\":true,\"operation\":\"status\",\"databases\":{\"battle-group2-2-process\":true,\"winners\":true,\"battle-group1-2-process"
+    },
+    {
+      "name": "POST /api/test/write",
+      "method": "POST",
+      "url": "/api/test/write",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "8aeb1d4a344bdb1c5a9e6d131a4ea6d22b0f86571f056dcb0194dda454294ac1",
+      "bodyLen": 340,
+      "preview": "{\"success\":true,\"operation\":\"write\",\"item\":{\"id\":\"<MS>\",\"timestamp\":\"<TS>\",\"content\":\"endpoint-diff 固定内容\"},\"data\":{\"time"
+    },
+    {
+      "name": "DELETE /api/test/delete/:id",
+      "method": "DELETE",
+      "url": "/api/test/delete/<MS>",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "3be93e4723bea9489a8d1fb72952b2a77abb496bc22ad7b6fac6badc70a37db2",
+      "bodyLen": 161,
+      "preview": "{\"success\":true,\"operation\":\"delete\",\"deletedId\":\"<MS>\",\"data\":{\"timestamp\":\"<TS>\",\"message\":\"测试数据库已重置\",\"items\":[]}}"
+    },
+    {
+      "name": "GET /api/modules",
+      "method": "GET",
+      "url": "/api/modules",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "bae20a6b8c75216e21000f7ef024a11d8d03fe4579fde87f88f7e68bc36cfbfe",
+      "bodyLen": 2973,
+      "preview": "[{\"id\":\"home\",\"name\":\"主页\",\"description\":\"2026 Y.Stage 4 比赛现场入口\",\"icon\":\"home\",\"nav\":[],\"order\":0,\"route\":\"/m/home/\"},{\"i"
+    },
+    {
+      "name": "GET /api/drag-settings",
+      "method": "GET",
+      "url": "/api/drag-settings",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "709c0561344d430350581843247c43ab5d1c035811f5ce360bc6df3a3095fecd",
+      "bodyLen": 17,
+      "preview": "<state-shape> {\"object\":[\"totalCount\"]}"
+    },
+    {
+      "name": "GET /api/drag-process",
+      "method": "GET",
+      "url": "/api/drag-process",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "5752905cadad5899d1cf872014d74c932f714e077347d34b26d793dcd5ba6dcf",
+      "bodyLen": 3620,
+      "preview": "<state-shape> {\"object\":[\"allPlayers\",\"championId\",\"doubleElimActive\",\"doubleElimResetDone\",\"lastUpdate\",\"music\",\""
+    },
+    {
+      "name": "GET /api/player1",
+      "method": "GET",
+      "url": "/api/player1",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "7e368c4b8a266d309ddf6cf70d1e83dd1f770ecf0a11e55f38cca26c7b3cc549",
+      "bodyLen": 157,
+      "preview": "<state-shape> {\"array\":true}"
+    },
+    {
+      "name": "GET /api/tricks",
+      "method": "GET",
+      "url": "/api/tricks",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "7e368c4b8a266d309ddf6cf70d1e83dd1f770ecf0a11e55f38cca26c7b3cc549",
+      "bodyLen": 382,
+      "preview": "<state-shape> {\"array\":true}"
+    },
+    {
+      "name": "GET /api/award",
+      "method": "GET",
+      "url": "/api/award",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "7e368c4b8a266d309ddf6cf70d1e83dd1f770ecf0a11e55f38cca26c7b3cc549",
+      "bodyLen": 229,
+      "preview": "<state-shape> {\"array\":true}"
+    },
+    {
+      "name": "GET /resource/json/musics_list.json",
+      "method": "GET",
+      "url": "/resource/json/musics_list.json",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "9da52028dbb6b336e6504542476a1cca0bf1e752eed6fb53cd0f8021a89e135e",
+      "bodyLen": 733,
+      "preview": "[\"kanaria,GUMI - エンヴィーベイビー.mp3\",\"MAN WITH A MISSION,milet - 絆ノ奇跡.mp3\",\"Neru,鏡音リン - ロストワンの号哭.mp3\",\"PSYQUI,ぷにぷに電機 - Still "
+    },
+    {
+      "name": "GET /api/music_count?group",
+      "method": "GET",
+      "url": "/api/music_count?group=1yearplus",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "983d54e0927d469a72edfa30ace3a90ef7d7e93696f0787ff8c7b923f4e99aef",
+      "bodyLen": 27,
+      "preview": "<state-shape> {\"object\":[\"count\",\"success\"]}"
+    },
+    {
+      "name": "GET /api/music_files?group",
+      "method": "GET",
+      "url": "/api/music_files?group=1yearplus",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "3abc80be23a7fd0fb153d91d01bd5d0caaa54aa3a1348d744441031d08c3c77e",
+      "bodyLen": 2221,
+      "preview": "<state-shape> {\"object\":[\"count\",\"files\",\"success\"]}"
+    },
+    {
+      "name": "GET /",
+      "method": "GET",
+      "url": "/",
+      "status": 200,
+      "headers": {
+        "content-type": "text/html; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "c1a2333fb6333bb5398d64931a13492c2dace071b12c071cf7cffe499b5d355e",
+      "bodyLen": 879,
+      "preview": "<!doctype html>\n<html lang=\"zh-CN\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=devic"
+    },
+    {
+      "name": "GET /favicon.ico",
+      "method": "GET",
+      "url": "/favicon.ico",
+      "status": 200,
+      "headers": {
+        "content-type": "image/x-icon",
+        "accept-ranges": "bytes",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "a93f76df60f27565ba99b9f41977ce5da673a824345f385768e5df0c8321bc80",
+      "bodyLen": 270622,
+      "preview": "<binary>"
+    },
+    {
+      "name": "GET /m/select（302）",
+      "method": "GET",
+      "url": "/m/select",
+      "status": 302,
+      "headers": {
+        "content-type": "text/plain; charset=utf-8",
+        "location": "/m/select/",
+        "access-control-allow-origin": "*",
+        "vary": "Accept"
+      },
+      "bodySha256": "82fe74ce70f27aeb626acf63739842914e258e29e973a56a7048b01082c59b67",
+      "bodyLen": 32,
+      "preview": "Found. Redirecting to /m/select/"
+    },
+    {
+      "name": "GET /m/select/（尾斜杠）",
+      "method": "GET",
+      "url": "/m/select/",
+      "status": 200,
+      "headers": {
+        "content-type": "text/html; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "61ce34be5dec1845d62e6916f38e9f62dc751786392bee2402d252f535bffef4",
+      "bodyLen": 918,
+      "preview": "<!doctype html>\n<html lang=\"zh-CN\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=devic"
+    },
+    {
+      "name": "GET /m/drag（302）",
+      "method": "GET",
+      "url": "/m/drag",
+      "status": 302,
+      "headers": {
+        "content-type": "text/plain; charset=utf-8",
+        "location": "/m/drag/",
+        "access-control-allow-origin": "*",
+        "vary": "Accept"
+      },
+      "bodySha256": "78387679bb106122f57421e770290710a395230ecd1d1b94348a75eb0276040c",
+      "bodyLen": 30,
+      "preview": "Found. Redirecting to /m/drag/"
+    },
+    {
+      "name": "GET /m/drag/（index）",
+      "method": "GET",
+      "url": "/m/drag/",
+      "status": 200,
+      "headers": {
+        "content-type": "text/html; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "e8d3cb26b6ddc264c5b8b23cf56e197d88a8eddbb352aafd19ecd73202cc783f",
+      "bodyLen": 3989,
+      "preview": "<!doctype html>\n<html lang=\"zh-CN\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=devic"
+    },
+    {
+      "name": "GET /m/drag/index.html",
+      "method": "GET",
+      "url": "/m/drag/index.html",
+      "status": 200,
+      "headers": {
+        "content-type": "text/html; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "e8d3cb26b6ddc264c5b8b23cf56e197d88a8eddbb352aafd19ecd73202cc783f",
+      "bodyLen": 3989,
+      "preview": "<!doctype html>\n<html lang=\"zh-CN\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=devic"
+    },
+    {
+      "name": "GET /m/drag/front/plugin.js",
+      "method": "GET",
+      "url": "/m/drag/front/plugin.js",
+      "status": 200,
+      "headers": {
+        "content-type": "application/javascript; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "34316a5daf0eb5022c35efac66151f0fc9003781d87249b3e47c1b1d9f1ff1d9",
+      "bodyLen": 639,
+      "preview": "/**\n * drag 前端插件（P3d 插件化迁移）\n *\n * 契约：原生 ESM，不 import 内核；apply 阶段只 register，DOM 操作统一发生在\n * component 被调用时（见 ./view.js dra"
+    },
+    {
+      "name": "GET /m/notexist（404）",
+      "method": "GET",
+      "url": "/m/notexist",
+      "status": 404,
+      "headers": {
+        "content-type": "text/html; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "50d9c9f0144fd15369eafcb5ef743daf270fe55895e3346e61a78b25f2aba142",
+      "bodyLen": 25,
+      "preview": "模块 notexist 不存在"
+    },
+    {
+      "name": "GET /api/nonexistent（404）",
+      "method": "GET",
+      "url": "/api/nonexistent",
+      "status": 404,
+      "headers": {
+        "content-type": "text/html; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "10a51410e3d4f38f7f7ffffc74e126086d549392c08b10e0db0d7ea1e59e44ea",
+      "bodyLen": 557,
+      "preview": "\n    <html>\n      <head>\n        <title>404 - 页面未找到</title>\n        <style>\n          body { font-family: Arial, sans-se"
+    },
+    {
+      "name": "GET 中文文件名（H1）",
+      "method": "GET",
+      "url": "/m/drag/%E7%AB%AF%E7%82%B9%E6%B5%8B%E8%AF%95_%E4%B8%AD%E6%96%87%E6%96%87%E4%BB%B6.txt",
+      "status": 200,
+      "headers": {
+        "content-type": "application/octet-stream",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "f0c245449abbcd481282f066cae38fa8fc62e8615db89511b048707a471c848b",
+      "bodyLen": 34,
+      "preview": "<binary>"
+    },
+    {
+      "name": "POST 坏 JSON → 500（H6）",
+      "method": "POST",
+      "url": "/api/winners",
+      "status": 500,
+      "headers": {
+        "content-type": "text/html; charset=utf-8"
+      },
+      "bodySha256": "b168f4eb9094e655c69b55af2b07d45fb0035f1466681ca6f08b7da8f5160f3e",
+      "bodyLen": 86,
+      "preview": "服务器出错: Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+    },
+    {
+      "name": "OPTIONS /api/winners 预检（H7）",
+      "method": "OPTIONS",
+      "url": "/api/winners",
+      "status": 204,
+      "headers": {
+        "access-control-allow-origin": "*",
+        "access-control-allow-methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
+        "access-control-allow-headers": "content-type",
+        "vary": "Access-Control-Request-Headers"
+      },
+      "bodySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bodyLen": 0,
+      "preview": "<binary>"
+    },
+    {
+      "name": "HEAD /",
+      "method": "HEAD",
+      "url": "/",
+      "status": 200,
+      "headers": {
+        "content-type": "text/html; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bodyLen": 0,
+      "preview": ""
+    },
+    {
+      "name": "GET 音乐 Range 0-99（206）",
+      "method": "GET",
+      "url": "/resource/musics/1yearplus/kanaria,GUMI%20-%20%E3%82%A8%E3%83%B3%E3%83%B4%E3%82%A3%E3%83%BC%E3%83%99%E3%82%A4%E3%83%93%E3%83%BC.mp3",
+      "status": 206,
+      "headers": {
+        "content-type": "audio/mpeg",
+        "content-range": "bytes 0-99/2308465",
+        "accept-ranges": "bytes",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "14289c677d092a750c5b7c85db0d84cc7da103b7bc125200e9b1bceb9fafb3b5",
+      "bodyLen": 100,
+      "preview": "<binary>"
+    },
+    {
+      "name": "HEAD 音乐 Range 0-99（206）",
+      "method": "HEAD",
+      "url": "/resource/musics/1yearplus/kanaria,GUMI%20-%20%E3%82%A8%E3%83%B3%E3%83%B4%E3%82%A3%E3%83%BC%E3%83%99%E3%82%A4%E3%83%93%E3%83%BC.mp3",
+      "status": 206,
+      "headers": {
+        "content-type": "audio/mpeg",
+        "content-range": "bytes 0-99/2308465",
+        "accept-ranges": "bytes",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bodyLen": 0,
+      "preview": "<binary>"
+    },
+    {
+      "name": "GET 音乐全文件",
+      "method": "GET",
+      "url": "/resource/musics/1yearplus/kanaria,GUMI%20-%20%E3%82%A8%E3%83%B3%E3%83%B4%E3%82%A3%E3%83%BC%E3%83%99%E3%82%A4%E3%83%93%E3%83%BC.mp3",
+      "status": 200,
+      "headers": {
+        "content-type": "audio/mpeg",
+        "accept-ranges": "bytes",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "ddc71bbbafd1b7af414453b99a5df7169e4d428e8e1cb3bae2ea34e889c2734d",
+      "bodyLen": 2308465,
+      "preview": "<binary>"
+    },
+    {
+      "name": "GET 音乐无效 Range（416）",
+      "method": "GET",
+      "url": "/resource/musics/1yearplus/kanaria,GUMI%20-%20%E3%82%A8%E3%83%B3%E3%83%B4%E3%82%A3%E3%83%BC%E3%83%99%E3%82%A4%E3%83%93%E3%83%BC.mp3",
+      "status": 416,
+      "headers": {
+        "content-type": "audio/mpeg",
+        "content-range": "bytes */2308465",
+        "accept-ranges": "bytes",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bodyLen": 0,
+      "preview": "<binary>"
+    },
+    {
+      "name": "POST /api/test_form_data（multipart H4）",
+      "method": "POST",
+      "url": "/api/test_form_data",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "04daff1d81ace5b07795355e82b0263847308466d150a859b2e3d9ed78e2beae",
+      "bodyLen": 309,
+      "preview": "{\"success\":true,\"message\":\"表单数据测试\",\"requestHeaders\":{\"content-type\":\"multipart/form-data; boundary=----YStageEndpointDif"
+    },
+    {
+      "name": "POST /api/upload_music 非音频（400 拒绝路径）",
+      "method": "POST",
+      "url": "/api/upload_music?group=1yearplus",
+      "status": 400,
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "c28cca91c13a91d30988e907247238101671cae898c47fff692d882793c00d23",
+      "bodyLen": 116,
+      "preview": "{\"success\":false,\"error\":\"不支持的文件格式: .txt, MIME: text/plain，只支持mp3、wav、flac、ogg格式\"}"
+    },
+    {
+      "name": "POST /api/test_audio_upload 无 group（中间件 next(err)→500）",
+      "method": "POST",
+      "url": "/api/test_audio_upload",
+      "status": 500,
+      "headers": {
+        "content-type": "text/html; charset=utf-8",
+        "access-control-allow-origin": "*"
+      },
+      "bodySha256": "837c0300bf9e9d0715d13e875bd445dc007e12cd765518d985db5a534e0dd522",
+      "bodyLen": 47,
+      "preview": "服务器出错: 无法确定上传目标组别"
+    }
+  ]
+}

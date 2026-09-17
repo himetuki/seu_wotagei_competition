@@ -4,10 +4,13 @@
  */
 const fs = require("fs");
 const path = require("path");
-const { serverLog } = require("./utils");
+const paths = require("./paths.cjs");
+const { serverLog, safeJoin } = require("./utils");
 const { dbManager } = require("./database");
 
-// 音乐目录配置
+// 音乐目录配置（dir 保持 "resource/..." 相对形态：响应回显与 API 出参依赖此字符串；
+// 磁盘解析统一经 resolveMusicDir 锚定 RESOURCE_DIR —— dev 下与旧 cwd 拼接逐字节同路径，
+// 便携模式下 resource 外置后依然正确）
 const MUSIC_DIRS = [
   {
     name: "一年加组第一章节",
@@ -36,9 +39,20 @@ const MUSIC_DIRS = [
   },
 ];
 
+// "resource/..." 相对路径 → RESOURCE_DIR 下的绝对路径（剥去 "resource" 前缀段）
+// 入参来自 MUSIC_DIRS 常量与经它匹配的 group；仍经 safeJoin 断言结果不越出 RESOURCE_DIR，
+// 防未来调用方传入外部字符串时逃逸到数据层之外。
+function resolveMusicDir(dir) {
+  const rel = path.relative("resource", dir);
+  if (rel === ".." || rel.startsWith(".." + path.sep) || path.isAbsolute(rel)) {
+    throw new Error(`非法的音乐目录: ${dir}`);
+  }
+  return safeJoin(paths.resourceDir(), rel);
+}
+
 // 获取音频文件（修复中文编码问题）
 function getAudioFiles(dir) {
-  const fullPath = path.join(process.cwd(), dir);
+  const fullPath = resolveMusicDir(dir);
 
   try {
     if (!fs.existsSync(fullPath)) {
@@ -107,7 +121,7 @@ function updateJsonFile(audioFiles, jsonFile) {
 
     // 非 db 的纯数据文件（musics_list_2 / games_musics / musics_free 等）：
     // 被前端模块直接 fetch，保留原有 json 文件写入逻辑不动。
-    const jsonPath = path.join(process.cwd(), "resource", "json", jsonFile);
+    const jsonPath = path.join(paths.resourceDir(), "json", jsonFile);
 
     // 确保目录存在
     const jsonDir = path.dirname(jsonPath);
@@ -192,12 +206,7 @@ function initializeMusicScanner() {
   serverLog("初始化音乐扫描模块...", "info");
 
   // 确保回收文件夹存在
-  const recycleDir = path.join(
-    process.cwd(),
-    "resource",
-    "musics",
-    "musics_free"
-  );
+  const recycleDir = path.join(paths.resourceDir(), "musics", "musics_free");
   if (!fs.existsSync(recycleDir)) {
     fs.mkdirSync(recycleDir, { recursive: true });
     serverLog(`已创建音乐回收文件夹: ${recycleDir}`, "info");
@@ -211,5 +220,6 @@ module.exports = {
   scanMusicDir,
   getMusicCount,
   initializeMusicScanner,
+  resolveMusicDir,
   MUSIC_DIRS,
 };

@@ -1,0 +1,48 @@
+name: Deploy Docs Pages
+
+# 文档站（docs/ 手册）自动发布到 GitHub Pages。
+# 与 package.yml（v* 标签 → 便携包 Release）完全独立、互不影响。
+#
+# 启用前提（仅一次）：仓库 Settings → Pages → Build and deployment →
+#   Source 选择 "GitHub Actions"。
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch: # 支持在 Actions 页手动触发
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true # 连续推送时取消未完成的旧构建
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 组装站点（docs 为根，手册作为首页）
+        run: |
+          mkdir -p site
+          cp -r docs/* site/
+          cp site/handbook.html site/index.html
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,3 +1,52 @@
+/* ============================================================
+ * home 模块 — 首页（入口按钮区重设计）
+ * 设计基调：与 plugin-manager 同款暗色玻璃 + 状态色语言
+ * 变量刻度与管理页逐项对齐：--space-* / --text-* / --line* / --radius-* / 蓝色主色
+ * ============================================================ */
+
+:root {
+  /* --- 间距刻度（与管理页一致） --- */
+  --space-xs: 6px;
+  --space-sm: 10px;
+  --space-md: 16px;
+  --space-lg: 28px;
+  --space-xl: 44px;
+
+  /* --- 面板/底色（重设计：深色玻璃） --- */
+  --bg-panel: rgba(17, 17, 20, 0.72);
+  --bg-inset: rgba(255, 255, 255, 0.06);
+  --bg-inset-strong: rgba(255, 255, 255, 0.1);
+  --bg-inset-soft: rgba(255, 255, 255, 0.03);
+
+  /* --- 文字（暗底上均 >= 4.5:1） --- */
+  --text-strong: #f2f4f8;
+  --text-main: #dfe3ec;
+  --text-muted: #94a3b8;
+  --text-faint: #7b8798;
+
+  /* --- 描边（与管理页一致） --- */
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.1);
+  --line-2: rgba(255, 255, 255, 0.16);
+  --line-soft: rgba(255, 255, 255, 0.06);
+
+  /* --- 强调色 / 状态色（与管理页一致） --- */
+  --focus-ring: #58c1ff;
+  --blue: #3b82f6;
+  --blue-strong: #2563eb;
+  --ok: #4ade80;
+  --warn: #fbbf24;
+  --err: #f27d72;
+  --neutral: #6b7280;
+
+  /* --- 圆角（与管理页一致 + 按钮专用） --- */
+  --radius-lg: 20px;
+  --radius-btn: 14px;
+  --radius-md: 12px;
+  --radius-sm: 10px;
+  --radius-pill: 999px;
+}
+
 /* 完全重置所有元素的边距和填充 */
 * {
   margin: 0;
@@ -12,58 +61,87 @@ body {
   width: 100%;
   overflow: hidden;
   position: fixed;
-  font-family: Arial, sans-serif;
+  font-family: "Microsoft YaHei", Arial, sans-serif;
 }
 
-/* 将背景图直接应用于body */
+/* 兜底底色：背景图未就绪时露出深色，避免白/灰闪烁（不改变 body 的半透明叠加层）
+   （★ 用户背景兜底，原样保留） */
+html {
+  background-color: #0a0a0a;
+}
+
+/* 将背景图直接应用于body（★ 用户背景图，原样保留） */
 body {
   background-image: url("/resource/images/bg_index.jpg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
-  color: white;
+  color: var(--text-main);
   background-color: rgba(0, 0, 0, 0.8); /* 深色背景 */
 }
 
-/* 重新设计容器样式，确保无缝对齐 */
+/* 重新设计容器样式，确保无缝对齐
+ * 说明：justify-content: center 仅作回退；实际垂直居中由 header/main 的 auto 外边距完成，
+ * 这样内容超高时可正常内部滚动（纯 center 会把顶部内容裁掉且不可达）。 */
 .container {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100vh;
-  width: 100vw;
+  width: 100%;
   position: absolute;
   top: 0;
   left: 0;
   text-align: center;
+  padding: 24px 24px 76px; /* 底部留白避开 fixed footer */
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* 居中软遮罩：仅中部柔和压暗，保证文字/按钮对比度，边缘完整露出背景图 */
+  background: radial-gradient(
+    ellipse 72% 62% at 50% 44%,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.3) 46%,
+    rgba(0, 0, 0, 0) 76%
+  );
 }
 
-/* header 样式 */
-header {
-  background-color: rgba(0, 0, 0, 0.6);
-  padding: 25px 40px;
-  border-radius: 12px;
-  margin-bottom: 30px;
-  animation: fadeIn 2s;
-  max-width: 90%;
+/* 安全居中：自由空间由 header 上边距与 main 下边距均分 */
+.container > header {
+  margin-top: auto;
 }
 
-/* h1 样式 */
+.container > main {
+  margin-bottom: auto;
+}
+
+/* ---- 标题区（轻量化：去实心大黑块，靠软遮罩 + 字影保证可读） ---- */
+.container > header {
+  max-width: 92%;
+  margin-bottom: var(--space-lg);
+  animation: fadeIn 0.6s ease-out both;
+}
+
 header h1 {
-  font-size: 3em;
-  margin-bottom: 15px;
-  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+  font-size: clamp(2rem, 4.6vw, 3.25rem);
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
 }
 
-/* p 样式 */
 header p {
-  font-size: 1.5em;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  margin-top: var(--space-sm);
+  font-size: clamp(0.95rem, 1.9vw, 1.15rem);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-muted);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.55);
 }
 
-/* main 样式 */
+/* ---- 按钮区容器 ---- */
 main {
   display: flex;
   flex-direction: column;
@@ -76,58 +154,67 @@ main {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
-  width: min(560px, 94vw);
+  width: 100%;
+  max-width: 680px;
 }
 
-/* 按钮通用样式 - 二级入口（等宽宫格） */
-button,
+/* ============================================================
+ * 按钮通用（.start-btn 一级 / .nav-btn 二级共用底座）
+ * ============================================================ */
+.start-btn,
 .nav-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
-  min-height: 54px;
-  padding: 12px 16px;
-  font-size: 1.05em;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
+  padding: 0 var(--space-md);
+  font-family: inherit;
+  font-size: 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-btn);
   cursor: pointer;
-  transition: transform 0.18s ease, border-color 0.18s ease,
-    background-color 0.18s ease, box-shadow 0.18s ease;
-  background-color: #1c1f26;
-  color: #e8ebf2;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  background-color: var(--bg-inset-soft);
+  color: var(--text-strong);
+  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
-.nav-btn:hover {
-  background-color: #262a34;
-  border-color: rgba(255, 255, 255, 0.22);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
-}
-
+.start-btn:focus-visible,
 .nav-btn:focus-visible {
-  outline: 2px solid #58c1ff;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
+/* ---- 图标 ---- */
 .btn-icon {
   flex: none;
-  font-size: 1.3em;
+  display: grid;
+  place-items: center;
   line-height: 1;
+  font-size: 1.2em;
 }
 
 .btn-label {
-  line-height: 1.2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* 一级入口（赛制选择，全宽突出） */
+/* ============================================================
+ * 一级入口：赛制选择（全宽主按钮）
+ * ============================================================ */
 .start-btn {
   grid-column: 1 / -1;
-  background-color: #2563eb;
-  border-color: transparent;
-  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+  height: 64px;
+  justify-content: center;
+  gap: 14px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  background: linear-gradient(180deg, var(--blue), var(--blue-strong));
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.35);
 }
 
 .start-btn .btn-icon {
@@ -135,28 +222,98 @@ button,
 }
 
 .start-btn:hover {
-  background-color: #1d4ed8;
+  background: linear-gradient(180deg, #4b8ef7, #2f6ee6);
+  border-color: #60a5fa;
+  color: #ffffff;
   transform: translateY(-2px);
-  box-shadow: 0 10px 26px rgba(37, 99, 235, 0.5);
+  box-shadow: 0 8px 26px rgba(59, 130, 246, 0.45);
 }
 
-/* footer 样式 */
+.start-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 12px rgba(59, 130, 246, 0.35);
+}
+
+/* ============================================================
+ * 二级入口：等宽宫格（左图标方块 + 左对齐文字）
+ * ============================================================ */
+.nav-btn {
+  justify-content: flex-start;
+  min-height: 60px;
+  height: 60px;
+  padding: 0 var(--space-md);
+  text-align: left;
+  background-color: rgba(255, 255, 255, 0.05); /* 设计稿指定卡面 .05（略亮于 --bg-inset-soft） */
+}
+
+.nav-btn .btn-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-inset);
+  border: 1px solid var(--line-strong);
+  font-size: 19px;
+}
+
+.nav-btn .btn-label {
+  flex: 1 1 auto;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-strong);
+}
+
+.nav-btn:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--line-2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+}
+
+.nav-btn:hover .btn-label {
+  color: #ffffff;
+}
+
+.nav-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* ---- 空状态 / 错误态（plugin.js 注入的提示 <p>） ---- */
+#nav-buttons > p {
+  grid-column: 1 / -1;
+  padding: 22px 20px;
+  border-radius: var(--radius-btn);
+  background: var(--bg-inset-soft);
+  border: 1px dashed var(--line-2);
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* ---- footer 版权 ---- */
 footer {
   position: fixed;
   bottom: 0;
   left: 0;
   width: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
-  padding: 12px 0;
+  padding: 12px var(--space-md);
+  text-align: center;
+  color: var(--text-muted);
+  border-top: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(10, 10, 12, 0.2), rgba(10, 10, 12, 0.85) 55%);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   z-index: 10;
 }
 
 footer p {
   margin: 0;
-  font-size: 0.9em;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
 }
 
-/* 淡入动画 */
+/* ---- 淡入动画 ---- */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -166,36 +323,97 @@ footer p {
   }
 }
 
-/* 媒体查询确保在小屏幕上正确显示 */
-@media (max-width: 768px) {
-  header h1 {
-    font-size: 2.2em;
-  }
-
-  header p {
-    font-size: 1.2em;
-  }
-
-  button,
-  .nav-btn {
-    padding: 10px 14px;
-    font-size: 1em;
-  }
-
+/* ============================================================
+ * 响应式
+ * ============================================================ */
+/* 窄屏：宫格退化 1 列，主按钮略降 */
+@media (max-width: 720px) {
   #nav-buttons {
+    grid-template-columns: minmax(0, 1fr);
     gap: 12px;
+    max-width: 520px;
+  }
+
+  .start-btn {
+    height: 58px;
+    font-size: 16px;
+  }
+
+  .nav-btn {
+    height: 56px;
+    min-height: 56px;
+  }
+
+  .container {
+    padding: 20px 16px 68px;
   }
 }
 
-/* 减弱动态偏好 */
+/* 极窄屏进一步压缩 */
+@media (max-width: 400px) {
+  header h1 {
+    font-size: 1.85rem;
+  }
+
+  header p {
+    font-size: 0.9rem;
+  }
+
+  .nav-btn .btn-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 17px;
+  }
+
+  .nav-btn .btn-label {
+    font-size: 14px;
+  }
+}
+
+/* 矮视口：压缩纵向占用，避免内容被裁（容器本身可滚动兜底） */
+@media (max-height: 640px) {
+  .container > header {
+    margin-bottom: var(--space-md);
+  }
+
+  header h1 {
+    font-size: clamp(1.6rem, 3.6vw, 2.4rem);
+  }
+
+  header p {
+    margin-top: var(--space-xs);
+    font-size: 0.95rem;
+  }
+
+  .start-btn {
+    height: 56px;
+  }
+
+  .nav-btn {
+    height: 54px;
+    min-height: 54px;
+  }
+
+  #nav-buttons {
+    gap: 10px;
+  }
+}
+
+/* ---- 减弱动态偏好 ---- */
 @media (prefers-reduced-motion: reduce) {
-  button {
+  .start-btn,
+  .nav-btn {
     transition: none;
   }
-  button:hover {
+
+  .start-btn:hover,
+  .nav-btn:hover,
+  .start-btn:active,
+  .nav-btn:active {
     transform: none;
   }
-  header {
+
+  .container > header {
     animation: none;
   }
 }

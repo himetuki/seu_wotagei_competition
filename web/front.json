@@ -1,0 +1,83 @@
+{
+  "provider": {
+    "ui": "dom"
+  },
+  "plugins": [
+    {
+      "target": "modules/home",
+      "enabled": true
+    },
+    {
+      "target": "modules/select",
+      "enabled": true
+    },
+    {
+      "target": "modules/setting",
+      "enabled": true
+    },
+    {
+      "target": "modules/plugin-manager",
+      "enabled": true
+    },
+    {
+      "target": "modules/battle-group1",
+      "enabled": true
+    },
+    {
+      "target": "modules/battle-group1-2",
+      "enabled": true
+    },
+    {
+      "target": "modules/battle-group2",
+      "enabled": true
+    },
+    {
+      "target": "modules/battle-group2-2",
+      "enabled": true
+    },
+    {
+      "target": "modules/group-battle",
+      "enabled": true
+    },
+    {
+      "target": "modules/drag",
+      "enabled": true
+    },
+    {
+      "target": "modules/music-draw",
+      "enabled": true
+    },
+    {
+      "target": "modules/music-import",
+      "enabled": true
+    },
+    {
+      "target": "modules/performance",
+      "enabled": true
+    },
+    {
+      "target": "modules/rank",
+      "enabled": true
+    },
+    {
+      "target": "modules/ranking",
+      "enabled": true
+    },
+    {
+      "target": "modules/team-rank",
+      "enabled": true
+    },
+    {
+      "target": "modules/games",
+      "enabled": true
+    },
+    {
+      "target": "modules/moving-sth",
+      "enabled": true
+    },
+    {
+      "target": "modules/movement-teaching",
+      "enabled": true
+    }
+  ]
+}

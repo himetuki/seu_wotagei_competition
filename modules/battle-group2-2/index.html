@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Rookies比赛界面 - 上半场</title>
+    <link rel="preload" as="image" href="/resource/images/bg.jpg" />
     <link rel="stylesheet" href="base.css" />
     <link rel="stylesheet" href="style.css" />
   </head>
@@ -37,14 +38,10 @@
       <audio id="musicPlayer" controls></audio>
     </main>
 
-    <!-- 模块化加载JS文件 -->
-    <script src="b-g2-2-core.js"></script>
-    <!-- b-g2-2-core是核心模块，包含全局状态和初始化 -->
-    <script src="b-g2-2-ui.js"></script>
-    <!-- b-g2-2-ui是UI模块，处理界面更新和交互 -->
-    <script src="b-g2-2-data.js"></script>
-    <!-- b-g2-2-data是数据模块，处理数据加载和状态管理 -->
-    <script src="b-g2-2-events.js"></script>
-    <!-- b-g2-2-events是事件模块，管理事件监听器 -->
+    <!-- 前端插件挂载点（P4：页面 UI 由 /web/front.json 声明的 front/plugin.js 装配） -->
+    <div id="plugin-root" hidden></div>
+
+    <!-- 前端内核（ESM bundle：装配 front.json 插件 → ctx.ui.render） -->
+    <script type="module" src="/web/kernel.js"></script>
   </body>
 </html>

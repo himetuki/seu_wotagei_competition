@@ -323,6 +323,11 @@ body {
   color: #aaa;
 }
 
+/* 状态栏内联图标：与文字基线对齐（对应原 emoji 前缀位置） */
+.status-bar .y-icon.status-icon {
+  vertical-align: -0.15em;
+}
+
 /* ── 冠军槽位（决赛对决） ── */
 .node-box.champion-slot {
   border-color: rgba(255, 215, 0, 0.3) !important;

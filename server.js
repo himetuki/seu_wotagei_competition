@@ -4,22 +4,35 @@
  */
 
 // 导入必要的库
-const express = require("express");
+const { createApp } = require("./server/http"); // y-router HTTP 层（自研，Express 兼容面）
 const bodyParser = require("body-parser");
 const path = require("path");
+const fs = require("fs");
 const cors = require("cors");
 
 // 导入核心模块
-const { getAppRoot, joinPath, dataDir, serverLog } = require("./server/utils");
+const { getAppRoot, dataDir, serverLog } = require("./server/utils");
+const paths = require("./server/paths.cjs");
 const { dbManager, initializeAllDatabases, registerModuleDatabases } = require("./server/database");
-const { initModules, getModuleDatabaseDefs } = require("./server/module-loader");
 const setupRoutes = require("./server/routes/index");
 const { runAllTests } = require("./server/test-utils");
 const musicScanner = require("./server/music-scanner"); // 导入音乐扫描模块
 
-// 创建 Express 应用实例
-const app = express();
+// 创建应用实例（y-router，listen 返回真 http.Server，其余监听逻辑零改动）
+const app = createApp();
 const PORT = Number(process.env.PORT) || 3000; // 强转数字，避免字符串拼接导致端口异常
+
+// cordis 装配自检（C9：必须显式退出，不起 HTTP 服务器；--test-cordis 为历史关口名，语义=装配自检）
+if (process.argv.includes("--test-cordis")) {
+  require("./server/cordis/selfcheck.cjs")
+    .run()
+    .then((code) => process.exit(code))
+    .catch((error) => {
+      console.error("selfcheck 异常:", error);
+      process.exit(1);
+    });
+  return; // F1：自检进程内只发生一次装配（selfcheck 自带 assembleBackend），不继续 bootstrap 双重装配
+}
 
 // 应用根目录
 const APP_ROOT = getAppRoot();
@@ -29,128 +42,48 @@ serverLog(`应用根目录: ${APP_ROOT}`);
 app.use(bodyParser.json({ limit: "5mb" })); // 增加请求体限制
 app.use(cors());
 
-// pkg 环境下加载内联资源
-const fs = require("fs");
-let inlinedAssets = null;
-try {
-  inlinedAssets = require("./server/inlined-assets");
-} catch (e) { /* 非构建环境 */ }
+// 静态文件中间件（自本文件整体平移至 server/http/static.js：Range/416 逐行保留；
+// P6b 起 /resource/** 锚定 RESOURCE_DIR，一切皆真实文件，无内联兜底）
+app.use(require("./server/http/static")({ APP_ROOT }));
 
-// pkg 兼容的静态文件中间件
-app.use((req, res, next) => {
-  if (req.path.startsWith("/api/") || req.path.startsWith("/resource/json/")) {
-    return next();
-  }
-
-  // 解码路径：req.path 保持百分号编码，中文/日文文件名会查不到
-  let relPath;
-  try {
-    relPath = decodeURIComponent(req.path);
-  } catch (e) {
-    relPath = req.path;
-  }
-  const filePath = joinPath(APP_ROOT, relPath);
-
-  // 1. 尝试文件系统
-  try {
-    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-      const ext = path.extname(filePath).toLowerCase();
-      const mimeMap = {
-        ".html": "text/html", ".css": "text/css",
-        ".js": "application/javascript", ".json": "application/json",
-        ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
-        ".gif": "image/gif", ".svg": "image/svg+xml", ".ico": "image/x-icon",
-        ".mp3": "audio/mpeg", ".wav": "audio/wav",
-      };
-      res.type(mimeMap[ext] || "application/octet-stream");
-      res.set("Accept-Ranges", "bytes");
-
-      const fileSize = fs.statSync(filePath).size;
-      const range = req.headers.range;
-
-      if (range) {
-        // 支持 Range 分片（媒体流/断点续传必需）：格式 bytes=start-end / bytes=-suffix
-        const m = /^bytes=(\d*)-(\d*)?$/.exec(range);
-        if (m) {
-          let start, end;
-          if (m[1] === "" && m[2] !== undefined) {
-            // 后缀范围：bytes=-N
-            start = Math.max(fileSize - parseInt(m[2], 10), 0);
-            end = fileSize - 1;
-          } else {
-            start = m[1] ? parseInt(m[1], 10) : 0;
-            end = m[2] ? parseInt(m[2], 10) : fileSize - 1;
-          }
-          if (isNaN(start)) start = 0;
-          if (isNaN(end) || end >= fileSize) end = fileSize - 1;
-
-          // 无效范围
-          if (start > end || start >= fileSize) {
-            res.status(416).set("Content-Range", `bytes */${fileSize}`).end();
-            return;
-          }
-
-          res.status(206);
-          res.set({
-            "Content-Range": `bytes ${start}-${end}/${fileSize}`,
-            "Content-Length": end - start + 1,
-          });
-          fs.createReadStream(filePath, { start, end }).pipe(res);
-          return;
-        }
-      }
-
-      // 无 Range：整文件流式发送（避免大文件整包读入内存）
-      res.set("Content-Length", fileSize);
-      fs.createReadStream(filePath).pipe(res);
-      return;
-    }
-  } catch (e) { /* fall through */ }
-
-  // 2. 尝试内联资源
-  if (inlinedAssets) {
-    const asset = inlinedAssets.getAsset(filePath);
-    if (asset) {
-      res.type(asset.mime);
-      res.send(Buffer.from(asset.data, "base64"));
-      return;
-    }
-  }
-
-  next();
+// ===== 诊断：运行时关键文件存在性（fs 直查，P6b 起替代内联资产诊断） =====
+serverLog("=== 诊断：检查运行时关键文件 ===");
+serverLog(`  模式: ${paths.isPortable() ? "便携（plugins/resource 外置）" : "开发（一切在应用根内）"}`);
+[
+  ["后端装配清单", paths.backendManifestPath()],
+  ["前端装配清单", paths.frontManifestPath()],
+  ["模块宇宙清单", paths.modulesManifestPath()],
+  ["cordis 内核（npm run build:kernel 产物）", path.join(APP_ROOT, "server", "cordis", "kernel.cjs")],
+  ["前端内核（npm run build:web 产物）", path.join(APP_ROOT, "web", "dist", "kernel.js")],
+].forEach(([label, p]) => {
+  serverLog(`  ${fs.existsSync(p) ? "✓" : "✗"} ${label}: ${p}${fs.existsSync(p) ? "" : " — 未找到"}`);
 });
-
-// ===== 诊断 =====
-serverLog("=== 诊断：检查内联资源 ===");
-if (inlinedAssets) {
-  const count = Object.keys(inlinedAssets.assets).length;
-  serverLog(`  内联资源已加载: ${count} 个文件`);
-  const testKeys = ["modules/home/index.html", "modules/select/app.js", "favicon.ico"];
-  testKeys.forEach(k => {
-    const a = inlinedAssets.getAsset(k);
-    if (a) {
-      const size = Buffer.from(a.data, "base64").length;
-      serverLog(`  ✓ ${k} (${size} bytes, ${a.mime})`);
-    } else {
-      serverLog(`  ✗ ${k} — 未找到`, "error");
-    }
-  });
-} else {
-  serverLog("  未加载内联资源（开发模式，使用文件系统）");
-}
 serverLog("=== 诊断结束 ===");
 
-// 启动引导：模块初始化 + 数据库初始化（async）+ 路由 + 监听的统一封装
+// 启动引导：插件装配 + 数据库初始化（async）+ 路由 + 监听的统一封装
 async function bootstrap() {
-  // 初始化模块（收集各模块 server 端代码与数据库定义）——必须在数据库初始化前
+  // cordis 插件装配（P5a 起唯一装配路径）：装配（清单读取 + 插件挂载 + 元数据投影）
+  // → 数据库 → 路由。时序硬约束：装配必须先于 initializeAllDatabases()，否则
+  // ctx.db.define 桥接的模块库缺 docs 行（静默以空 {} 兜底，数据形变）。
   try {
-    serverLog("正在初始化模块系统...");
-    initModules();
-    // 把模块声明的数据库定义桥接给 database.js
-    registerModuleDatabases(getModuleDatabaseDefs());
-    serverLog("模块系统初始化完成");
+    serverLog("[cordis] 正在装配后端插件...");
+    const { assembleBackend } = require("./server/cordis/loader");
+    const result = await assembleBackend({ app, dbManager, registerModuleDatabases, serverLog });
+    if (result.errors.length > 0) {
+      // 装配错误不阻止启动（loader 已回退），但逐条上报
+      result.errors.forEach((e) => serverLog(e.message, "error"));
+    }
+    // /api/modules 与 /m/:id 元数据源切到 ctx.modules
+    const registry = require("./server/module-registry.cjs");
+    registry.setSource(
+      () => result.ctx.modules.list(),
+      (id) => result.ctx.modules.get(id)
+    );
+    serverLog("模块系统初始化完成（cordis 装配）");
   } catch (error) {
-    serverLog(`模块系统初始化失败: ${error.message}`, "error");
+    // kernel.cjs 缺失等装配失败：快速失败（唯一装配路径，无 legacy 兜底可退）
+    serverLog(`[cordis] 装配失败: ${error.message}（若为产物缺失请先运行 npm run build:kernel）`, "error");
+    process.exit(1);
   }
 
   // 初始化数据库
@@ -195,15 +128,18 @@ async function bootstrap() {
       // 初始化音乐扫描模块
       musicScanner.initializeMusicScanner();
 
-      // 检查命令行参数，如果有--test参数，则运行测试
+      // 检查命令行参数，如果有--test参数，则运行测试（测完自动退出，避免驻留挂进程）
       if (process.argv.includes("--test")) {
         // 延迟1秒运行测试，确保服务器已完全启动
         setTimeout(async () => {
+          let failed = false;
           try {
             await runAllTests(dbManager);
           } catch (error) {
             serverLog(`运行测试时出错: ${error.message}`, "error");
+            failed = true;
           }
+          process.exit(failed ? 1 : 0);
         }, 1000);
       } else {
         serverLog("提示: 使用 'node server.js --test' 来运行数据库操作测试");
@@ -272,7 +208,7 @@ async function bootstrap() {
       }
     } else if (input === "exit" || input === "quit" || input === "q") {
       serverLog("正在关闭服务器...");
-      server.close(() => {
+      httpServer.close(() => {
         serverLog("服务器已关闭");
         process.exit(0);
       });

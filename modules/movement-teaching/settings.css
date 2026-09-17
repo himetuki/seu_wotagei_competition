@@ -343,6 +343,16 @@
   margin-right: 5px;
 }
 
+/* Tabler 内联 SVG 图标基座（P10b：emoji/文本符号 → icons.mjs） */
+.y-icon {
+  vertical-align: middle;
+}
+
+.edit-btn .y-icon,
+.delete-btn .y-icon {
+  display: block;
+}
+
 .settings-saved {
   animation: settings-saved-flash 1s;
 }

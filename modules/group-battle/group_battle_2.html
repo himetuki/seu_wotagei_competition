@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>团体赛 - 第二大轮</title>
+    <link rel="preload" as="image" href="/resource/images/bg.jpg" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -68,15 +69,11 @@
     </div>
     <div id="win-effect" class="win-effect hidden">
       <div class="win-text">VICTORY</div>
-      <div class="crown">👑</div>
+      <div class="crown"><!-- 皇冠图标由 front/plugin.js 注入内联 SVG（原 emoji 已移除） --></div>
     </div>
     <audio id="music-player"></audio>
-    <script src="gb_common.js"></script>
-    <script src="group_battle_2_main.js"></script>
-    <script src="group_battle_2_data.js"></script>
-    <script src="group_battle_2_match.js"></script>
-    <script src="group_battle_2_battle.js"></script>
-    <script src="group_battle_2_render.js"></script>
-    <script src="group_battle_2_persist.js"></script>
+
+    <div id="plugin-root" hidden></div>
+    <script type="module" src="/web/kernel.js"></script>
   </body>
 </html>

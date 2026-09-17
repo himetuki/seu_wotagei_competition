@@ -83,6 +83,11 @@ header h1 {
   text-shadow: 0 0 15px rgba(249, 115, 22, 0.5);
 }
 
+/* Tabler 内联 SVG 图标基座（P10b：emoji → icons.mjs） */
+.y-icon {
+  vertical-align: middle;
+}
+
 /* ========== 音乐区域 ========== */
 #music-section {
   flex: 1;

@@ -288,9 +288,10 @@ FakesAssemblies/
 node_modules/
 
 # Build outputs
-y-stageX.exe
-server/inlined-assets.js
-server/module-servers.js
+dist-server/
+server/cordis/kernel.cjs
+YStage3-Portable/
+YStage3-Portable.zip
 .pkg-cache/
 
 # 运行时数据（sql.js 自动生成，不入库）
@@ -415,3 +416,9 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# web 前端内核构建产物（npm run build:web 生成）
+web/dist/
+
+# 安全扫描工具产物（Mimosa）
+.mimosa/

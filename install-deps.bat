@@ -16,7 +16,7 @@ if %errorlevel% neq 0 (
 echo [检测] Node.js 已安装:
 node -v
 echo.
-echo [提示] 旧版 pkg 需要 Node.js 18，当前版本若不兼容请用 nvm 切换。
+echo [提示] 打包已改为便携式（build.bat = build + scripts/make-portable.js），本脚本仅负责安装依赖。
 echo.
 
 REM 检查 package.json 是否存在
@@ -69,25 +69,7 @@ if %errorlevel% equ 0 (
     goto :end
 )
 
-REM 同步 pkg 打包缓存：从 C盘复制到项目内（换机器不用重新下载）
-echo.
-echo [缓存] 检查 pkg 打包缓存...
-set LOCAL_CACHE=%~dp0.pkg-cache
-set GLOBAL_CACHE=%USERPROFILE%\.pkg-cache
-if not exist "%LOCAL_CACHE%" mkdir "%LOCAL_CACHE%"
-
-set SYNCED=0
-if not exist "%LOCAL_CACHE%\v3.4\fetched-v18.5.0-win-x64" (
-    if exist "%GLOBAL_CACHE%\v3.4\fetched-v18.5.0-win-x64" (
-        xcopy "%GLOBAL_CACHE%\v3.4\fetched-v18.5.0-win-x64" "%LOCAL_CACHE%\v3.4\" /Y /I >nul
-        echo   ^> 已同步 Node 18.5 缓存 ^(v3.4^)
-        set SYNCED=1
-    )
-)
-if "%SYNCED%"=="0" (
-    echo   ^> 项目内缓存已完整，无需同步
-    echo   ^> 如需获得缓存，请运行 build.bat 自动下载
-)
+REM pkg 打包缓存机制已随 P6b 便携化退役（打包走 scripts/make-portable.js）
 echo.
 echo   启动命令: node server.js
 

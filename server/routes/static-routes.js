@@ -3,22 +3,15 @@
  */
 const path = require("path");
 const fs = require("fs");
-const { serverLog, joinPath } = require("../utils");
+const paths = require("../paths.cjs");
+const { serverLog, safeBasename, safeJoin } = require("../utils");
 const { dbManager } = require("../database");
-
-// pkg 环境下加载内联资源（构建时由 build-inline.js 生成）
-let inlinedAssets = null;
-try {
-  inlinedAssets = require("../inlined-assets");
-  serverLog(`已加载内联资源: ${Object.keys(inlinedAssets.assets).length} 个文件`);
-} catch (e) {
-  // 非 pkg 环境或内联文件不存在，正常
-}
 
 const mimeMap = {
   ".html": "text/html",
   ".css": "text/css",
   ".js": "application/javascript",
+  ".mjs": "application/javascript",
   ".json": "application/json",
   ".png": "image/png",
   ".jpg": "image/jpeg",
@@ -30,9 +23,8 @@ const mimeMap = {
   ".wav": "audio/wav",
 };
 
-// 发送文件：先试文件系统，再试内联资源
+// 发送文件（P6b：inlined-assets 兜底随 pkg 退役，真实文件直读）
 function sendFileSafe(res, filePath) {
-  // 1. 尝试文件系统
   try {
     const content = fs.readFileSync(filePath);
     const ext = path.extname(filePath).toLowerCase();
@@ -40,21 +32,8 @@ function sendFileSafe(res, filePath) {
     res.send(content);
     return true;
   } catch (e) {
-    // 文件系统失败，继续
+    return false;
   }
-
-  // 2. 尝试内联资源
-  if (inlinedAssets) {
-    const asset = inlinedAssets.getAsset(filePath);
-    if (asset) {
-      const buf = Buffer.from(asset.data, "base64");
-      res.type(asset.mime);
-      res.send(buf);
-      return true;
-    }
-  }
-
-  return false;
 }
 
 // 设置静态文件路由
@@ -63,8 +42,12 @@ function setupStaticRoutes(app, APP_ROOT, dataDir) {
   app.get("/resource/json/:jsonfile", (req, res) => {
     try {
       const jsonFile = req.params.jsonfile;
-      const safeName = path.basename(jsonFile);
-      const jsonPath = path.join(dataDir, safeName);
+      // 只接受纯文件名：URL 段含目录成分（. / \ 等）一律拒绝，防逃逸出 json 数据目录
+      const safeName = safeBasename(jsonFile);
+      if (!safeName) {
+        return res.status(400).send("非法文件名");
+      }
+      const jsonPath = safeJoin(dataDir, safeName);
 
       // 首先尝试从文件系统获取
       if (fs.existsSync(jsonPath)) {
@@ -88,7 +71,7 @@ function setupStaticRoutes(app, APP_ROOT, dataDir) {
 
   // 首页（直接服务 home 模块，避免存根跳转）
   app.get("/", (req, res) => {
-    const filePath = joinPath(APP_ROOT, "modules", "home", "index.html");
+    const filePath = path.join(paths.modulesDir(), "home", "index.html");
     if (!sendFileSafe(res, filePath)) {
       res.status(404).send("首页不存在");
     }
@@ -97,7 +80,7 @@ function setupStaticRoutes(app, APP_ROOT, dataDir) {
   // 模糊匹配
   app.use((req, res, next) => {
     if (req.path === "/" || req.path === "" || req.path === "/index") {
-      const filePath = joinPath(APP_ROOT, "modules", "home", "index.html");
+      const filePath = path.join(paths.modulesDir(), "home", "index.html");
       if (!sendFileSafe(res, filePath)) {
         next();
       }

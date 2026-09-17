@@ -2,64 +2,44 @@
 chcp 65001 >nul
 cd /d "%~dp0"
 echo ========================================
-echo   Y.Stage X 打包工具（旧版 pkg + Node 18）
+echo   Y.Stage X 便携式打包（P6b，无 pkg）
 echo ========================================
 
 REM 安装依赖
 call npm install
 
-REM 设置路径
-set NODE_MIRROR=https://mirrors.huaweicloud.com/nodejs/
-set LOCAL_CACHE=%~dp0.pkg-cache
-set GLOBAL_CACHE=%USERPROFILE%\.pkg-cache
-if not exist "%LOCAL_CACHE%" mkdir "%LOCAL_CACHE%"
-
-REM ===== 同步缓存：项目内 > C盘 =====
-if not exist "%LOCAL_CACHE%\v3.4\fetched-v18.5.0-win-x64" (
-    if exist "%GLOBAL_CACHE%\v3.4\fetched-v18.5.0-win-x64" (
-        xcopy "%GLOBAL_CACHE%\v3.4\fetched-v18.5.0-win-x64" "%LOCAL_CACHE%\v3.4\" /Y /I >nul
-        echo [同步] 从 C盘复制 Node 18.5 缓存
-    )
-)
-
-REM ===== 检测缓存 =====
-if not exist "%LOCAL_CACHE%\v3.4\fetched-v18.5.0-win-x64" (
-    echo [下载] 通过 GHProxy 加速下载 Node 18 二进制...
-    if not exist "%LOCAL_CACHE%\v3.4" mkdir "%LOCAL_CACHE%\v3.4"
-    powershell -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://ghproxy.com/https://github.com/vercel/pkg-fetch/releases/download/v3.4/fetched-v18.5.0-win-x64' -OutFile '%LOCAL_CACHE%\v3.4\fetched-v18.5.0-win-x64' -UseBasicParsing" 2>nul
-    if exist "%LOCAL_CACHE%\v3.4\fetched-v18.5.0-win-x64" (
-        echo [完成] Node 18.5 缓存已下载到项目内
-    ) else (
-        echo [提示] 自动下载失败，请手动下载放到 .pkg-cache\v3.4\ 后重试
-        echo         链接: https://ghproxy.com/https://github.com/vercel/pkg-fetch/releases/download/v3.4/fetched-v18.5.0-win-x64
-    )
-) else (
-    echo [缓存] Node 18.5 ^(v3.4^)
-)
-
-set PKG_CACHE_PATH=%LOCAL_CACHE%
+echo.
+echo [内核] 构建 cordis 内核（create-root.cjs → server\cordis\kernel.cjs）...
+call npm run build:kernel
+if %errorlevel% neq 0 goto :fail
 
 echo.
-echo [内联] 将网页文件打包到 JS 模块中...
-echo        ^> 生成 server\inlined-assets.js（静态资源）与 server\module-servers.js（模块后端注册表）
-call node build-inline.js
+echo [内核] 构建前端内核（web\kernel.mjs → web\dist\kernel.js，/web/kernel.js 发布依赖）...
+call npm run build:web
+if %errorlevel% neq 0 goto :fail
 
 echo.
-echo [打包] 开始...
-del y-stageX.exe 2>nul
-call npx pkg server.js --targets node18-win-x64 --output y-stageX.exe
+echo [核心] 构建服务端 bundle（server.js + 生产依赖 → dist-server\server.bundle.cjs）...
+call npm run build:server
+if %errorlevel% neq 0 goto :fail
 
-if %errorlevel% equ 0 (
-    echo.
-    echo 打包完成！
-    echo y-stageX .exe
-    echo.
-    echo [分发] 将 y-stageX.exe 与 resource\ 文件夹放同一目录即可运行
-    echo        （音乐库、SQLite 等数据保存在 resource\ 中）
-) else (
-    echo.
-    echo 打包失败！请检查上方错误信息。
-    echo 提示：旧版 pkg 需要 Node.js 16/18 环境运行。
-)
+echo.
+echo [便携] 组装 YStage3-Portable\（bundle 形态：运行时 + 单文件 app + plugins 组件层 + resource 数据层 + zip）...
+call node scripts/make-portable.js --zip
+if %errorlevel% neq 0 goto :fail
 
+echo.
+echo 打包完成！
+echo   产物: YStage3-Portable\        （bundle 形态，整个目录拷走即用，双击 启动YStage.bat）
+echo   压缩: YStage3-Portable.zip
+echo.
+echo 调试源码形态: node scripts/make-portable.js --loose
+echo 插件热替换：改 plugins\ 下文件 → 管理页（/m/plugin-manager/）热重载；清单改动即时落盘。
+goto :end
+
+:fail
+echo.
+echo 打包失败！请检查上方错误信息。
+
+:end
 pause

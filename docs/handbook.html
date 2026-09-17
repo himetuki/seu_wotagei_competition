@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Y.Stage3 手册 · WOTA艺对战平台</title>
+<style>
+  :root{
+    --bg:#07090f; --panel:#0c1018; --panel2:#090d15; --border:#1c2433;
+    --text:#c9d4e3; --muted:#7d8aa0; --cyan:#22d3ee; --magenta:#f472b6; --amber:#fbbf24;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:system-ui,-apple-system,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+    font-size:15px; line-height:1.75; min-height:100vh;
+  }
+  ::selection{background:rgba(34,211,238,.28)}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:#1e293b;border-radius:4px}
+  ::-webkit-scrollbar-track{background:transparent}
+
+  .neonline{position:fixed;top:0;left:0;right:0;height:2px;z-index:50;
+    background:linear-gradient(90deg,var(--cyan),var(--magenta),var(--amber));
+    box-shadow:0 0 12px rgba(34,211,238,.55),0 0 22px rgba(244,114,182,.35)}
+
+  aside{position:fixed;top:0;bottom:0;left:0;width:252px;padding:28px 0 18px;
+    background:var(--panel2);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;overflow-y:auto;z-index:40}
+  .brand{padding:0 22px 18px;border-bottom:1px solid var(--border)}
+  .brand .t{font-size:19px;font-weight:700;color:#e8f4ff;letter-spacing:.5px;
+    text-shadow:0 0 16px rgba(34,211,238,.45)}
+  .brand .t .pen{color:var(--cyan)}
+  .brand .s{font-size:11.5px;color:var(--muted);margin-top:4px;letter-spacing:1px}
+  nav{flex:1;padding:14px 12px}
+  nav a{display:flex;align-items:baseline;gap:9px;padding:9px 12px;margin:2px 0;
+    border-radius:8px;color:var(--muted);text-decoration:none;font-size:14px;
+    border-left:3px solid transparent;transition:all .15s}
+  nav a .no{font-size:11px;opacity:.55;font-family:ui-monospace,Consolas,monospace;min-width:18px}
+  nav a:hover{color:var(--text);background:rgba(34,211,238,.05)}
+  nav a.on{color:var(--cyan);background:rgba(34,211,238,.08);
+    border-left-color:var(--cyan);text-shadow:0 0 12px rgba(34,211,238,.5)}
+  nav a.on .no{color:var(--cyan);opacity:.9}
+  .sidefoot{padding:12px 22px 0;border-top:1px solid var(--border);font-size:12px}
+  .sidefoot a{color:var(--muted);text-decoration:none}
+  .sidefoot a:hover{color:var(--cyan)}
+
+  main{margin-left:252px;padding:44px 52px 60px}
+  .wrap{max-width:840px;margin:0 auto}
+  #ch-head{margin-bottom:26px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+  #ch-title{margin:0;font-size:26px;color:#eaf6ff;font-weight:700;
+    text-shadow:0 0 20px rgba(34,211,238,.4)}
+  #ch-head .kicker{font-size:12px;letter-spacing:2px;color:var(--muted);margin-bottom:8px}
+  .chfile{display:inline-block;margin-top:8px;font-size:12.5px;color:var(--muted);
+    text-decoration:none;border:1px solid var(--border);padding:2px 10px;border-radius:20px}
+  .chfile:hover{color:var(--cyan);border-color:var(--cyan)}
+
+  #content h2{font-size:20px;color:#e8f4ff;margin:38px 0 14px;padding-left:12px;
+    border-left:3px solid var(--cyan);text-shadow:0 0 14px rgba(34,211,238,.3)}
+  #content h3{font-size:16.5px;color:#dbeafe;margin:28px 0 10px;padding-left:10px;
+    border-left:2px solid rgba(244,114,182,.6)}
+  #content h4{font-size:15px;color:var(--text);margin:20px 0 8px}
+  #content p{margin:10px 0}
+  #content a{color:var(--cyan);text-decoration:none}
+  #content a:hover{text-decoration:underline;text-shadow:0 0 10px rgba(34,211,238,.6)}
+  #content strong{color:#eaf2ff}
+  #content hr{border:none;border-top:1px dashed var(--border);margin:30px 0}
+  #content blockquote{margin:14px 0;padding:10px 16px;border-left:3px solid var(--magenta);
+    background:rgba(244,114,182,.05);border-radius:0 8px 8px 0;color:var(--muted)}
+  #content code{background:rgba(34,211,238,.09);color:#7dd3fc;padding:1.5px 6px;
+    border-radius:5px;font-family:ui-monospace,Consolas,"Cascadia Code",monospace;font-size:.88em}
+  .codeblock{margin:14px 0;border:1px solid var(--border);border-radius:10px;
+    overflow:hidden;background:var(--panel)}
+  .codebar{display:flex;justify-content:space-between;align-items:center;
+    padding:5px 14px;background:rgba(34,211,238,.04);border-bottom:1px solid var(--border);
+    font-size:11.5px;color:var(--muted);font-family:ui-monospace,Consolas,monospace}
+  .codebar .copy{background:transparent;border:1px solid var(--border);color:var(--muted);
+    font-size:11px;padding:1px 10px;border-radius:12px;cursor:pointer;transition:all .15s}
+  .codebar .copy:hover{color:var(--cyan);border-color:var(--cyan)}
+  .codeblock pre{margin:0;padding:14px 16px;overflow-x:auto}
+  .codeblock pre code{background:transparent;color:#c9e6f5;padding:0;font-size:13px;line-height:1.65}
+  .tablewrap{overflow-x:auto;margin:14px 0}
+  #content table{border-collapse:collapse;width:100%;font-size:13.5px}
+  #content th,#content td{border:1px solid var(--border);padding:7px 12px;text-align:left;vertical-align:top}
+  #content th{background:rgba(34,211,238,.07);color:#bfe9ff;font-weight:600}
+  #content tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+  #content ul,#content ol{margin:10px 0;padding-left:26px}
+  #content li{margin:5px 0}
+  #content ul li::marker{color:var(--cyan)}
+  #content ol li::marker{color:var(--magenta)}
+  #content input[type=checkbox]{accent-color:var(--cyan)}
+
+  #foot{max-width:840px;margin:50px auto 0;padding-top:16px;border-top:1px solid var(--border);
+    color:var(--muted);font-size:12px}
+  #foot .glow{color:var(--cyan)}
+
+  @media (max-width:900px){
+    aside{position:static;width:auto;height:auto;padding:14px 0 6px;border-right:none;border-bottom:1px solid var(--border)}
+    nav{display:flex;overflow-x:auto;padding:6px 10px}
+    nav a{white-space:nowrap;border-left:none;border-bottom:2px solid transparent;border-radius:6px 6px 0 0}
+    nav a.on{border-bottom-color:var(--cyan)}
+    .brand{border-bottom:none;padding-bottom:6px;text-align:center}
+    .sidefoot{display:none}
+    main{margin-left:0;padding:26px 20px 50px}
+  }
+</style>
+</head>
+<body>
+<div class="neonline"></div>
+
+<aside>
+  <div class="brand">
+    <div class="t"><span class="pen">◼</span> Y.Stage3 手册</div>
+    <div class="s">WOTA艺对战平台 · 使用与开发</div>
+  </div>
+  <nav id="nav"></nav>
+  <div class="sidefoot"><a href="../README.md">← 返回仓库</a></div>
+</aside>
+
+<main>
+  <div class="wrap">
+    <header id="ch-head">
+      <div class="kicker">Y.STAGE3 HANDBOOK</div>
+      <h1 id="ch-title"></h1>
+      <a id="ch-file" class="chfile" target="_blank" rel="noopener"></a>
+    </header>
+    <article id="content"></article>
+  </div>
+  <footer id="foot">
+    本页为<span class="glow">自包含静态聚合</span>：内容内嵌自 <code>docs/</code> 下各 .md（唯一事实源），修改 md 后请同步本页 ·
+    深色手册 · <span class="glow">Keep the penlight glowing ✦</span>
+  </footer>
+</main>
+
+<!-- ══════════ 章节内容（源：docs/*.md；正文中的内核 script 闭合标签以反斜杠转义存储，渲染时还原） ══════════ -->
+
+<script type="text/markdown" id="md-intro">
+**《Y.Stage3 手册》**聚合了本项目的使用与开发文档。Y.Stage3 是 WOTA 艺对战平台——**万物皆插件**：每个功能模块都是一对可独立启停、热替换的插件。
+
+**按身份选择入口**
+
+- 现场使用者 → [快速上手](#getting-started)、[日常使用](#usage)
+- 管理员 → [插件管理](#plugin-manager)
+- 开发者 → [插件开发教程](#tutorial)（先）→ [插件开发参考](#plugin-development)（后）
+- 出包分发 → [打包与发布](#packaging)
+
+**阅读提示**
+
+- 左侧目录可随时切换章节；地址栏 hash 可直达（如 `#tutorial`）
+- 内容源文件为 `docs/` 目录下各 `.md`（唯一事实源），修改 md 后请同步本页
+- 开发者契约以仓库根目录 `AGENTS.md` 为最高权威
+</script>
+
+<script type="text/markdown" id="md-getting-started">
+> 《Y.Stage3 手册》章节 · 读者：现场使用者与开发者
+> 插件开发请进阶阅读 [插件开发教程](#tutorial) 与 [插件开发技术参考](#plugin-development)。
+
+## 1. 项目是什么
+
+Y.Stage3 是 WOTA 艺（荧光棒舞蹈）对战平台：管理选手、技能、音乐，支持一年加组、一年内组、团体赛、Drag 对阵树等赛制。
+
+架构一句话：**万物皆插件**。每个功能模块 = 一对插件（后端 `plugin.js` + 前端 `front/plugin.js`）+ 三份清单条目；页面仍是独立页面 `/m/<id>/`，由服务端（Node 内置 http + 自研 y-router + cordis 插件内核）与前端内核（`/web/kernel.js`）分别装配。**新增功能不需要修改任何共享代码。**
+
+## 2. 现场使用者（便携包）
+
+1. 从 Release 下载 `YStage3-Portable.zip`，解压到一个**专用文件夹**
+2. 双击 `启动YStage.bat`，浏览器访问 <http://localhost:3000>
+3. 首次运行会自动生成缺失的 `resource/` 目录结构
+4. 用完关闭窗口即可
+
+> 端口 3000 被占用时自动改用 3001、3002……，并在窗口打印实际地址，访问打印出的地址即可。
+
+**停止与自检**：
+
+- 正常退出：`Ctrl+C`，或在终端输入 `q` / `exit`
+- 数据自检：输入 `t` / `test`，确认本机能否正常读写数据库（**重要比赛前建议在备用电脑也跑一遍**）
+
+## 3. 开发者环境（源码运行）
+
+```bash
+npm install          # 安装依赖
+npm run build        # 构建内核产物（server/cordis/kernel.cjs + web/dist/kernel.js，均 gitignored）
+node server.js       # 启动，控制台出现 [cordis] 装配完成 即成功
+```
+
+- 克隆或换新环境后**必须先 `npm run build`**——内核产物不入库，缺它启动会快速失败并给出修复指引
+- 数据自检：启动后终端输入 `t`；开发测试入口 `node server.js --test`（跑完自动退出，exit 0）
+- 装配自检：`node server.js --test-cordis`（插件装配断言 A1-A6）
+- 单元测试：`node server/run-unit-tests.js`
+
+## 4. 数据在哪
+
+全部运行数据都在 `resource/` 文件夹（SQLite 数据库、音乐库、json 快照、图片）。**备份 = 复制整个 `resource/` 文件夹**，详见[日常使用](#usage)。
+</script>
+
+<script type="text/markdown" id="md-usage">
+> 《Y.Stage3 手册》章节 · 现场使用者必读。
+
+## 1. 首次启动后的数据导入
+
+程序自带空数据启动后，选手、技能、音乐等全部在**网页界面**里导入，通常不需要直接编辑文件：
+
+- **导入选手**：主页 → 设置中心 → 选手管理。支持 txt 批量导入：文件一行一个选手名字，后缀 `.txt`，无需分隔符
+- **导入技能**：设置中心 → 技能管理
+- **导入奖励**：设置中心 → 奖励管理
+- **导入音乐**：设置中心 → 音乐管理，或"音乐导入"页面批量导入；也可以直接把音乐文件放进 `resource/musics/<组别目录>`（如 `1yearplus`、`1yearminus`、`1yearplus_ex`、`games_musics`、`musics_free`），再刷新页面
+
+> 音乐文件格式建议 mp3 / wav，文件名尽量避免特殊字符。
+
+## 2. 一场比赛怎么跑
+
+1. **赛前准备**：在设置中心导入选手、技能、音乐；打开各赛制页面确认数据正确
+2. **抽签/编排**：在赛制页面（一年加组 / 一年内组 / 团体赛 / Drag 式）完成分组与对阵
+3. **抽取音乐**：点击"抽取音乐"，随机滚动结束后确认曲目
+4. **开始比赛**：点击"开始比赛"播放音乐，进入比赛模式；双击任意位置可停止播放
+5. **判定胜负**：比赛结束后点击胜者，系统自动计分并推进轮次
+6. **查看结果**：比赛结束后到排名、排行榜、团体排名页面查看成绩
+7. **备份数据**：比赛结束后复制整个 `resource/` 文件夹保存
+
+## 3. 备份与恢复
+
+- 全部数据都在 `resource/` 文件夹里（选手、赛程、SQLite 数据库、音乐）
+- **备份**：复制整个 `resource/` 文件夹即可
+- **恢复**：把备份的 `resource/` 放回程序同目录，覆盖同名文件即可
+- **重要比赛前**：请备份，并在备用电脑上跑一遍 `t` 自检
+
+## 4. 功能页面 404 了？
+
+可能该插件被停用了。到 `/m/plugin-manager/` 查看状态并重新启用即可；停用不影响已保存的数据（详见[插件管理](#plugin-manager)）。
+</script>
+
+<script type="text/markdown" id="md-plugin-manager">
+> 《Y.Stage3 手册》章节 · 面向管理员；面向开发者的管理面实现见[插件开发技术参考](#plugin-development)。
+
+## 1. 它是什么
+
+管理页本身也是一个插件（这是本项目"界面插件化"的示范），提供全部模块的可视化管理：**不修改代码、不重启服务**即可启停功能、编辑配置、热重载。
+
+## 2. 操作与生效时机
+
+| 操作 | 效果 |
+|------|------|
+| 启用/停用后端插件 | **即时生效**：其路由与页面物理 404（请求排空保证在途请求安全完成），SQLite 数据保留 |
+| 编辑 config | 写入清单并热重装，即时生效 |
+| 热重载 | 改盘上的插件文件后无需重启即生效 |
+| 前端插件开关 | 落盘后**刷新页面**生效 |
+
+## 3. 语义细节
+
+- **停用不丢数据**：SQLite 数据完整保留，重新启用即恢复
+- **请求排空**：热重载瞬间，正在保存的比赛进度会安全完成；新请求会短暂收到 503（自动重试即可），比赛进行中热重载正在使用的模块属于低风险操作，但仍建议避开
+- **便携包内**：所有改动写入 `plugins/` 目录下的真实清单文件，**重启后保持**
+- **清单即事实**：手动编辑 `plugins/plugins.json` / `front.json`（或 dev 模式的 `server/plugins.json` / `web/front.json`）与在页面上操作等效
+
+## 4. 常见操作
+
+- 某个赛制页 404？→ 到管理页确认该插件是否被停用，重新启用即可
+- 改了某插件的代码？→ 管理页对该插件"重载"，无需重启
+- 想临时隐藏某个功能？→ 停用它，数据不丢，随时恢复
+</script>
+
+<script type="text/markdown" id="md-tutorial">
+> 《Y.Stage3 手册》章节 · 面向开发者。本篇是上手导览；**API 签名、参数、清单结构、生命周期与错误语义的完整技术细节**见姊妹篇 [插件开发技术参考](#plugin-development)。
+
+## 1. 心智模型
+
+一个功能 = **一对插件 + 三份清单条目**：
+
+```
+modules/my-feature/
+├── plugin.js          # 后端插件（CommonJS）：路由 + 数据库 + 页面元数据
+├── index.html         # 页面：静态骨架（可选）+ #plugin-root + /web/kernel.js
+├── style.css
+└── front/
+    ├── plugin.js      # 前端插件（原生 ESM）：注册页面组件
+    └── view*.js       # 组件实现（可拆多文件，同目录相对 import）
+```
+
+三份清单（脚手架会自动追加，**不要手改**）：
+
+| 清单 | 作用 | 漏掉的后果 |
+|------|------|-----------|
+| `modules/modules.json` | 页面元数据（导航/管理页显示名单） | 页面能跑但不进导航 |
+| `server/plugins.json` | 后端装配 | 路由与页面 404 |
+| `web/front.json` | 前端装配 | 页面空白、前端代码不下载 |
+
+`enabled:false` = 不挂载但数据保留；未列出 = 不挂载。
+
+## 2. 准备
+
+- 能跑 `node server.js` 且控制台无 error（见[快速上手](#getting-started)）
+- 起服后访问 `/m/plugin-manager/`，确认现有插件全部"已挂载"——这是你的基线环境
+- 选定模块 id：**小写字母 + 连字符**（如 `music-draw`），它同时是目录名、页面路径、前端组件 key
+
+## 3. 第一步：脚手架（永远从它开始）
+
+```bash
+node scripts/new-module.js my-feature "我的功能"            # 纯前端模块
+node scripts/new-module.js my-feature "我的功能" --server   # 带后端（附 db + 路由模板）
+```
+
+脚手架生成一对插件骨架（含中文契约注释）并**自动追加三份清单条目**。三份清单不同步是本项目最经典的坑，用脚手架可完全避免。
+
+## 4. 后端插件（`plugin.js`，CommonJS）
+
+```js
+module.exports = {
+  name: "my-feature",
+  inject: ["db", "server", "modules"],   // 白名单：server / db / modules / assembly
+  apply(ctx) {
+    // ---- 数据库：一行声明即得持久化文档 ----
+    ctx.db.define([
+      { name: "my-feature-process", defaultValue: { phase: "idle" } },
+    ]);
+    // ctx.db 还有 get(name) / sql(q, p) / exists(name)
+
+    // ---- 路由：必须在 apply 同步窗口内注册；一律带路径前缀 ----
+    ctx.server.route((app, { dbManager, serverLog, dataDir }) => {
+      app.get("/api/my-feature/ping", (req, res) => res.json({ ok: true }));
+      app.post("/api/my-feature-process", (req, res) => { /* 保存进度 */ });
+    });
+
+    // ---- 页面元数据：必须与 modules.json 中本模块条目逐字段一致 ----
+    ctx.modules.registerPage({
+      id: "my-feature", name: "我的功能", description: "一句话说明",
+      icon: "puzzle",                         // 图标名，须 ∈ web/icons.mjs 的 ICON_NAMES
+      nav: ["select"], order: 50,             // nav: "index"/"select"/"games"
+    });
+
+    // ---- 卸载清理：插件停用时从导航中消失 ----
+    ctx.effect(() => () => ctx.modules.unregister("my-feature"));
+  },
+};
+```
+
+**三条纪律：**
+
+1. `inject` 只能写白名单服务名，**拼错会导致装配挂起**（内核会校验跳过，但别依赖兜底）
+2. 路由全部经 `app.get/post(...)` 带**路径前缀**注册——**禁止 `scope.use(fn)` 无路径中间件**（热重载排空按路径模式拦截，pathless 层无锚点）
+3. 数据库名与 API 前缀保持对应（`my-feature-process` ↔ `/api/my-feature-process`）
+
+## 5. 前端插件（`front/plugin.js`，原生 ESM）
+
+```js
+export default {
+  name: "my-feature-front",
+  inject: ["ui", "api"],                 // 白名单：ui / api / state
+  apply(ctx) {
+    ctx.ui.register({
+      key: "my-feature",                 // ★ 必须 = 模块 id，内核按它渲染
+      component(el, meta, ctx2) {        // el = #plugin-root；meta = 清单条目 config
+        const controller = new AbortController();
+        el.innerHTML = `<section class="my-feature-page">
+          <button id="my-feature-btn">点我</button>
+        </section>`;
+        el.querySelector("#my-feature-btn")
+          .addEventListener("click", onClick, { signal: controller.signal });
+
+        return () => controller.abort(); // cleanup：重渲染/卸载前被调用
+      },
+    });
+  },
+};
+```
+
+**铁约定：**
+
+- **所有事件监听都传 `{ signal }`**，cleanup 里统一 `abort()`——违反它，插件重渲染时会双绑双触发
+- `apply` 阶段只 register，**DOM 操作统一发生在 component 被调用时**（内核装配完成后）
+- 页面内资源用同目录相对路径（`style.css`、`./front/...`）；共享资源用绝对路径（`/api/...`、`/resource/...`、`/web/...`），**不要写死 localhost 或端口**
+- 服务可用 `ctx.api.get/post/del`（自动 JSON 序列化，非 2xx 抛错带 status）；跨插件通信用 `ctx.state` + `state:changed` 事件
+
+### 5.1 图标（`/web/icons.mjs`）
+
+全项目 UI 图标统一来自共享基座 `web/icons.mjs`（Tabler Icons 本地内置子集，MIT，离线可用、运行期零依赖；许可见根 `THIRD-PARTY-NOTICES.md`）。前端插件里 origin 相对路径 import，不要自建图标字典：
+
+```js
+import { icon, iconEl } from "/web/icons.mjs";
+
+// 装饰性图标（旁边有文字）——不停用屏幕阅读器
+btn.innerHTML = `${icon("plus", { size: 18 })}<span>新增选手</span>`;
+
+// 图标即唯一语义——必须给 label
+cell.append(iconEl("trash", { label: "删除该行" }));
+
+// 颜色跟随父元素（stroke="currentColor"，无需在 JS 指定颜色）
+statusEl.innerHTML = icon("circle-check", { size: 16 }) + " 已保存";
+```
+
+- `icon(name, { size = 20, class, stroke = 1.75, label })` → SVG 字符串；`iconEl(name, opts)` → 真实 `SVGElement`
+- `label` 有值渲染 `role="img"` + `aria-label`，无值渲染 `aria-hidden="true"`；未知图标名 `icon()` 返回 `""`、`iconEl()` 返回 `null`（占位安全，不抛错）
+- **禁止 emoji 图标、禁止内联复制 SVG path**；缺图标时把准确 path 追加进 `web/icons.mjs` 的 `ICON_PATHS`，再跑 `node web/icons.test.js` 守门
+- 模块元数据的 `icon` 字段填**图标名**（`ICON_NAMES` 成员，如 `puzzle`），不是 emoji
+
+## 6. 页面与静态骨架
+
+`index.html` 最小骨架：
+
+```html
+<body>
+  <div id="plugin-root"></div>
+  <script type="module" src="/web/kernel.js"><\/script>
+</body>
+```
+
+也可以像 `modules/drag/` 那样把完整静态骨架（控制条、音频元素等）直接写进 HTML，组件只负责绑定既有 DOM 与渲染动态内容——改动更小、样式零回归，复杂页面推荐此法。多页面模块（如 `moving-sth` 的设置页）每页都放内核标签，前端组件内按 DOM 标记分发。
+
+## 7. 持久化双写模板（赛制类模块）
+
+前端保存采用 **localStorage + 服务器双写**，服务器失败静默跳过（比赛现场网络抖动不丢进度）；恢复时先服务器后本地：
+
+```js
+const API_URL = "/api/my-feature-process";      // origin 相对路径
+
+function saveState() {
+  localStorage.setItem("myFeatureState", JSON.stringify(data));
+  fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...data, lastUpdate: new Date().toISOString() }),
+  }).catch(() => {});
+}
+// 恢复链：loadStateFromServer() 失败 → loadLocalState() → 都没有则 initNewGame()
+```
+
+## 8. 生命周期：挂载、停用、热重载
+
+- **挂载**：内核按清单装配，register 后按 key 渲染
+- **停用**：物理生效——后端路由与页面 404、前端代码不再下载；**SQLite 数据保留**，重新启用即恢复
+- **热重载**：改盘上的插件文件 → 管理页点"重载"→ 请求排空（在飞请求安全完成后切换）→ require 缓存逐出 → 新代码生效，**全程无需重启**
+- 前端插件开关：落盘后刷新页面生效
+
+## 9. 命名约定
+
+| 类别 | 规则 | 示例 |
+|------|------|------|
+| 模块目录 | 小写+连字符 | `modules/music-draw/` |
+| 后端/前端插件文件 | 固定名 | `plugin.js` / `front/plugin.js` |
+| API 端点 | `/api/{功能前缀}-{资源}` | `/api/drag-process` |
+| 数据库名 | 与 API 前缀对应 | `drag-process` |
+| localStorage key | 功能+描述 | `dragBattleState2_player1` |
+| CSS class / HTML id | 小写+连字符 | `.node-box`、`draw-music-btn` |
+| JS 变量/函数 | camelCase | `drawMusic` |
+| 图标名 | 小写+连字符，须 ∈ `ICON_NAMES` | `home`、`device-gamepad-2` |
+
+## 10. 验证清单（每步都要实际跑）
+
+- [ ] 重启 `node server.js`，控制台 `[cordis] 装配完成` 且无 error
+- [ ] 访问 `/m/my-feature/` 正常渲染；`/m/plugin-manager/` 中本插件"已挂载"无 error
+- [ ] 管理页**停用再启用**：路由/页面 404 后恢复，数据不丢
+- [ ] 刷新页面、二次进入，无重复渲染、无控制台红错
+- [ ] `node scripts/endpoint-diff.js --compare` 全绿（不破坏既有 HTTP 行为基线）
+
+## 11. 实例索引（按需照抄）
+
+| 实例 | 学什么 |
+|------|--------|
+| `modules/select/` | 最小后端插件：纯页面元数据注册 |
+| `modules/drag/` | 完整范式：数据库 + 路由 + 复杂前端 + 静态骨架绑定 + cleanup |
+| `modules/setting/` | 多文件前端聚合（set-*.js → front/view.js） |
+| `modules/moving-sth/` | 多页面模块（游戏页 + 设置页，DOM 标记分发） |
+| `modules/plugin-manager/` | 管理面：assembly 服务、config 机制、页面本身即可替换插件 |
+
+## 12. 常见坑
+
+1. **三份清单不同步**——用脚手架，别手改
+2. **inject 拼写错误** → fiber 挂起（内核校验后跳过并报 error，去管理页看）
+3. **`scope.use(fn)` 无路径中间件** → 热重载排空失效，禁止
+4. **监听不传 `{ signal }`** → 重渲染双绑，事件触发两次
+5. **写死 `localhost:3000`** → 换环境即坏，一律 origin 相对路径
+6. **改了内核/共享设施** → 后果自负；一切功能自包含于 `modules/<id>/`（唯一例外：缺图标时向 `web/icons.mjs` 追加 path）
+7. **用 emoji 或自绘/粘贴 SVG 当图标** → 多份事实来源必然漂移；统一走 `web/icons.mjs` 的 `icon()` / `iconEl()`
+
+---
+
+出包与分发见[打包与发布](#packaging)；更多文档见[文档索引](./README.md)。
+</script>
+
+<script type="text/markdown" id="md-plugin-development">
+> 本文是插件开发的**完整技术参考**：API 签名、参数、数据结构、生命周期与错误语义。
+> 入门教程见 [插件开发教程](#tutorial)；架构总览见 `AGENTS.md`。
+
+## 1. 插件形态总览
+
+### 1.1 目录结构（一个模块的全部文件）
+
+```
+modules/<模块id>/
+├── plugin.js            # 后端插件（CommonJS，必须）
+├── index.html           # 页面（必须）：静态骨架 + #plugin-root + 内核标签
+├── style.css            # 样式（可选，页面同目录相对引用）
+└── front/
+    ├── plugin.js        # 前端插件（原生 ESM，必须）
+    └── view*.js         # 组件实现（可选拆分，同目录相对 import）
+```
+
+加载方式：
+
+| 文件 | 加载者 | 方式 |
+|------|--------|------|
+| `plugin.js` | 服务端 cordis loader | `require(磁盘绝对路径)`（参与真实 `require.cache`，热重载可逐出） |
+| `index.html` / `style.css` | y-router 的 `/m/:id/*` 静态服务 | HTTP |
+| `front/plugin.js` 及其 import 图 | 浏览器内核 loader | `import("/m/<id>/front/plugin.js")` 动态导入（`enabled:false` 不下载） |
+
+### 1.2 导出形状对照
+
+| | 后端 `plugin.js` | 前端 `front/plugin.js` |
+|---|---|---|
+| 模块格式 | CommonJS（`module.exports =`） | 原生 ESM（`export default`） |
+| 必填字段 | `apply(ctx)` | `apply(ctx)` + 注册的 `key` |
+| 可选字段 | `name`、`inject`、`Config` | `name`、`inject` |
+| `inject` 白名单 | `server` `db` `modules` `assembly`（+ 清单 `provides` 声明） | `ui` `api` `state` |
+| 运行环境 | Node（服务进程内） | 浏览器（页面内） |
+| 不可 import | 不得绕过内核直接 require 服务端模块 | 不得 import 内核文件或 Node 模块 |
+
+### 1.3 装配流程（谁在什么时候调用你）
+
+**后端**：进程启动 → 读 `server/plugins.json` → 创建根 Context → provide 内置服务（`server/db/modules/assembly`，在任何业务插件挂载之前）→ 按清单顺序 `await ctx.plugin(wrapped)` → `initializeAllDatabases()` → 挂共享路由 → listen。
+
+**前端**：页面加载 `/web/kernel.js` → 从 `location.pathname` 解析模块 id → `fetch("/web/front.json")` → 过滤 `enabled !== false` 且 target 匹配的条目 → 建前端 root、provide `ui/api/state` → 逐个 `await import(...)` + `ctx.plugin()` → 全部完成后 emit `kernel:ready` → 对当前模块 id 调 `ui.render`。
+
+## 2. 后端插件 API
+
+### 2.1 导出契约
+
+```js
+module.exports = {
+  name: "my-feature",              // string，可省略（loader 以清单 target 的 id 兜底）
+  inject: ["db", "server", "modules"], // array 或单个 string（如 "db"），可省略
+  // Config: <StandardSchemaV1>,   // 可选：声明后清单 config 会先过校验
+  apply(ctx, config) { /* ... */ },
+};
+```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `name` | `string` | 插件名；省略时以 `plugins.json` 条目 target 的 id 兜底 |
+| `inject` | `string \| string[]` | 依赖的服务名。**不在白名单内的名字 → 该插件被跳过挂载，计入 errors，serverLog 报 error，不阻断启动**（防止 cordis fiber 永久 PENDING 死锁） |
+| `Config` | StandardSchema | 可选 config 校验器；不声明时清单条目的 `config` 原样透传 |
+| `apply` | `(ctx, config) => void` | 插件主体。**`ctx.server.route()` 必须在 apply 的同步窗口内完成调用**（loader 顺序 await 保证单变量 scope 无交错） |
+
+白名单集合 = 内置 `{ server, db, modules, assembly }` ∪ `server/plugins.json` 各条目 `provides: [...]` 声明的服务名。插件间依赖：先行插件在清单声明 `provides` 并 `ctx.provide(name, value)`，后行插件 inject 该名字。
+
+### 2.2 `ctx.server`
+
+```js
+ctx.server = {
+  app,                                 // y-router 实例（createApp 产物）
+  route(cb),                           // 注册进 per-plugin 路由 scope
+  log(...args),                        // 等价 serverLog
+};
+```
+
+**`route(cb)`**：`cb = (app, { dbManager, serverLog, dataDir }) => void`，在回调内同步完成全部路由注册。
+
+| 参数/成员 | 说明 |
+|-----------|------|
+| `app` | 路由注册面：`app.get/post/put/delete(path, handler...)`、`app.use(path, subRouter)`；handler 为 Connect 风格 `(req, res, next)`，支持中间件数组与 4 参错误处理 `(err, req, res, next)` |
+| `dbManager` | 数据库管理器（同 `ctx.db` 的底层，供原 Express 时代代码直迁） |
+| `serverLog` | 结构化日志函数：`serverLog(msg, level?)`，level 可为 `"error"` 等 |
+| `dataDir` | 数据目录绝对路径（`resource/` 的解析结果，便携模式随 env 变化） |
+
+**scope 语义**（理解热插拔的关键）：
+
+- 每次 `route()` 的注册进入名为 `plugin:<id>` 的 scope；插件卸载 = `removeScope` **物理删除**这些路由层（后续请求立即 404），不是逻辑屏蔽
+- 卸载前执行**请求排空**：该 scope 标记 draining → 命中其路由的新请求得到 `503 {"error":"plugin <id> is reloading"}` + `Retry-After: 1` → 在飞请求全部完成后才 dispose（超时 `Y_STAGE_DRAIN_TIMEOUT_MS`，默认 15000ms，强制降级并告警）
+- 重挂（reload/改 config）时层序自动修正：新路由层会被搬回 404 兜底之前的正确位置（K16），`/api/modules` 投影顺序保持不变（K17）
+- 同一插件的管理操作按 id **promise 链串行化**：并发 toggle/reload 不会交错出"三态不一致"
+
+**禁止事项**：`scope.use(fn)`（无路径中间件）——排空按路径模式拦截，pathless 层无锚点（当前内核已防御：pathless 层不参与拦截匹配，但作为约定仍禁止）。
+
+### 2.3 `ctx.db`
+
+```js
+ctx.db = {
+  define(defs),          // defs: [{ name: string, defaultValue: object }]
+  get(name),             // → lowdb v1 兼容文档对象
+  sql(q, params),        // 原生 SQL 查询
+  exists(name),          // → boolean
+};
+```
+
+| API | 参数 | 返回/行为 |
+|-----|------|-----------|
+| `define(defs)` | `[{ name, defaultValue }]` | 声明模块数据库。`INSERT OR IGNORE` 幂等；默认值**不覆盖**已有数据（优先读 docs 行）。装配早于建库时仅登记，统一初始化时补写 |
+| `get(name)` | 数据库名 | lowdb v1 兼容对象：`getState()` / `setState(obj)` / `write()` / `set(path, val)` / `push(path, val)` 链式可用（`.set().set().write()` 为合法用法） |
+| `sql(q, params)` | SQL 语句 + 参数 | 直查 SQLite |
+| `exists(name)` | 数据库名 | 是否已存在 |
+
+存储位置：`resource/sqlite/y-stage.sqlite`（单文件，sql.js WASM 引擎，无需安装数据库）。插件停用/卸载**不删数据**。
+
+### 2.4 `ctx.modules`
+
+```js
+ctx.modules = {
+  registerPage(page),    // 注册页面元数据
+  unregister(id),        // 注销（从 /api/modules 与导航中消失）
+  list(),                // 当前全部页面投影
+  get(id),               // 单条查询
+};
+```
+
+**`registerPage(page)`** 参数（7 字段，与 `modules/modules.json` 中本模块条目**逐字段一致**——selfcheck A3 双源 parity 断言把关）：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `id` | `string` | 模块 id（= 目录名 = 前端组件 key） |
+| `name` | `string` | 显示名 |
+| `description` | `string` | 一句话说明 |
+| `icon` | `string` | 图标名，必须是 `web/icons.mjs` 的 `ICON_NAMES` 成员（如 `trophy`），不是 emoji |
+| `nav` | `string[]` | 出现在哪些导航页：`"index"` / `"select"` / `"games"` 的子集；`[]` 不进导航 |
+| `order` | `number` | 导航内排序，小在前 |
+
+投影时自动补 `route: "/m/<id>/"`。**必须**配套 `ctx.effect(() => () => ctx.modules.unregister(id))`，保证停用后从 `/api/modules` 消失。
+
+### 2.5 `ctx.assembly`（管理面服务，一般只有 plugin-manager 使用）
+
+```js
+ctx.assembly = {
+  status(),                    // → { manifest, fibers, errors, baseOrder, baseLayerCount, ... }
+  toggle(id, enabled),         // → { ok, persisted }  启停（排空→dispose→按需重挂）
+  reload(id),                  // → { ok }             require.cache 逐出 + 重挂
+  setConfig(id, config),       // → { ok, persisted }  写清单 config + 热重装
+  toggleFront(id, enabled),    // → { ok, persisted }  写 web/front.json（前端插件，刷新生效）
+};
+```
+
+`persisted:false` 仅在清单文件不可写时出现（通用写权限警示）。自保护：对 plugin-manager 自身执行禁用/重载/改 config 一律 400。
+
+### 2.6 HTTP 处理器环境（垫片语义）
+
+handler 写法与 Express 子集一致，由 `server/http/shim.js` 提供。**能用与不能用的**：
+
+| 类别 | 支持 | 说明 |
+|------|------|------|
+| `res` 链式 | `res.status(n).set(k,v).type(mime).json(obj).send(body).end()` | `send(string)` → `text/html; charset=utf-8`；`send(Buffer)` 保型；`redirect(url)` 带 `Vary: Accept` 协商 |
+| `req` | `req.params`（**URL 解码**）、`req.query`、`req.path`（**保持原始编码**——注意与 params 的不对称是 Express 语义）、`req.originalUrl`、`req.body`、`req.headers` | `:param` 路径参数 + `*` 通配 + 尾斜杠宽容匹配 + 大小写不敏感 |
+| 全局中间件 | `cors`（最先，预检 204）、`body-parser`（JSON，limit 5MB）、`multer`（50MB，仅音乐上传路由） | 直接 `next(e)` |
+| 错误处理 | `next(err)` → 4 参错误分发 → 穷尽后 500 JSON | malformed JSON → 500 |
+| 明确不存在 | ETag/304、自动 OPTIONS 应答（无 Origin 裸 OPTIONS 落 404）、`res.sendFile/download/cookies/render`、`express.static` | 静态文件走共享层；需要发文件用 `res.send(Buffer)` 或流 |
+| 404 兜底 | JSON/文本形式 `Cannot <METHOD> <path>` | 依赖 `req.originalUrl` |
+
+### 2.7 生命周期与卸载语义
+
+```
+apply(ctx) 同步窗口
+  └─ ctx.server.route() 注册 → scope "plugin:<id>"
+停用（toggle off / 清单移除）
+  ├─ 标记 draining：命中本插件路由的新请求 → 503 + Retry-After: 1
+  ├─ 等在飞请求归零（Y_STAGE_DRAIN_TIMEOUT_MS，默认 15000，超时强制降级并 warn）
+  └─ dispose（cordis effect 逆序回收）→ scope 路由物理移除 → 后续 404（正确语义）
+重载（reload / 改 config）
+  └─ 同上排空 → require.cache 逐出该插件的磁盘文件 → 重新 require + apply
+     → 重挂期间微窗口内原路径请求 503（而非 404）→ finally resumeScope
+```
+
+约束：同一插件对象重复 `ctx.plugin()` 会叠加 fiber（cordis K2）——loader 已防，插件作者无需处理但**不要在模块顶层做有副作用的单例注册**；`fiber.dispose()` 是异步的（K6），loader 全程 await。
+
+---
+
+## 3. 前端插件 API
+
+### 3.1 导出契约
+
+```js
+export default {
+  name: "my-feature-front",     // string，可省略
+  inject: ["ui", "api"],        // 白名单：ui / api / state；可省略或传单个 string
+  apply(ctx) {
+    ctx.ui.register({ key: "my-feature", component });
+  },
+};
+```
+
+- **`key` 必须 = 模块 id**：内核装配完成后按 `location.pathname` 解析出的 id 调 `ui.render`，key 不匹配则页面显示"插件未启用"占位
+- `inject` 含未知服务名 → 该插件被跳过（防 cordis fiber PENDING 死锁），错误计入装配 errors
+- 插件文件**不要 import 内核**（`/web/kernel.js`）或任何 Node 模块；需要拆分就用同目录相对 import（`./view.js`）
+
+### 3.2 `ctx.ui`
+
+```js
+ctx.ui = {
+  register({ key, component }),
+  unregister(key),
+  render(key, meta, container),
+};
+```
+
+| API | 参数 | 行为 |
+|-----|------|------|
+| `register` | `key: string`；`component: (el, meta, ctx) => cleanup \| void` | 注册组件。`el` = 容器元素（`#plugin-root`）；`meta` = front.json 条目的 `config`（缺省 `null`）；`ctx` = 前端 Context（`ctx.on/emit` 可用） |
+| `unregister` | `key` | 注销并触发其 cleanup |
+| `render` | `key, meta, container` | 未注册 → 渲染占位 `<div class="plugin-placeholder">插件未启用…</div>`；重复 render **先调用旧 cleanup**；组件抛错 → 捕获、降级渲染占位并 console.error（不会白屏） |
+
+**cleanup 契约**：返回的函数在"同容器再次 render"或"unregister 当前 key"时被调用（抛错被吞并 console.error，不阻断新渲染）。事件监听一律 `addEventListener(type, handler, { signal })` + `AbortController`，cleanup 里 `abort()`；定时器/rAF/audio 也应在 cleanup 中清理。
+
+### 3.3 `ctx.api`
+
+```js
+ctx.api = {
+  get(path),            // → Promise<解析后的 JSON>
+  post(path, body),     // body 自动 JSON.stringify + Content-Type
+  del(path),
+};
+```
+
+- `path` 一律 **origin 相对路径**（`/api/...`）——部署到任意端口/子路径无需改代码
+- 非 2xx：抛 `Error`，`err.status` 为状态码（前端按需 try/catch）
+- 纯文本响应回退为 `{ text }` 形态
+
+### 3.4 `ctx.state`
+
+```js
+ctx.state = {
+  get(key),          // → any
+  set(key, val),     // 广播 ctx.emit("state:changed", { key, val })
+};
+```
+
+跨插件内存键值。监听：`ctx.on("state:changed", (payload) => {...})`。
+
+### 3.5 事件
+
+| 事件 | 载荷 | 时机 |
+|------|------|------|
+| `kernel:ready` | `{ moduleId }` | 全部插件挂载完成后、`ui.render` 之前 |
+| `state:changed` | `{ key, val }` | `ctx.state.set` 时 |
+| `plugins.updated` | 装配快照 | 后端管理操作成功后（预留事件，当前无前端订阅者） |
+
+### 3.6 页面结构（`index.html`）
+
+最小形态：
+
+```html
+<body>
+  <div id="plugin-root"></div>
+  <script type="module" src="/web/kernel.js"><\/script>
+</body>
+```
+
+三种形态：
+
+1. **全组件**：页面内容全部由 component 构建（适合简单页面）
+2. **静态骨架 + 绑定**（复杂页面推荐，参考 `modules/drag/`）：HTML 写完整骨架与 CSS 引用，component 只绑定既有 DOM（用 `document.getElementById`）并渲染动态内容——样式零回归
+3. **多页面模块**（参考 `modules/moving-sth/`）：每个 HTML 都含内核标签，component 内按 DOM 标记分发（如 `#settings-form` → 设置页逻辑），`front.json` 只需一条
+
+模块 id 解析规则（`web/loader.mjs` 的 `moduleIdFromPath`）：`/m/<id>/…` → `<id>`；`/` 与 `/index.html` → `home`；其余 → null（不装配）。
+
+### 3.7 图标基座 `web/icons.mjs`
+
+全项目 UI 图标的唯一来源：Tabler Icons 的本地内置子集（MIT，`@tabler/icons` v3.46.0 outline，构建期一次性提取，运行期零依赖、无 CDN、无网络请求）。来源与许可全文见仓库根 `THIRD-PARTY-NOTICES.md`。
+
+```js
+import { icon, iconEl, ICON_NAMES } from "/web/icons.mjs";
+```
+
+| API | 参数 | 返回/行为 |
+|-----|------|-----------|
+| `icon(name, opts?)` | `name` 图标名；`opts = { size?, class?, stroke?, label? }` | 内联 SVG **字符串**。`size` 默认 20、`stroke` 默认 1.75（非法/非正数回退默认）、`class` 追加且基础类 `y-icon` 恒保留。**未知名字返回 `""`**（占位安全，不抛错） |
+| `iconEl(name, opts?)` | 同上 | 真实 `SVGElement`（经 `<template>` 构造）；无 DOM 环境（node 单测）或未知名字返回 `null` |
+| `ICON_NAMES` | — | 已内置图标名（冻结数组，当前 61 枚，字典序）；模块 `icon` 字段必须取自这里 |
+
+无障碍语义：`label` 有值 → `role="img"` + `aria-label`（图标是唯一语义来源时用）；无值 → `aria-hidden="true"`（装饰性，旁边已有文字说明）。`label` / `class` 中的引号与尖括号会被属性转义。
+
+```js
+import { icon, iconEl } from "/web/icons.mjs";
+
+// ① 装饰性图标（旁边有文字）——不停用屏幕阅读器
+btn.innerHTML = `${icon("plus", { size: 18 })}<span>新增选手</span>`;
+
+// ② 图标即唯一语义——必须给 label
+cell.append(iconEl("trash", { label: "删除该行" }));
+
+// ③ 颜色跟随父元素（stroke="currentColor"，无需在 JS 指定颜色）
+statusEl.innerHTML = icon("circle-check", { size: 16 }) + " 已保存";
+```
+
+约定与边界：
+
+- **禁止新增 emoji 图标**，**禁止在模块内自建图标字典或内联复制 SVG path**——图标只有 `web/icons.mjs` 一份事实来源。CSS 伪元素 `content:"…"` 无法承载图标，改由真实 DOM 节点（`icon()` 输出）承载。
+- **缺失图标**：把准确的 Tabler path 追加进 `web/icons.mjs` 的 `ICON_PATHS`（键自动并入 `ICON_NAMES`），然后跑 `node web/icons.test.js`；该测试校验需求清单、SVG 统一规格、边界行为，并扫描 `modules/**` 中引用本基座的文件、报告缺失图标名。
+- 模块元数据 `registerPage({ icon })` 与 `modules/modules.json` 的 `icon` 填图标名（`ICON_NAMES` 成员），两处必须一致（见 2.4）。
+
+---
+
+## 4. 结构参考
+
+### 4.1 三份清单
+
+**`server/plugins.json`**（后端装配）：
+
+```json
+{
+  "provider": { "server": "y-router", "db": "sqlite" },
+  "plugins": [
+    { "target": "modules/drag", "enabled": true,
+      "config": { "totalCount": 12 },
+      "provides": [] }
+  ]
+}
+```
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `target` | ✔ | `"modules/<id>"` |
+| `enabled` |  | 默认 true；`false` = 不挂载（路由/页面 404，SQLite 数据保留） |
+| `config` |  | 透传为 `apply(ctx, config)` 第二参（声明了 `Config` schema 则先校验） |
+| `provides` |  | 本插件向其他插件提供的服务名数组（并入 inject 白名单动态集合） |
+
+**`web/front.json`**（前端装配）：
+
+```json
+{
+  "provider": { "ui": "dom" },
+  "plugins": [
+    { "target": "modules/drag", "enabled": true,
+      "config": { "keepBg": true },
+      "pages": ["drag", "performance"] }
+  ]
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| `enabled` | `false` = 不 import，**前端代码不下载**（效果等同没有该 script） |
+| `config` | 作为 `component(el, meta)` 的 `meta` 传入 |
+| `pages` | 可选；覆盖默认的"target 即本模块页"匹配，用于跨页插件 |
+
+**`modules/modules.json`**（页面元数据）：`{ "modules": [ { id, name, description, icon, nav, order } ] }`——与后端插件 `registerPage` 逐字段一致（脚手架自动双写），其中 `icon` 为 `web/icons.mjs` 的 `ICON_NAMES` 图标名。
+
+损坏容错：后端清单 JSON 损坏 → 整体回退 legacy 投影 + serverLog error，服务器照常启动；前端清单获取失败 → 按空清单装配（页面渲染占位，不白屏）。
+
+### 4.2 `/api/modules` 投影结构
+
+```json
+{ "id": "drag", "name": "Drag式比赛", "description": "对阵树式四强双败赛",
+  "icon": "trophy", "nav": ["select"], "order": 15, "route": "/m/drag/" }
+```
+
+固定 7 字段、顺序 = modules.json 宇宙序（插件注册按 id 原位覆盖，不沉底）。
+
+### 4.3 `/api/plugins` 快照结构（管理页数据源）
+
+```json
+{ "backend": [ { "id", "kind": "plugin|legacy", "enabled", "mounted", "error", "config", "name" } ],
+  "front":   [ { "id", "target", "enabled" } ] }
+```
+
+便携模式（`Y_STAGE_PLUGINS_DIR` / `Y_STAGE_RESOURCE_DIR` 环境变量注入）下清单即 `plugins/` 目录的真实文件，所有写操作 `persisted: true`。
+
+---
+
+## 5. 错误语义与边界
+
+| 场景 | 行为 |
+|------|------|
+| 后端 inject 含未知服务 | 跳过挂载、errors 收集、serverLog error，其余插件照常装配 |
+| `apply` 抛错 | fiber dispose，已注册的 scope effect 被回收（路由随插件消失），errors 收集 |
+| 前端插件 import 失败 / apply 抛错 | errors 收集，继续装配后续插件；页面渲染占位 |
+| component 抛错 | render 捕获 → 占位降级 + console.error |
+| 坏 JSON 请求体 | 500（4 参错误分发穷尽兜底） |
+| 热重载排空超时 | 强制 dispose + warn（在飞请求可能失败，有界降级） |
+| 清单写盘失败（只读目录） | 响应 `persisted:false` + 通用写权限警示，内存态本次进程内仍生效 |
+
+---
+
+## 6. 工具链与验证
+
+| 工具 | 命令 | 用途 |
+|------|------|------|
+| 脚手架 | `node scripts/new-module.js <id> "名称" [--server]` | 生成一对插件骨架 + 自动追加三份清单 |
+| 数据库回归 | `node server.js --test` | 6 项，测完自动退出 |
+| 装配自检 | `node server.js --test-cordis` | A1-A6 + A6.9 排空端到端，30 项断言 |
+| 单元测试 | `node server/run-unit-tests.js` | 10 个测试文件（含 `web/icons.test.js` 图标基座守门） |
+| HTTP 行为基线 | `node scripts/endpoint-diff.js --compare` | 35 用例逐字节回放，**不重录直绿**是改动零漂移的证明 |
+
+**发布前检查单**（完整版见 `AGENTS.md` §6.8）：契约正确、inject 合法、三清单同步、key=模块 id、signal+cleanup、管理页可见无 error、endpoint-diff 全绿。
+
+---
+
+## 7. 稳定性备注
+
+- cordis 锁定 `4.0.0-rc.9` 精确版本；内核 API 漂移收敛在 `server/cordis/` 内，不扩散到插件代码
+- 内核实测结论（重复挂载叠加 fiber、dispose 异步、effect 逆序回收、list 顺序语义等）以 `server/cordis/selfcheck.cjs` 头注释 K1-K17 为准
+- 本文与 `AGENTS.md` 第 6 章冲突时，以 `AGENTS.md` 为准；发现文档失实请直接修正并保持与实现同步
+</script>
+
+<script type="text/markdown" id="md-packaging">
+> 《Y.Stage3 手册》章节 · 面向负责出包与分发的同学。
+
+## 1. 一键打包
+
+```bat
+build.bat
+```
+
+等价于：构建内核产物（`npm run build`）→ `node scripts/make-portable.js --zip` → 产出 `YStage3-Portable/` 目录与同名 zip。解压即用，无需安装 Node。
+
+`make-portable.js` 支持 `--out <目录>`（自定义输出位置）、`--zip`（打压缩包）、`--no-resource`（不带数据目录）。
+
+## 2. 便携包布局（三层分离）
+
+```
+YStage3-Portable/
+├── node/       # Node 运行时（复制构建机的 node.exe，可与应用分别升级）
+├── app/        # 应用核心（bundle 形态：server.bundle.cjs + sql-wasm.wasm + web/ 整树；整体替换即升级）
+├── plugins/    # ★ 插件组件层：两份清单 + 全部模块代码（可写、可热替换）
+├── resource/   # 数据层：sqlite/、musics/、json/、images/
+├── 启动YStage.bat
+└── 说明.txt
+```
+
+- `plugins/` 与 `resource/` 在升级应用时**原地保留**——选手数据、比赛进度、自定义配置不丢失
+- 启动脚本通过 `Y_STAGE_PLUGINS_DIR` / `Y_STAGE_RESOURCE_DIR` 环境变量把插件层与数据层指向外置目录，**清单与 config 的改动即时落盘、重启保持**
+- `app/web/` 是**整树复制**（含 `dist/` 内核产物与 `icons.mjs` 等共享前端资产，排除 `*.test.js` 与 `front.json`），而不是只带 `dist/`——保证便携包内 `/web/icons.mjs` 等共享资产可达
+
+## 3. 插件热替换（无需重新出包）
+
+1. 直接修改 `plugins/` 下的文件（改 `modules/<id>/plugin.js` 逻辑、增删模块目录）
+2. 打开 `/m/plugin-manager/` 对该插件**热重载**——改盘即生效
+3. 新增模块：在 `plugins/plugins.json` 追加条目后重启；前端插件在 `plugins/front.json` 加条目
+
+## 4. GitHub Actions 自动发布
+
+`.github/workflows/package.yml`：推送 `v*` 标签或手动触发即可自动构建，产出 `YStage3-Portable.zip` 工件并随 Release 发布。
+
+> 跨平台提示：便携包内的 node.exe 取自构建机，Windows 包需在 Windows 上构建；如需 macOS/Linux 分发，在对应系统上执行 `node scripts/make-portable.js` 即可。
+</script>
+
+<script>
+"use strict";
+/* ── 迷你 Markdown 渲染器 + 手册导航（自包含，无外部依赖） ── */
+const CHAPTERS = [
+  { id: "intro",             title: "导读",           file: null,                   src: "md-intro" },
+  { id: "getting-started",   title: "快速上手",        file: "./getting-started.md", src: "md-getting-started" },
+  { id: "usage",             title: "日常使用",        file: "./usage.md",           src: "md-usage" },
+  { id: "plugin-manager",    title: "插件管理",        file: "./plugin-manager.md",  src: "md-plugin-manager" },
+  { id: "tutorial",          title: "插件开发教程",    file: "./tutorial.md",        src: "md-tutorial" },
+  { id: "plugin-development",title: "插件开发参考",    file: "./plugin-development.md", src: "md-plugin-development" },
+  { id: "packaging",         title: "打包与发布",      file: "./packaging.md",       src: "md-packaging" },
+];
+
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+function mdToHtml(src) {
+  const codeBlocks = [];
+  src = src.replace(/```([^\n`]*)\n([\s\S]*?)```/g, (m, lang, code) => {
+    codeBlocks.push({ lang: lang.trim(), code: code.replace(/\n$/, "") });
+    return "\n\u0000B" + (codeBlocks.length - 1) + "\u0000\n";
+  });
+  const codeBlockHtml = (b) =>
+    `<div class="codeblock"><div class="codebar"><span>${esc(b.lang) || "代码"}</span>` +
+    `<button class="copy">复制</button></div><pre><code>${esc(b.code)}</code></pre></div>`;
+
+  const inline = (s) => {
+    const codes = [];
+    s = s.replace(/`([^`]+)`/g, (m, c) => { codes.push(c); return "\u0000C" + (codes.length - 1) + "\u0000"; });
+    s = esc(s);
+    if (/^\[ \]/.test(s)) s = "☐ " + s.slice(4);
+    s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, t, u) =>
+      u.startsWith("#") ? `<a href="${u}">${t}</a>`
+                        : `<a href="${u}" target="_blank" rel="noopener">${t}</a>`);
+    s = s.replace(/\u0000C(\d+)\u0000/g, (m, ix) => `<code>${esc(codes[+ix])}</code>`);
+    return s;
+  };
+
+  const lines = src.split("\n");
+  let html = "", i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    const cb = line.match(/^\u0000B(\d+)\u0000$/);
+    if (cb) { html += codeBlockHtml(codeBlocks[+cb[1]]); i++; continue; }
+    const h = line.match(/^(#{1,4})\s+(.*)/);
+    if (h) { const n = Math.min(h[1].length + 1, 5); html += `<h${n}>${inline(h[2])}</h${n}>`; i++; continue; }
+    if (/^(---+|\*\*\*+)\s*$/.test(line)) { html += "<hr>"; i++; continue; }
+    if (line.startsWith("> ")) {
+      const buf = [];
+      while (i < lines.length && lines[i].startsWith("> ")) { buf.push(inline(lines[i].slice(2))); i++; }
+      html += `<blockquote>${buf.join("<br>")}</blockquote>`; continue;
+    }
+    if (line.startsWith("|") && lines[i + 1] && /^\|[\s:|-]+\|?\s*$/.test(lines[i + 1])) {
+      const cells = (l) => l.replace(/^\||\|\s*$/g, "").replace(/\\\|/g, "\u0001")
+                            .split("|").map((c) => inline(c.replace(/\u0001/g, "\\|").trim()));
+      const head = cells(line); i += 2;
+      const body = [];
+      while (i < lines.length && lines[i].startsWith("|")) { body.push(cells(lines[i])); i++; }
+      html += '<div class="tablewrap"><table><thead><tr>' + head.map((c) => `<th>${c}</th>`).join("") +
+        "</tr></thead><tbody>" +
+        body.map((r) => "<tr>" + r.map((c) => `<td>${c}</td>`).join("") + "</tr>").join("") +
+        "</tbody></table></div>";
+      continue;
+    }
+    if (/^\s*([-*]|\d+\.)\s+/.test(line)) {
+      const ordered = /^\s*\d+\./.test(line);
+      const tag = ordered ? "ol" : "ul";
+      const items = [];
+      while (i < lines.length) {
+        const m = lines[i].match(/^(\s*)([-*]|\d+\.)\s+(.*)/);
+        if (!m) break;
+        const text = inline(m[3]);
+        if (m[1].length === 0 || !items.length) items.push({ html: text, sub: [] });
+        else items[items.length - 1].sub.push(text);
+        i++;
+      }
+      html += `<${tag}>` + items.map((it) =>
+        `<li>${it.html}${it.sub.length ? `<${tag}>` + it.sub.map((s) => `<li>${s}</li>`).join("") + `</${tag}>` : ""}</li>`
+      ).join("") + `</${tag}>`;
+      continue;
+    }
+    if (line.trim() === "") { i++; continue; }
+    html += `<p>${inline(line)}</p>`; i++;
+  }
+  html = html.replace(/\u0000B(\d+)\u0000/g, (m, ix) => codeBlockHtml(codeBlocks[+ix]));
+  return html;
+}
+
+const nav = document.getElementById("nav");
+const content = document.getElementById("content");
+const chTitle = document.getElementById("ch-title");
+const chFile = document.getElementById("ch-file");
+
+CHAPTERS.forEach((ch, ix) => {
+  const a = document.createElement("a");
+  a.href = "#" + ch.id;
+  a.innerHTML = `<span class="no">${String(ix).padStart(2, "0")}</span>${ch.title}`;
+  a.dataset.id = ch.id;
+  nav.appendChild(a);
+});
+
+function loadChapter(id) {
+  const ch = CHAPTERS.find((c) => c.id === id) || CHAPTERS[0];
+  const raw = document.getElementById(ch.src).textContent.replace(/<\\\//g, "</");
+  chTitle.textContent = ch.title;
+  if (ch.file) { chFile.href = ch.file; chFile.textContent = "查看源文件 " + ch.file; chFile.style.display = ""; }
+  else { chFile.style.display = "none"; }
+  content.innerHTML = mdToHtml(raw);
+  nav.querySelectorAll("a").forEach((a) => a.classList.toggle("on", a.dataset.id === ch.id));
+  window.scrollTo({ top: 0 });
+}
+
+content.addEventListener("click", (e) => {
+  const a = e.target.closest("a");
+  if (!a) return;
+  const href = a.getAttribute("href") || "";
+  if (href.startsWith("#") && CHAPTERS.some((c) => c.id === href.slice(1))) {
+    e.preventDefault();
+    location.hash = href;
+  }
+});
+
+// 代码块复制按钮
+content.addEventListener("click", (e) => {
+  const btn = e.target.closest("button.copy");
+  if (!btn) return;
+  const code = btn.closest(".codeblock").querySelector("code");
+  const done = () => { btn.textContent = "已复制"; setTimeout(() => (btn.textContent = "复制"), 1200); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code.textContent).then(done, () => fallbackCopy(code.textContent, done));
+  } else fallbackCopy(code.textContent, done);
+});
+function fallbackCopy(text, done) {
+  const ta = document.createElement("textarea");
+  ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand("copy"); done(); } catch (e) {}
+  document.body.removeChild(ta);
+}
+
+window.addEventListener("hashchange", () => loadChapter(location.hash.slice(1) || "intro"));
+loadChapter(location.hash.slice(1) || "intro");
+</script>
+</body>
+</html>

@@ -4,7 +4,7 @@
       "id": "home",
       "name": "主页",
       "description": "2026 Y.Stage 4 比赛现场入口",
-      "icon": "🏠",
+      "icon": "home",
       "nav": [],
       "order": 0
     },
@@ -12,7 +12,7 @@
       "id": "select",
       "name": "赛制选择",
       "description": "选择赛制：单人/团体/Drag",
-      "icon": "⚔️",
+      "icon": "swords",
       "nav": [
         "index",
         "select"
@@ -23,7 +23,7 @@
       "id": "setting",
       "name": "设置",
       "description": "选手/技能/奖励/音乐管理",
-      "icon": "⚙️",
+      "icon": "settings",
       "nav": [
         "index",
         "select"
@@ -34,7 +34,7 @@
       "id": "battle-group1",
       "name": "Prof（一年加组）",
       "description": "一年加组章节赛",
-      "icon": "🏅",
+      "icon": "medal",
       "nav": [
         "select"
       ],
@@ -44,7 +44,7 @@
       "id": "battle-group1-2",
       "name": "一年加组第二章",
       "description": "一年加组第二章节",
-      "icon": "🎯",
+      "icon": "target-arrow",
       "nav": [
         "select"
       ],
@@ -54,7 +54,7 @@
       "id": "battle-group2",
       "name": "Rookies II（一年内组）",
       "description": "一年内组章节赛",
-      "icon": "🌱",
+      "icon": "seedling",
       "nav": [
         "select"
       ],
@@ -64,7 +64,7 @@
       "id": "battle-group2-2",
       "name": "Rookies I（一年内组第二章）",
       "description": "一年内组第二章节",
-      "icon": "🎈",
+      "icon": "balloon",
       "nav": [
         "select"
       ],
@@ -74,7 +74,7 @@
       "id": "group-battle",
       "name": "Team（团体赛）",
       "description": "3人团体赛",
-      "icon": "🤝",
+      "icon": "handshake",
       "nav": [
         "select"
       ],
@@ -84,7 +84,7 @@
       "id": "drag",
       "name": "Drag式比赛",
       "description": "对阵树式四强双败赛",
-      "icon": "🏆",
+      "icon": "trophy",
       "nav": [
         "select"
       ],
@@ -94,7 +94,7 @@
       "id": "music-draw",
       "name": "音乐抽取",
       "description": "直接抽取音乐",
-      "icon": "🎵",
+      "icon": "music",
       "nav": [
         "select"
       ],
@@ -104,7 +104,7 @@
       "id": "music-import",
       "name": "音乐导入",
       "description": "批量导入音乐文件",
-      "icon": "🎼",
+      "icon": "playlist",
       "nav": [],
       "order": 40
     },
@@ -112,7 +112,7 @@
       "id": "performance",
       "name": "演出",
       "description": "演出/中键快捷页面",
-      "icon": "🎤",
+      "icon": "microphone",
       "nav": [],
       "order": 20
     },
@@ -120,7 +120,7 @@
       "id": "rank",
       "name": "选手排名",
       "description": "选手排名页",
-      "icon": "📊",
+      "icon": "chart-bar",
       "nav": [
         "index"
       ],
@@ -130,7 +130,7 @@
       "id": "ranking",
       "name": "排行榜",
       "description": "排行榜（战绩展示）",
-      "icon": "📈",
+      "icon": "trending-up",
       "nav": [
         "index"
       ],
@@ -140,7 +140,7 @@
       "id": "team-rank",
       "name": "团体排名",
       "description": "团体赛排名",
-      "icon": "🏅",
+      "icon": "award",
       "nav": [
         "index"
       ],
@@ -150,7 +150,7 @@
       "id": "games",
       "name": "游戏中心",
       "description": "光棒猴的小游戏",
-      "icon": "🎮",
+      "icon": "device-gamepad-2",
       "nav": [
         "index"
       ],
@@ -160,7 +160,7 @@
       "id": "moving-sth",
       "name": "定时搬化棒",
       "description": "在规定时间内完成化棒移动挑战",
-      "icon": "⏱️",
+      "icon": "clock-play",
       "nav": [
         "games"
       ],
@@ -170,11 +170,21 @@
       "id": "movement-teaching",
       "name": "体态传技",
       "description": "不用手来传达技的信息",
-      "icon": "👐",
+      "icon": "hand-stop",
       "nav": [
         "games"
       ],
       "order": 2
+    },
+    {
+      "id": "plugin-manager",
+      "name": "插件管理",
+      "description": "插件装配管理与热替换",
+      "icon": "puzzle",
+      "nav": [
+        "index"
+      ],
+      "order": 5
     }
   ]
 }
