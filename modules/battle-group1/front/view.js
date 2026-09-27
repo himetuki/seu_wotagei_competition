@@ -50,7 +50,8 @@ let restoreGeneration = 0;
 /* 本次页面装配采样的代数（battleGroup1Component 入口赋值） */
 let loadGeneration = 0;
 /* 一次性收尾定时器（toast/播报自动移除、抖动移除、清缓存后的 reload 等）——
- * P12 起经 /web/lib/timers.mjs 注册表统一登记（替代原 pageTimers + later() 样板） */
+ * P12 起经 /web/lib/timers.mjs 注册表统一登记（替代原 pageTimers + later() 样板）。
+ * 按单渲染语义使用：cleanup dispose 后本实例不再重建（内核每文档仅 render 一次） */
 const timers = createTimerRegistry();
 /** 登记一次性定时器（cleanup 统一清理，避免 teardown 后回调仍在飞；别名保调用点零改动） */
 const later = (fn, ms) => timers.later(fn, ms);

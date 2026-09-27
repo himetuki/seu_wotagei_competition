@@ -465,6 +465,8 @@ export default {
 
 语义：`enabled:false` 不挂载（后端路由/页面 404、前端代码不下载，SQLite 数据保留）；未列出 = 不挂载；`config` 作为插件配置传入（后端为 `apply(ctx, config)` 第二参，前端为组件 `meta`）。新模块**三份都要追加**——直接用脚手架，别手改。组件类插件**只进 `web/front.json`**（不进 `modules.json` / `plugins.json`、不进导航，见 4.2）。
 
+**纯后端功能件（P13）**：与 component-\* 对偶的形态——无页面、不进导航的后端功能插件，**只进 `server/plugins.json`**（不进 `modules.json` / `web/front.json`）。例：`modules/music-library`（音乐扫描/上传/回收，原 `server/music-scanner.js` + `server/routes/music-routes.js` 迁入）；setting 插件同时承载本页配置数据 API（/api/player1 等）。共享路由层 `server/routes/` 只保留通用基础设施（winners、data CRUD、静态/模块/测试路由），业务端点一律随页面插件。
+
 ### 6.5 三步创建一个新模块
 
 1. **脚手架**（自动生成一对插件骨架并追加三份清单，条目已存在则跳过并提示）：

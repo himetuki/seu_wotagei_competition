@@ -16,7 +16,6 @@ const paths = require("./server/paths.cjs");
 const { dbManager, initializeAllDatabases, registerModuleDatabases } = require("./server/database");
 const setupRoutes = require("./server/routes/index");
 const { runAllTests } = require("./server/test-utils");
-const musicScanner = require("./server/music-scanner"); // 导入音乐扫描模块
 
 // 创建应用实例（y-router，listen 返回真 http.Server，其余监听逻辑零改动）
 const app = createApp();
@@ -124,9 +123,6 @@ async function bootstrap() {
       serverLog(`服务器运行在 http://localhost:${actualPort}`);
       serverLog(`数据文件保存位置: ${path.join(dataDir, "winners.json")}`);
       serverLog(`尝试访问首页: http://localhost:${actualPort}`);
-
-      // 初始化音乐扫描模块
-      musicScanner.initializeMusicScanner();
 
       // 检查命令行参数，如果有--test参数，则运行测试（测完自动退出，避免驻留挂进程）
       if (process.argv.includes("--test")) {

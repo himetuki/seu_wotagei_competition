@@ -1,12 +1,13 @@
 /**
- * 音乐文件扫描模块
- * 用于扫描各音乐目录并更新对应的JSON文件
+ * 音乐文件扫描模块（P13 自 server/music-scanner.js 迁入 music-library 功能件）
+ * 用于扫描各音乐目录并更新对应的JSON文件。
+ * 逻辑逐行原样迁移（仅 require 相对路径随文件位置调整）。
  */
 const fs = require("fs");
 const path = require("path");
-const paths = require("./paths.cjs");
-const { serverLog, safeJoin } = require("./utils");
-const { dbManager } = require("./database");
+const paths = require("../../server/paths.cjs");
+const { serverLog, safeJoin } = require("../../server/utils");
+const { dbManager } = require("../../server/database");
 
 // 音乐目录配置（dir 保持 "resource/..." 相对形态：响应回显与 API 出参依赖此字符串；
 // 磁盘解析统一经 resolveMusicDir 锚定 RESOURCE_DIR —— dev 下与旧 cwd 拼接逐字节同路径，

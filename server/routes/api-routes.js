@@ -3,9 +3,6 @@
  */
 const { dbManager } = require("../database");
 
-// 导入音乐路由模块
-const musicRoutes = require("./music-routes");
-
 // 获取数据库实例
 function getDB(name) {
   return dbManager.get(name);
@@ -136,9 +133,6 @@ function setupApiRoutes(app) {
       res.status(500).send(`Error: ${error.message}`);
     }
   });
-
-  // 添加音乐管理API路由
-  app.use("/api", musicRoutes);
 
   console.log("API路由已设置完成");
 }

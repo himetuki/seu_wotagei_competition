@@ -47,8 +47,9 @@ const KEEP_BG_CLASS = "battle-keep-bg";
 
 /**
  * 跨实例 body class 引用计数（P12）：由 L1 资产 /web/lib/body-class.mjs 承载——
- * 同页多实例时只有最后一个释放者移除 class（组件纪律第 2 条），替代原模块级
- * bodyModeUsers 手写计数（组件纪律第 3 条"禁模块级可变状态"的唯一豁免就此消除）。
+ * 同页多实例时只有最后一个释放者移除 class（组件纪律第 2 条）。模块级 modeRef/keepRef
+ * 仍属共享可变状态，但这是"多实例共享 body 类"的必要设计：原 bodyModeUsers 手写
+ * 计数收敛进 L1，语义与组件纪律第 3 条的既定豁免一致（共享恰是目的，非豁免消除）。
  */
 const modeRef = createBodyClassRef({ className: CANONICAL_BODY_CLASS });
 const keepRef = createBodyClassRef({ className: KEEP_BG_CLASS });

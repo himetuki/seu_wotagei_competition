@@ -154,6 +154,8 @@
 </script>
 
 <script type="text/markdown" id="md-getting-started">
+# 快速上手
+
 > 《Y.Stage3 手册》章节 · 读者：现场使用者与开发者
 > 插件开发请进阶阅读 [插件开发教程](#tutorial) 与 [插件开发技术参考](#plugin-development)。
 
@@ -177,6 +179,18 @@ Y.Stage3 是 WOTA 艺（荧光棒舞蹈）对战平台：管理选手、技能�
 - 正常退出：`Ctrl+C`，或在终端输入 `q` / `exit`
 - 数据自检：输入 `t` / `test`，确认本机能否正常读写数据库（**重要比赛前建议在备用电脑也跑一遍**）
 
+### ⚠ 赛前准备清单（下载 ≠ 能直接上场）
+
+解压后得到的是"空舞台"：程序能启动，但**没有选手、音乐和技能数据**，操作流程也需要提前熟悉。请至少提前 1~2 天完成：
+
+1. **上手演练**：用测试数据完整跑一遍"导入 → 分组编排 → 抽音乐 → 比赛 → 出分"，第二次再重置走一遍——现场节奏快，当天才第一次点开页面是最大风险
+2. **音乐文件**：按组别放入 `resource/musics/` 下对应目录（`1yearplus` / `1yearplus_ex` / `1yearminus` / `games_musics` / `musics_free`），mp3/wav，刷新页面自动扫描；或直接在"音乐导入"页上传
+3. **参赛人员列表**：txt 一行一个名字（UTF-8），设置中心批量导入；一年加组与一年内组是两份独立名单
+4. **技能/奖项**：设置中心维护（抽取与颁奖要用）
+5. **赛前检查**：`t` 自检 + 试播一首音乐 + 备份 `resource/` + 备用机演练
+
+详见[日常使用](#usage)。
+
 ## 3. 开发者环境（源码运行）
 
 ```bash
@@ -196,7 +210,29 @@ node server.js       # 启动，控制台出现 [cordis] 装配完成 即成功
 </script>
 
 <script type="text/markdown" id="md-usage">
+# 日常使用
+
 > 《Y.Stage3 手册》章节 · 现场使用者必读。
+
+## 0. 赛前准备清单（下载 ≠ 能直接上场）
+
+**便携包解压后是"空舞台"**——程序能启动，但没有选手、音乐和技能数据，操作流程也需要提前熟悉。请**至少提前 1~2 天**完成以下准备，不要等到比赛当天：
+
+- [ ] **上手演练**：用测试数据完整跑一遍"导入 → 分组编排 → 抽音乐 → 比赛判分 → 查看结果"，然后重置再走一遍——第二次通常会发现第一次没搞懂的按钮
+- [ ] **音乐文件就位**：按组别放入 `resource/musics/` 对应目录（见下表）或在"音乐导入"页上传，刷新页面自动扫描
+- [ ] **参赛人员列表就位**：txt 一行一个选手名（UTF-8），设置中心 → 选手管理批量导入；一年加组与一年内组是**两份独立名单**
+- [ ] **技能与奖项维护**：设置中心 → 技能/奖励管理（抽取与颁奖要用）
+- [ ] **当天出门前**：终端 `t` 自检 + 试播一首音乐 + 备份 `resource/` + 备用机恢复演练
+
+音乐组别目录对照：
+
+| 组别 | 目录（`resource/musics/` 下） | 对应赛制 |
+| --- | --- | --- |
+| 一年加组第一章节 | `1yearplus` | 一年加组 Prof |
+| 一年加组第二章节 | `1yearplus_ex` | 一年加组第二章 |
+| 一年内组 | `1yearminus` | Rookies（一年内组） |
+| 团体赛游戏音乐 | `games_musics` | 团体赛 |
+| 回收站（暂存下架曲目） | `musics_free` | — |
 
 ## 1. 首次启动后的数据导入
 
@@ -232,6 +268,8 @@ node server.js       # 启动，控制台出现 [cordis] 装配完成 即成功
 </script>
 
 <script type="text/markdown" id="md-plugin-manager">
+# 插件管理页（`/m/plugin-manager/`）
+
 > 《Y.Stage3 手册》章节 · 面向管理员；面向开发者的管理面实现见[插件开发技术参考](#plugin-development)。
 
 ## 1. 它是什么
@@ -262,6 +300,8 @@ node server.js       # 启动，控制台出现 [cordis] 装配完成 即成功
 </script>
 
 <script type="text/markdown" id="md-tutorial">
+# 插件开发教程
+
 > 《Y.Stage3 手册》章节 · 面向开发者。本篇是上手导览；**API 签名、参数、清单结构、生命周期与错误语义的完整技术细节**见姊妹篇 [插件开发技术参考](#plugin-development)。
 
 ## 1. 心智模型
@@ -467,7 +507,7 @@ if (factory) mounted.cleanups.push(factory(host, props, ctx));
 ```html
 <body>
   <div id="plugin-root"></div>
-  <script type="module" src="/web/kernel.js"><\/script>
+  <script type="module" src="/web/kernel.js"></script>
 </body>
 ```
 
@@ -559,8 +599,24 @@ function saveState() {
 </script>
 
 <script type="text/markdown" id="md-plugin-development">
+# 插件开发技术参考（Plugin Development Reference）
+
 > 本文是插件开发的**完整技术参考**：API 签名、参数、数据结构、生命周期与错误语义。
-> 入门教程见 [插件开发教程](#tutorial)；架构总览见 `AGENTS.md`。
+> 入门教程见 [`docs/tutorial.md`](#tutorial)；架构总览见 `AGENTS.md`。
+> 所有签名均与当前实现核对过；cordis 内核的实测 API 结论（K1-K17）收录在 `server/cordis/selfcheck.cjs` 头注释。
+
+---
+
+## 目录
+
+1. [插件形态总览](#1-插件形态总览)
+2. [后端插件 API](#2-后端插件-api)
+3. [前端插件 API](#3-前端插件-api)
+4. [结构参考](#4-结构参考)
+5. [错误语义与边界](#5-错误语义与边界)
+6. [工具链与验证](#6-工具链与验证)
+
+---
 
 ## 1. 插件形态总览
 
@@ -622,6 +678,8 @@ modules/component-<名>/
 | 资源放行 | 由页面模块条目决定 | `kind:"component"` 且 `enabled !== false` 是 `/m/component-*/**` 可被静态服务的**白名单依据**（`server/routes/module-routes.js` 的 `resolveComponentDir`，fail closed：禁用即不服务） |
 
 跨页命中：`pages` 决定被哪些页面加载（`web/loader.mjs` 的 `matchPage`，缺省 = 只匹配 target 自身 id）；`enabled:false` 不 import、前端代码不下载。
+
+---
 
 ## 2. 后端插件 API
 
@@ -848,7 +906,7 @@ ctx.state = {
 ```html
 <body>
   <div id="plugin-root"></div>
-  <script type="module" src="/web/kernel.js"><\/script>
+  <script type="module" src="/web/kernel.js"></script>
 </body>
 ```
 
@@ -1070,6 +1128,8 @@ const mounted = mountFromConfig({
 </script>
 
 <script type="text/markdown" id="md-packaging">
+# 打包与发布
+
 > 《Y.Stage3 手册》章节 · 面向负责出包与分发的同学。
 
 ## 1. 一键打包

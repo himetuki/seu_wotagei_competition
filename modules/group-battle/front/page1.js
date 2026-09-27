@@ -230,6 +230,7 @@ function initPage1(componentBridge) {
       audio.onended = null;
     }
     // body.battle-mode 的权威清理在 music-player 组件 cleanup（引用计数）；此处兜底
+    // 不回改计数——依赖组件 cleanup 幂等释放（teardown-only，重复 remove 为空操作）
     document.body.classList.remove("battle-mode");
   };
 }

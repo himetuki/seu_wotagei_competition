@@ -1,15 +1,20 @@
 /**
- * 音乐文件路由模块
- * 处理音乐文件的上传、扫描和管理
+ * 音乐文件路由模块（P13 自 server/routes/music-routes.js 迁入 music-library 功能件）
+ * 处理音乐文件的上传、扫描和管理。
+ * 形态改造：Express Router（app.use("/api", router)）→ 平铺 registerMusicRoutes(app)，
+ * 各端点路径补 /api 前缀（行为与迁移前逐字节一致，endpoint-diff 35/35 验收）。
  */
-const { Router } = require("../http/express-compat"); // y-router Express 兼容出口（HTTP 层切换）
-const router = Router();
 const path = require("path");
 const fs = require("fs");
 const multer = require("multer");
-const { serverLog, safeBasename, safeJoin } = require("../utils");
-const musicScanner = require("../music-scanner");
+const { serverLog, safeBasename, safeJoin } = require("../../server/utils");
+const musicScanner = require("./scanner");
 
+/**
+ * 注册全部音乐路由（原 app.use("/api", router) 的平铺等价形态）
+ * @param {object} app y-router app（(req,res,next) 风格与 Express 一致）
+ */
+function registerMusicRoutes(app) {
 // 设置上传的存储选项
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -66,7 +71,7 @@ const upload = multer({
 });
 
 // 获取音乐文件数量
-router.get("/music_count", (req, res) => {
+app.get("/api/music_count", (req, res) => {
   try {
     const group = req.query.group;
     if (!group) {
@@ -88,7 +93,7 @@ router.get("/music_count", (req, res) => {
 });
 
 // 检查音乐文件是否存在
-router.post("/check_music_files", (req, res) => {
+app.post("/api/check_music_files", (req, res) => {
   try {
     const { group, files } = req.body;
 
@@ -132,7 +137,7 @@ router.post("/check_music_files", (req, res) => {
 });
 
 // 上传音乐文件
-router.post("/upload_music", (req, res) => {
+app.post("/api/upload_music", (req, res) => {
   try {
     // 添加详细日志用于调试
     serverLog(
@@ -310,7 +315,7 @@ router.post("/upload_music", (req, res) => {
 });
 
 // 测试上传参数 (用于调试表单提交问题)
-router.post("/test_upload_params", (req, res) => {
+app.post("/api/test_upload_params", (req, res) => {
   try {
     // 记录所有请求信息以便调试
     serverLog(
@@ -339,7 +344,7 @@ router.post("/test_upload_params", (req, res) => {
 });
 
 // 测试表单数据解析
-router.post("/test_form_data", upload.none(), (req, res) => {
+app.post("/api/test_form_data", upload.none(), (req, res) => {
   try {
     serverLog("测试表单数据 - 收到请求", "info");
     serverLog(`请求头: ${JSON.stringify(req.headers)}`, "info");
@@ -365,7 +370,7 @@ router.post("/test_form_data", upload.none(), (req, res) => {
 });
 
 // 检查上传组件状态
-router.get("/upload_status", (req, res) => {
+app.get("/api/upload_status", (req, res) => {
   try {
     // 检查multer是否可用
     const multerAvailable = typeof multer === "function";
@@ -388,7 +393,7 @@ router.get("/upload_status", (req, res) => {
 });
 
 // 更新音乐列表JSON
-router.post("/update_music_list", (req, res) => {
+app.post("/api/update_music_list", (req, res) => {
   try {
     const { group } = req.body;
 
@@ -416,7 +421,7 @@ router.post("/update_music_list", (req, res) => {
 });
 
 // 扫描所有音乐目录
-router.post("/scan_all_music", (req, res) => {
+app.post("/api/scan_all_music", (req, res) => {
   try {
     const results = musicScanner.scanAllMusicDirs();
     res.json({
@@ -433,7 +438,7 @@ router.post("/scan_all_music", (req, res) => {
 });
 
 // 获取指定组别的所有音乐文件
-router.get("/music_files", (req, res) => {
+app.get("/api/music_files", (req, res) => {
   try {
     const group = req.query.group;
     if (!group) {
@@ -484,7 +489,7 @@ router.get("/music_files", (req, res) => {
 });
 
 // 移动音乐文件到回收文件夹
-router.post("/move_to_recycle", (req, res) => {
+app.post("/api/move_to_recycle", (req, res) => {
   try {
     const { group, filename } = req.body;
 
@@ -559,7 +564,7 @@ router.post("/move_to_recycle", (req, res) => {
 });
 
 // 添加测试音频文件上传端点
-router.post("/test_audio_upload", upload.single("file"), (req, res) => {
+app.post("/api/test_audio_upload", upload.single("file"), (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -602,5 +607,6 @@ router.post("/test_audio_upload", upload.single("file"), (req, res) => {
     });
   }
 });
+}
 
-module.exports = router;
+module.exports = { registerMusicRoutes };

@@ -49,6 +49,10 @@
       "enabled": true
     },
     {
+      "target": "modules/music-library",
+      "enabled": true
+    },
+    {
       "target": "modules/performance",
       "enabled": true
     },

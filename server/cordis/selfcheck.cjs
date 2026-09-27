@@ -330,12 +330,17 @@ async function run(options = {}) {
   if (!empty) {
     const snap = await httpJson(port, "/api/plugins");
     const backend = (snap.body && snap.body.backend) || [];
-    // P5a：条目数取 modules.json 宇宙数（与后端清单条目一一对应），不再硬编码 19
+    // P5a：条目数取 modules.json 宇宙数（与后端清单条目一一对应），不再硬编码 19。
+    // P13：纯后端功能件（如 music-library，无页面、不进 modules.json）会令后端快照
+    // 条目数 ≥ modules.json 宇宙数——断言放宽为 >=，功能件单独由 A6.1b 锁定。
     const universeCount = moduleLoader.getModules().length;
-    assert(`A6.1 GET /api/plugins 200，后端快照 ${universeCount} 条且 manager 已挂载`,
-      snap.status === 200 && backend.length === universeCount &&
+    assert(`A6.1 GET /api/plugins 200，后端快照 ≥ ${universeCount} 条且 manager 已挂载`,
+      snap.status === 200 && backend.length >= universeCount &&
       backend.some((b) => b.id === "plugin-manager" && b.enabled && b.mounted && b.kind === "plugin"),
       `status=${snap.status} backend=${backend.length} universe=${universeCount}`);
+    assert("A6.1b 纯后端功能件 music-library 已挂载（P13：无页面、不进 modules.json）",
+      backend.some((b) => b.id === "music-library" && b.enabled && b.mounted),
+      `music-library=${JSON.stringify(backend.find((b) => b.id === "music-library") || null)}`);
     assert("A6.2 快照含前端条目（web/front.json 投影）",
       Array.isArray(snap.body.front) && snap.body.front.length > 0 &&
       snap.body.front.some((f) => f.id === "plugin-manager"),
