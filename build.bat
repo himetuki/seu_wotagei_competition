@@ -1,50 +1,49 @@
 @echo off
-chcp 65001 >nul
 cd /d "%~dp0"
 echo ========================================
-echo   Y.Stage X ä¾¿æºå¼æ‰“åŒ…ï¼ˆP6bï¼Œæ—  pkgï¼‰
+echo   Y.Stage X ±ãĞ¯Ê½´ò°ü£¨P6b£¬ÎŞ pkg£©
 echo ========================================
 
-REM å®‰è£…ä¾èµ–
+REM °²×°ÒÀÀµ
 call npm install
 
 echo.
-echo [vendor] ç”Ÿæˆ petite-vue äº§ç‰©ï¼ˆweb\lib\vendor\petite-vue.mjsï¼ŒP12 å“åº”å¼åŸºåº§ï¼‰...
+echo [vendor] Éú³É petite-vue ²úÎï£¨web\lib\vendor\petite-vue.mjs£¬P12 ÏìÓ¦Ê½»ù×ù£©...
 call npm run vendor:petite-vue
 if %errorlevel% neq 0 goto :fail
 
 echo.
-echo [å†…æ ¸] æ„å»º cordis å†…æ ¸ï¼ˆcreate-root.cjs â†’ server\cordis\kernel.cjsï¼‰...
+echo [ÄÚºË] ¹¹½¨ cordis ÄÚºË£¨create-root.cjs ¡ú server\cordis\kernel.cjs£©...
 call npm run build:kernel
 if %errorlevel% neq 0 goto :fail
 
 echo.
-echo [å†…æ ¸] æ„å»ºå‰ç«¯å†…æ ¸ï¼ˆweb\kernel.mjs â†’ web\dist\kernel.jsï¼Œ/web/kernel.js å‘å¸ƒä¾èµ–ï¼‰...
+echo [ÄÚºË] ¹¹½¨Ç°¶ËÄÚºË£¨web\kernel.mjs ¡ú web\dist\kernel.js£¬/web/kernel.js ·¢²¼ÒÀÀµ£©...
 call npm run build:web
 if %errorlevel% neq 0 goto :fail
 
 echo.
-echo [æ ¸å¿ƒ] æ„å»ºæœåŠ¡ç«¯ bundleï¼ˆserver.js + ç”Ÿäº§ä¾èµ– â†’ dist-server\server.bundle.cjsï¼‰...
+echo [ºËĞÄ] ¹¹½¨·şÎñ¶Ë bundle£¨server.js + Éú²úÒÀÀµ ¡ú dist-server\server.bundle.cjs£©...
 call npm run build:server
 if %errorlevel% neq 0 goto :fail
 
 echo.
-echo [ä¾¿æº] ç»„è£… YStage3-Portable\ï¼ˆbundle å½¢æ€ï¼šè¿è¡Œæ—¶ + å•æ–‡ä»¶ app + plugins ç»„ä»¶å±‚ + resource æ•°æ®å±‚ + zipï¼‰...
+echo [±ãĞ¯] ×é×° YStage3-Portable\£¨bundle ĞÎÌ¬£ºÔËĞĞÊ± + µ¥ÎÄ¼ş app + plugins ×é¼ş²ã + resource Êı¾İ²ã + zip£©...
 call node scripts/make-portable.js --zip
 if %errorlevel% neq 0 goto :fail
 
 echo.
-echo æ‰“åŒ…å®Œæˆï¼
-echo   äº§ç‰©: YStage3-Portable\        ï¼ˆbundle å½¢æ€ï¼Œæ•´ä¸ªç›®å½•æ‹·èµ°å³ç”¨ï¼ŒåŒå‡» å¯åŠ¨YStage.batï¼‰
-echo   å‹ç¼©: YStage3-Portable.zip
+echo ´ò°üÍê³É£¡
+echo   ²úÎïÄ¿Â¼: YStage3-Portable £¨¿½×ß¼´ÓÃ£¬Ë«»÷ Æô¶¯YStage.bat£©
+echo   Ñ¹Ëõ°ü: YStage3-Portable.zip
 echo.
-echo è°ƒè¯•æºç å½¢æ€: node scripts/make-portable.js --loose
-echo æ’ä»¶çƒ­æ›¿æ¢ï¼šæ”¹ plugins\ ä¸‹æ–‡ä»¶ â†’ ç®¡ç†é¡µï¼ˆ/m/plugin-manager/ï¼‰çƒ­é‡è½½ï¼›æ¸…å•æ”¹åŠ¨å³æ—¶è½ç›˜ã€‚
+echo µ÷ÊÔÔ´ÂëĞÎÌ¬: node scripts/make-portable.js --loose
+echo ²å¼şÈÈÌæ»»£º¸Ä plugins\ ÏÂÎÄ¼ş ¡ú ¹ÜÀíÒ³£¨/m/plugin-manager/£©ÈÈÖØÔØ£»Çåµ¥¸Ä¶¯¼´Ê±ÂäÅÌ¡£
 goto :end
 
 :fail
 echo.
-echo æ‰“åŒ…å¤±è´¥ï¼è¯·æ£€æŸ¥ä¸Šæ–¹é”™è¯¯ä¿¡æ¯ã€‚
+echo ´ò°üÊ§°Ü£¡Çë¼ì²éÉÏ·½´íÎóĞÅÏ¢¡£
 
 :end
 pause
