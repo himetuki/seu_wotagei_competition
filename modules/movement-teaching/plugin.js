@@ -123,8 +123,15 @@ module.exports = {
           if (!req.body || !Array.isArray(req.body)) {
             return res.status(400).send("无效的技能数据格式");
           }
-          const validData = req.body.filter((item) => item && item.name);
-          require("fs").writeFileSync(tricksFilePath, JSON.stringify(validData, null, 2));
+          // 名称为字符串并钳长（防超长串经设置页回流渲染）；条目数封顶防文件膨胀
+          const validData = req.body
+            .filter((item) => item && typeof item.name === "string" && item.name)
+            .slice(0, 500)
+            .map((item) => ({ name: item.name.slice(0, 100) }));
+          // 写 LF + 末尾换行：仓库 blob 即 LF（工作区 CRLF 只是 autocrlf 检出转换），
+          // 写 LF 在任何 autocrlf 配置下都不会制造整文件 EOL diff
+          const tricksJson = JSON.stringify(validData, null, 2) + "\n";
+          require("fs").writeFileSync(tricksFilePath, tricksJson);
           serverLog("已更新体态传技游戏技能数据");
           res.status(200).send("更新成功");
         } catch (error) {
@@ -177,16 +184,34 @@ module.exports = {
           const currentData = db.getState();
           const records = currentData.records || [];
 
+          // ★ 入库前白名单整形（审计修复）：此处曾把 req.body 原样 push——局域网任意
+          //   客户端可把任意 JSON（超长串 / HTML 载荷）写进存档，记录页渲染即成存储型
+          //   XSS。字段与游戏页 recordData 逐一对应，长度钳制防存档膨胀。
+          const src = req.body && typeof req.body === "object" ? req.body : {};
+          const clampStr = (v, cap) =>
+            typeof v === "string" ? v.slice(0, cap) : "";
+          const record = {
+            id: Number(src.id) || Date.now(),
+            teamName: clampStr(src.teamName, 100),
+            trickName: clampStr(src.trickName, 200),
+            duration: Number(src.duration) || 0,
+            isGuessCorrect: !!src.isGuessCorrect,
+            date:
+              typeof src.date === "string"
+                ? src.date.slice(0, 40)
+                : new Date().toISOString(),
+          };
+
           const existingIndex = records.findIndex(
-            (record) => record.id === req.body.id
+            (item) => item.id === record.id
           );
 
           if (existingIndex !== -1) {
-            records[existingIndex] = req.body;
-            serverLog(`更新已有记录 ID: ${req.body.id}`);
+            records[existingIndex] = record;
+            serverLog(`更新已有记录 ID: ${record.id}`);
           } else {
-            records.push(req.body);
-            serverLog(`添加新记录 ID: ${req.body.id}`);
+            records.push(record);
+            serverLog(`添加新记录 ID: ${record.id}`);
           }
 
           db.setState({
@@ -198,7 +223,7 @@ module.exports = {
           res.status(200).json({
             success: true,
             message: "记录已保存",
-            data: req.body,
+            data: record,
           });
         } catch (error) {
           serverLog("保存体态传技游戏记录失败: " + error.message, "error");

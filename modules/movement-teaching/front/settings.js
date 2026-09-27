@@ -9,8 +9,13 @@
  *
  * cleanup 覆盖：signal 登记的静态监听、节拍器试听 interval、WebAudio 上下文、
  * 未关闭确认对话框。
+ *
+ * P11-B6：设置存档（键 movement_without_hands_settings / 端点 /api/game_2_settings）
+ * 统一经 /web/lib/persist.mjs 的 createPersistence；主路径走 window.GameData 桥接
+ * （game-data.js 内已封装同一控制器），数据层缺失时的兜底分支同样不再手写 localStorage。
  */
-import { GameData } from "./game-data.js";
+import { GameData, useGameDataApi } from "./game-data.js";
+import { createPersistence } from "/web/lib/persist.mjs";
 import { icon } from "/web/icons.mjs";
 
 // 全局状态
@@ -32,6 +37,32 @@ const State = {
 
 // DOM元素缓存（原脚本顶层缓存移入 initMovementTeachingSettings）
 const DOM = {};
+
+// HTML 转义：技能名可经 POST /api/tricks_for_game 被任意局域网客户端写入，
+// 凡插入 innerHTML 的业务字段必须经过这里
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (ch) => HTML_ESCAPES[ch]);
+}
+const HTML_ESCAPES = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
+
+/* 兜底存档控制器用到的 ctx.api（init 注入；主路径经 window.GameData 桥接，用不到它） */
+let persistApi = null;
+
+/** 兜底存档控制器（仅当 window.GameData 数据层缺失时才会被调用；键/端点逐字保留） */
+function settingsFallbackStore() {
+  return createPersistence({
+    key: "movement_without_hands_settings",
+    endpoint: "/api/game_2_settings",
+    api: persistApi,
+    isValid: (data) => data !== null && data !== undefined,
+  });
+}
 
 // 绑定事件处理函数
 function bindEvents(signal) {
@@ -201,8 +232,9 @@ function renderTrickList() {
   State.trickData.forEach((trick, index) => {
     const li = document.createElement("li");
     li.dataset.index = index;
+    // 技能名可经 POST /api/tricks_for_game 被任意局域网客户端写入，渲染须转义
     li.innerHTML = `
-      <span class="item-name">${trick.name}</span>
+      <span class="item-name">${escapeHtml(trick.name)}</span>
       <div class="item-actions">
         <button class="edit-btn" title="编辑">${icon("pencil", { size: 16, label: "编辑" })}</button>
         <button class="delete-btn" title="删除">${icon("trash", { size: 16, label: "删除" })}</button>
@@ -352,17 +384,13 @@ function updateBpmValueDisplay(value) {
 // 加载设置数据
 async function loadSettingsData() {
   try {
-    // 如果GameData已定义且包含settings，则使用它
-    if (window.GameData && GameData.settings) {
-      State.settings = { ...State.settings, ...GameData.settings };
-      console.log("从GameData加载设置:", State.settings);
-    } else {
-      // 否则调用API加载
-      const settings = await loadGameSettings();
-      if (settings) {
-        State.settings = { ...State.settings, ...settings };
-        console.log("从API加载设置:", State.settings);
-      }
+    // 必须实际执行一次持久化加载（server → localStorage 恢复链）：GameData.settings
+    // 恒为对象（内存默认值 {beatsPerMinute:120}），不能当"已加载"判据——原实现因此
+    // 跳过 loadGameSettings()，滑块首显恒为默认 120 而非已保存值
+    const settings = await loadGameSettings();
+    if (settings) {
+      State.settings = { ...State.settings, ...settings };
+      console.log("从存档加载设置:", State.settings);
     }
 
     // 更新UI显示
@@ -578,121 +606,54 @@ function addButtonClickEffect(button) {
 
 // 从服务器加载游戏设置的辅助函数
 async function loadGameSettings() {
-  try {
-    // 先尝试使用游戏数据模块中的加载函数
-    if (window.GameData && typeof window.GameData.loadSettings === "function") {
-      console.log("使用GameData.loadSettings加载...");
-      return await window.GameData.loadSettings();
-    }
+  // 主路径：数据层封装（createPersistence，键/端点逐字保留）
+  if (window.GameData && typeof window.GameData.loadSettings === "function") {
+    console.log("使用GameData.loadSettings加载...");
+    return await window.GameData.loadSettings();
+  }
 
-    // 如果游戏模块未提供加载函数，则使用API
-    console.log("通过API加载设置...");
-    const response = await fetch("/api/game_2_settings");
-    if (!response.ok) {
-      throw new Error(`获取设置失败: ${response.status}`);
-    }
-    const settings = await response.json();
-
-    // 检查是否有备份可以合并
-    try {
-      const localSettings = localStorage.getItem(
-        "movement_without_hands_settings"
-      );
-      if (localSettings) {
-        const parsedLocalSettings = JSON.parse(localSettings);
-        console.log("发现本地备份设置:", parsedLocalSettings);
-
-        // 如果服务器没有BPM设置但本地有，使用本地的
-        if (!settings.beatsPerMinute && parsedLocalSettings.beatsPerMinute) {
-          settings.beatsPerMinute = parsedLocalSettings.beatsPerMinute;
-          console.log("从本地备份恢复BPM设置:", settings.beatsPerMinute);
-        }
-      }
-    } catch (e) {
-      console.warn("无法从本地存储读取设置:", e);
-    }
-
-    return settings;
-  } catch (error) {
-    console.error("加载游戏设置失败:", error);
-
-    // 尝试从本地存储恢复
-    try {
-      const localSettings = localStorage.getItem(
-        "movement_without_hands_settings"
-      );
-      if (localSettings) {
-        const parsedSettings = JSON.parse(localSettings);
-        console.log("从本地存储恢复设置:", parsedSettings);
-        return parsedSettings;
-      }
-    } catch (e) {
-      console.warn("无法从本地存储恢复设置:", e);
-    }
-
+  // 兜底：数据层缺失时同样经 createPersistence（origin 相对路径、非 2xx 回退本地）
+  console.log("通过API加载设置...");
+  const { data, source } = await settingsFallbackStore().load();
+  if (source === "none") {
     return { beatsPerMinute: 120 }; // 返回默认设置
   }
+  return data;
 }
 
 // 保存游戏设置的辅助函数
 async function saveGameSettings(settings) {
-  try {
-    console.log("正在保存游戏设置:", settings);
+  console.log("正在保存游戏设置:", settings);
 
-    // 确保BPM是数字类型
-    const settingsToSave = {
-      ...settings,
-      beatsPerMinute: parseInt(settings.beatsPerMinute, 10),
-    };
+  // 确保BPM是数字类型
+  const settingsToSave = {
+    ...settings,
+    beatsPerMinute: parseInt(settings.beatsPerMinute, 10),
+  };
 
-    // 先尝试使用游戏数据模块中的保存函数
-    if (window.GameData && typeof window.GameData.saveSettings === "function") {
-      console.log("使用GameData.saveSettings保存...");
-      return await window.GameData.saveSettings(settingsToSave);
-    }
-
-    // 如果游戏模块未提供保存函数，则使用API
-    console.log("通过API保存设置...");
-    const response = await fetch("/api/game_2_settings", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(settingsToSave),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("服务器返回错误:", response.status, errorText);
-      throw new Error(`服务器返回错误 ${response.status}: ${errorText}`);
-    }
-
-    // 如果需要，可以向LocalStorage保存一份备份
-    try {
-      localStorage.setItem(
-        "movement_without_hands_settings",
-        JSON.stringify(settingsToSave)
-      );
-      console.log("设置已保存到本地存储作为备份");
-    } catch (e) {
-      console.warn("无法保存设置到本地存储:", e);
-    }
-
-    console.log("设置保存成功");
-    return true;
-  } catch (error) {
-    console.error("保存游戏设置失败:", error);
-    return false;
+  // 主路径：数据层封装
+  if (window.GameData && typeof window.GameData.saveSettings === "function") {
+    console.log("使用GameData.saveSettings保存...");
+    return await window.GameData.saveSettings(settingsToSave);
   }
+
+  // 兜底：数据层缺失时同样经 createPersistence（先本地备份，后 POST）
+  console.log("通过API保存设置...");
+  const { local, remote } = await settingsFallbackStore().save(settingsToSave);
+  return persistApi ? remote : local;
 }
 
 /* =================================================================
  *  组件入口（原两个 DOMContentLoaded 初始化 + 顶层 DOM 缓存，kernel render 时执行）
  * ================================================================= */
-export function initMovementTeachingSettings() {
+export function initMovementTeachingSettings(ctx) {
   // cleanup 契约：静态骨架监听经 signal 登记，重渲染时 abort 统一解绑
   const bindAbort = new AbortController();
   const { signal } = bindAbort;
+
+  // 持久化控制器取用 ctx.api（game-data.js 的 window.GameData 桥接 + 本地兜底共用）
+  persistApi = ctx && ctx.api ? ctx.api : null;
+  useGameDataApi(persistApi);
 
   // DOM元素缓存（原脚本顶层缓存，调用时 DOM 早已就绪）
   DOM.trickList = document.getElementById("trick-list");
@@ -760,28 +721,9 @@ export function initMovementTeachingSettings() {
     }, { signal });
   }
 
-  // 确保页面初始化时从JSON文件加载设置（原第二个 DOMContentLoaded）
-  (async function () {
-    try {
-      // 直接从json文件加载设置
-      const response = await fetch("/resource/json/game_2_settings.json");
-      if (response.ok) {
-        const settings = await response.json();
-        if (settings && settings.beatsPerMinute) {
-          State.settings.beatsPerMinute = parseInt(settings.beatsPerMinute);
-          console.log("从JSON文件加载BPM设置:", State.settings.beatsPerMinute);
-
-          // 更新UI显示
-          if (DOM.bpmSetting) {
-            DOM.bpmSetting.value = State.settings.beatsPerMinute;
-            DOM.bpmValue.textContent = State.settings.beatsPerMinute;
-          }
-        }
-      }
-    } catch (error) {
-      console.error("直接从JSON文件加载设置失败:", error);
-    }
-  })();
+  // 设置加载由上方 loadSettingsData() 承担（server → localStorage 恢复链）。
+  // 原第二个 DOMContentLoaded 的兜底 IIFE 已删除：其请求的静态文件
+  // /resource/json/game_2_settings.json 从不存在，恒 404 静默。
 
   return () => cleanupMovementTeachingSettings(bindAbort);
 }

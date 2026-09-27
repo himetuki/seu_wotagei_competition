@@ -143,6 +143,10 @@ header h1 {
   align-items: center;
   flex-direction: column;
   margin-bottom: 30px;
+  /* P11-B6：拉伸到 .game-container 全宽（原 align-items:center 收缩包裹）。
+     子元素仍各自居中 → 视觉不变；但 .timer-controls 的 auto-fit 由此拿到
+     **确定可用宽度**，列数不再受 .timer 文本宽度（字体度量）影响。 */
+  align-self: stretch;
 }
 
 .timer {
@@ -182,9 +186,24 @@ header h1 {
   font-size: 1.2rem;
 }
 
+/* 按钮行（P11-B6）：排布由 /web/components/grid.css 的 .grid-flow 提供
+   （auto-fit，按容器宽度连续计算，零媒体查询）。此处只覆盖轨道尺寸：
+   max-content 上界 + 100px 下界 → 按钮保持迁移前"内容宽、居中成行"的节奏，
+   窄屏按 100px 轨道连续折行且永不横向溢出。
+   width:100% 是必需的——父级 .timer-section 是收缩包裹的 flex 列，
+   不给确定宽度时 auto-fit 算不出多列（会塌成单列）。 */
+.timer-controls.grid-flow,
+.navigation.grid-flow {
+  grid-template-columns: repeat(auto-fit, minmax(min(100px, 100%), max-content));
+  justify-content: center;
+}
+
+.timer-controls.grid-flow {
+  width: 100%;
+}
+
 .timer-controls {
-  display: flex;
-  gap: 20px;
+  gap: 20px; /* 原 flex gap 逐像素保留 */
 }
 
 .time-setting {
@@ -201,9 +220,7 @@ header h1 {
 
 /* 导航区域 */
 .navigation {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
+  gap: 15px; /* 原 flex gap 逐像素保留 */
   margin-top: 20px;
   margin-bottom: 20px;
   animation: fadeInUp 1s ease-out;
@@ -611,9 +628,11 @@ button:hover::before {
     font-size: 3.5rem;
   }
 
-  .navigation {
-    flex-direction: column;
-    align-items: center;
+  /* .navigation 的窄屏单列由 .grid-flow 的 auto-fit 承接（原 flex-direction: column 已移除）；
+     justify-items 承接原 align-items:center —— button{max-width:300px} 下居中而非贴左 */
+  .navigation.grid-flow {
+    grid-template-columns: 1fr;
+    justify-items: center;
   }
 
   button {

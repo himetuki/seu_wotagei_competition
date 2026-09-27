@@ -20,6 +20,8 @@
 // ========== 1/5 set-core.js：设置中心 - 核心模块（包含通用功能和基础设置） ==========
 
 import { icon } from "/web/icons.mjs";
+import { createReactiveScope, mountReactiveSafe } from "/web/lib/reactive.mjs";
+import { createTimerRegistry } from "/web/lib/timers.mjs";
 
 export function component(el, meta, ctx) {
   // cleanup 契约：静态骨架节点的全部监听经 signal 登记，重渲染/卸载时 abort 统一解绑，
@@ -28,17 +30,41 @@ export function component(el, meta, ctx) {
   const bindAbort = new AbortController();
   const { signal } = bindAbort;
 
+  // 一次性定时器句柄（cleanup 统一清理，避免 teardown 后回调仍在飞）
+  // P12 起经 /web/lib/timers.mjs 注册表统一登记（替代原 pageTimers + later() 样板）
+  const timers = createTimerRegistry();
+  /** 登记一次性定时器（别名保既有调用点零改动） */
+  const later = (fn, ms) => timers.later(fn, ms);
+
+  // P12：confirm-dialog 组件实例化（自挂 body；onReady 回填桥 confirmApi，弹窗节点由
+  // 组件自管——组件缺失时桥接降级 warn，9 个调用点零改动）
+  let confirmApi = null;
+  let disposeConfirm = null;
+  const confirmFactory = ctx && ctx.ui ? ctx.ui.component("confirm-dialog") : null;
+  if (confirmFactory) {
+    const dispose = confirmFactory(
+      document.body,
+      { onReady: (api) => { confirmApi = api; } },
+      ctx
+    );
+    if (typeof dispose === "function") disposeConfirm = dispose;
+  }
+
   // DOM元素缓存
   const DOM = {};
+
+  // 响应式列表状态（P11-R1）：三个列表编辑器的数组与加载态。
+  // 异步就绪前为 null；CRUD 函数经闭包读写 R.xxx，数组变更自动驱动 v-for 更新
+  // （替代旧 renderPlayerList/renderTrickList/renderAwardList 的 innerHTML 全量重建）。
+  let R = null;
+  const listViews = []; // 三个列表的 dispose 函数（cleanup 统一卸载）
+  let listsDisposed = false;
 
   // 全局状态
   const State = {
     currentTab: "players",
     currentPlayerFile: "player1",
     currentTrickFile: "tricks",
-    playerData: [],
-    trickData: [],
-    awardData: [],
     editingItemId: null,
     isEditing: false,
     hasChanges: false,
@@ -133,6 +159,9 @@ export function component(el, meta, ctx) {
     DOM.toggleDragKeepBg = document.getElementById("toggle-drag-keep-bg");
     DOM.toggleDragDoubleElim = document.getElementById("toggle-drag-double-elim");
     DOM.saveFeatureTogglesBtn = document.getElementById("save-feature-toggles-btn");
+
+    // 音乐导入跳转按钮（原 index.html 内联 onclick，改为常规 { signal } 绑定）
+    DOM.gotoMusicImportBtn = document.getElementById("goto-music-import-btn");
 
     // 静态骨架图标：批量导入标签的装饰图标（原 HTML 内 emoji，此处注入 Tabler SVG）
     document.querySelectorAll(".import-icon").forEach((node) => {
@@ -252,73 +281,12 @@ export function component(el, meta, ctx) {
     showStatusMessage("功能开关设置已保存", "success");
   }
 
-  // 显示自定义确认对话框
+  // 显示自定义确认对话框（P12 桥接：实现归 component-confirm-dialog 组件实例——单弹窗/
+  // 遮罩取消/visible 显形动画均由组件承担；调用点零改动。降级 = warn 且不回调 onConfirm，
+  // 防止组件被禁用时误触发删除/清空）
   function showConfirmDialog(message, onConfirm, onCancel) {
-    // 移除可能已存在的对话框
-    const existingDialog = document.querySelector(".dialog-container");
-    if (existingDialog) {
-      document.body.removeChild(existingDialog);
-    }
-
-    // 创建对话框容器
-    const dialogContainer = document.createElement("div");
-    dialogContainer.className = "dialog-container";
-
-    // 创建半透明遮罩
-    const overlay = document.createElement("div");
-    overlay.className = "dialog-overlay";
-
-    // 创建对话框
-    const dialog = document.createElement("div");
-    dialog.className = "custom-dialog";
-
-    // 添加内容
-    const content = document.createElement("p");
-    content.textContent = message;
-    dialog.appendChild(content);
-
-    // 添加按钮容器
-    const buttonContainer = document.createElement("div");
-    buttonContainer.className = "dialog-buttons";
-
-    // 确认按钮
-    const confirmBtn = document.createElement("button");
-    confirmBtn.textContent = "确认";
-    confirmBtn.className = "dialog-btn confirm-btn";
-    confirmBtn.addEventListener("click", function () {
-      document.body.removeChild(dialogContainer);
-      if (onConfirm) onConfirm();
-    });
-
-    // 取消按钮
-    const cancelBtn = document.createElement("button");
-    cancelBtn.textContent = "取消";
-    cancelBtn.className = "dialog-btn cancel-btn";
-    cancelBtn.addEventListener("click", function () {
-      document.body.removeChild(dialogContainer);
-      if (onCancel) onCancel();
-    });
-
-    // 组装对话框
-    buttonContainer.appendChild(confirmBtn);
-    buttonContainer.appendChild(cancelBtn);
-    dialog.appendChild(buttonContainer);
-    dialogContainer.appendChild(overlay);
-    dialogContainer.appendChild(dialog);
-
-    // 点击遮罩关闭对话框（相当于取消）
-    overlay.addEventListener("click", function () {
-      document.body.removeChild(dialogContainer);
-      if (onCancel) onCancel();
-    });
-
-    // 添加到页面
-    document.body.appendChild(dialogContainer);
-
-    // 触发动画
-    setTimeout(() => {
-      dialog.classList.add("show");
-    }, 10);
+    if (confirmApi) confirmApi(message, onConfirm, onCancel);
+    else console.warn("[setting] confirm-dialog 组件不可用，已忽略确认请求");
   }
 
   // 绑定通用事件
@@ -330,6 +298,13 @@ export function component(el, meta, ctx) {
         showTab(tabName);
       }, { signal });
     });
+
+    // 音乐导入页跳转（原内联 onclick，唯一活路径：按钮在本页 #musics-panel 内）
+    if (DOM.gotoMusicImportBtn) {
+      DOM.gotoMusicImportBtn.addEventListener("click", function () {
+        window.location.href = "/m/music-import/";
+      }, { signal });
+    }
   }
 
   // 显示标签页
@@ -381,7 +356,7 @@ export function component(el, meta, ctx) {
     DOM.statusMessage.className = type;
     DOM.statusMessage.classList.add("show");
 
-    setTimeout(() => {
+    later(() => {
       DOM.statusMessage.classList.remove("show");
     }, 3000);
   }
@@ -427,16 +402,10 @@ export function component(el, meta, ctx) {
     }
   }
 
-  // 生成唯一ID
-  function generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
-  }
-
   // ========== 2/5 set-players.js：设置中心 - 选手管理模块（处理选手数据的加载、编辑和保存） ==========
 
   // ---- 原 set-players.js DOMContentLoaded 初始化体（第 2 个监听器） ----
-  // 加载初始选手数据
-  loadPlayerData(State.currentPlayerFile);
+  // 初始选手加载移至响应式列表就绪后的异步初始化（原为同步 loadPlayerData 调用）
 
   // 绑定选手相关事件
   bindPlayerEvents();
@@ -505,20 +474,23 @@ export function component(el, meta, ctx) {
     }
   }
 
-  // 加载选手数据
-  async function loadPlayerData(fileType) {
+  // 加载选手数据（silent=true 跳过成功提示——异步初始化三列表并发加载时，
+  // 否则会弹出与当前 tab 不匹配的 toast；错误提示不受影响，始终显示）
+  async function loadPlayerData(fileType, silent = false) {
+    if (!R) return; // 响应式列表未就绪（初始 showTab 同步调用）；真实加载在异步初始化中
     try {
-      // 显示加载中
-      DOM.playerList.innerHTML = '<li class="loading">加载中...</li>';
+      // 显示加载中（响应式：隐藏旧列表，仅渲染 loading 行）
+      R.playerLoading = true;
+      R.playerError = "";
 
       // 获取数据
       const data = await fetchAPI(ENDPOINTS[fileType]);
 
       // 格式化数据
-      State.playerData = Array.isArray(data) ? data : [];
+      let list = Array.isArray(data) ? data : [];
       if (fileType === "player1" || fileType === "player2") {
         // 确保数据格式一致
-        State.playerData = State.playerData
+        list = list
           .map((player) => {
             if (typeof player === "string") {
               return { name: player };
@@ -529,59 +501,24 @@ export function component(el, meta, ctx) {
           })
           .filter((player) => player !== null);
       }
-
-      // 渲染列表
-      renderPlayerList();
+      R.playerData = list;
 
       // 重置表单
       resetPlayerForm();
 
-      showStatusMessage(`${fileType}.json 加载成功`);
+      if (!silent) showStatusMessage(`${fileType}.json 加载成功`);
     } catch (error) {
       console.error(`加载${fileType}.json失败:`, error);
-      DOM.playerList.innerHTML = '<li class="error">加载失败，请重试</li>';
+      R.playerError = "加载失败，请重试";
       showStatusMessage(`加载${fileType}.json失败`, "error");
+    } finally {
+      R.playerLoading = false;
     }
-  }
-
-  // 渲染选手列表
-  function renderPlayerList() {
-    if (!State.playerData || State.playerData.length === 0) {
-      DOM.playerList.innerHTML = '<li class="empty">暂无选手数据</li>';
-      return;
-    }
-
-    DOM.playerList.innerHTML = "";
-
-    State.playerData.forEach((player, index) => {
-      const li = document.createElement("li");
-      li.dataset.index = index;
-      li.dataset.id = player.id || index;
-      li.innerHTML = `
-        <span class="item-name">${player.name}</span>
-        <div class="item-actions">
-          <button class="edit-btn" title="编辑">${icon("pencil", { size: 16, label: "编辑" })}</button>
-          <button class="delete-btn" title="删除">${icon("trash", { size: 16, label: "删除" })}</button>
-        </div>
-      `;
-
-      // 编辑按钮事件
-      li.querySelector(".edit-btn").addEventListener("click", () => {
-        editPlayer(index);
-      });
-
-      // 删除按钮事件
-      li.querySelector(".delete-btn").addEventListener("click", () => {
-        deletePlayer(index);
-      });
-
-      DOM.playerList.appendChild(li);
-    });
   }
 
   // 编辑选手
   function editPlayer(index) {
-    const player = State.playerData[index];
+    const player = R.playerData[index];
     if (player) {
       State.isEditing = true;
       State.editingItemId = index;
@@ -593,8 +530,7 @@ export function component(el, meta, ctx) {
   // 删除选手
   function deletePlayer(index) {
     showConfirmDialog("确定要删除这名选手吗？", () => {
-      State.playerData.splice(index, 1);
-      renderPlayerList();
+      R.playerData.splice(index, 1);
       State.hasChanges = true;
       showStatusMessage("选手已删除，点击保存以提交更改");
     });
@@ -611,15 +547,14 @@ export function component(el, meta, ctx) {
 
     if (State.isEditing && State.editingItemId !== null) {
       // 更新已有选手
-      State.playerData[State.editingItemId].name = name;
+      R.playerData[State.editingItemId].name = name;
       showStatusMessage("选手已更新，点击保存更改以提交", "success");
     } else {
       // 添加新选手
-      State.playerData.push({ name });
+      R.playerData.push({ name });
       showStatusMessage("选手已添加，点击保存更改以提交", "success");
     }
 
-    renderPlayerList();
     resetPlayerForm();
     State.hasChanges = true;
   }
@@ -641,9 +576,9 @@ export function component(el, meta, ctx) {
         State.currentPlayerFile === "player2"
       ) {
         // 修正：保存为对象格式，而不是仅保存名称
-        dataToSave = State.playerData.map((player) => ({ name: player.name }));
+        dataToSave = R.playerData.map((player) => ({ name: player.name }));
       } else {
-        dataToSave = State.playerData;
+        dataToSave = R.playerData;
       }
 
       // 发送请求
@@ -736,19 +671,19 @@ export function component(el, meta, ctx) {
         // 根据导入模式处理选手列表
         if (importMode === "replace") {
           // 替换模式：清空现有列表
-          State.playerData = playerNames.map((name) => ({ name }));
+          R.playerData = playerNames.map((name) => ({ name }));
           showStatusMessage(`已替换为${playerNames.length}名新选手`, "success");
         } else {
           // 添加模式：添加到现有列表
           let addedCount = 0;
           playerNames.forEach((name) => {
             // 检查重复选手
-            const exists = State.playerData.some(
+            const exists = R.playerData.some(
               (player) => player.name.toLowerCase() === name.toLowerCase()
             );
 
             if (!exists) {
-              State.playerData.push({ name });
+              R.playerData.push({ name });
               addedCount++;
             }
           });
@@ -759,10 +694,7 @@ export function component(el, meta, ctx) {
           );
         }
 
-        // 更新列表显示
-        renderPlayerList();
-
-        // 标记为已修改
+        // 标记为已修改（列表由响应式自动更新）
         State.hasChanges = true;
       };
 
@@ -791,8 +723,7 @@ export function component(el, meta, ctx) {
   // ========== 3/5 set-tricks.js：设置中心 - 技能管理模块（处理技能数据的加载、编辑和保存） ==========
 
   // ---- 原 set-tricks.js DOMContentLoaded 初始化体（第 3 个监听器） ----
-  // 加载初始技能数据
-  loadTrickData(State.currentTrickFile);
+  // 初始技能加载移至响应式列表就绪后的异步初始化（原为同步 loadTrickData 调用）
 
   // 绑定技能相关事件
   bindTrickEvents();
@@ -853,21 +784,21 @@ export function component(el, meta, ctx) {
     }
   }
 
-  // 加载技能数据
-  async function loadTrickData(fileType) {
+  // 加载技能数据（silent 参数语义同 loadPlayerData）
+  async function loadTrickData(fileType, silent = false) {
+    if (!R) return; // 响应式列表未就绪（初始 showTab 同步调用）；真实加载在异步初始化中
     try {
-      // 显示加载中
-      DOM.trickList.innerHTML = '<li class="loading">加载中...</li>';
+      // 显示加载中（响应式：隐藏旧列表，仅渲染 loading 行）
+      R.trickLoading = true;
+      R.trickError = "";
 
       // 获取数据
       const data = await fetchAPI(ENDPOINTS[fileType]);
 
-      // 格式化数据
-      State.trickData = Array.isArray(data) ? data : [];
-
-      // 确保技能数据结构一致
+      // 格式化数据 + 确保技能数据结构一致
+      let list = Array.isArray(data) ? data : [];
       if (fileType === "tricks" || fileType === "tricks_for_group2") {
-        State.trickData = State.trickData
+        list = list
           .map((trick) => {
             if (typeof trick === "string") {
               return { name: trick };
@@ -879,59 +810,24 @@ export function component(el, meta, ctx) {
           })
           .filter((trick) => trick !== null);
       }
-
-      // 渲染列表
-      renderTrickList();
+      R.trickData = list;
 
       // 重置表单
       resetTrickForm();
 
-      showStatusMessage(`${fileType}.json 加载成功`);
+      if (!silent) showStatusMessage(`${fileType}.json 加载成功`);
     } catch (error) {
       console.error(`加载${fileType}.json失败:`, error);
-      DOM.trickList.innerHTML = '<li class="error">加载失败，请重试</li>';
+      R.trickError = "加载失败，请重试";
       showStatusMessage(`加载${fileType}.json失败`, "error");
+    } finally {
+      R.trickLoading = false;
     }
-  }
-
-  // 渲染技能列表
-  function renderTrickList() {
-    if (!State.trickData || State.trickData.length === 0) {
-      DOM.trickList.innerHTML = '<li class="empty">暂无技能数据</li>';
-      return;
-    }
-
-    DOM.trickList.innerHTML = "";
-
-    State.trickData.forEach((trick, index) => {
-      const li = document.createElement("li");
-      li.dataset.index = index;
-      li.dataset.id = trick.id || index;
-      li.innerHTML = `
-        <span class="item-name">${trick.name}</span>
-        <div class="item-actions">
-          <button class="edit-btn" title="编辑">${icon("pencil", { size: 16, label: "编辑" })}</button>
-          <button class="delete-btn" title="删除">${icon("trash", { size: 16, label: "删除" })}</button>
-        </div>
-      `;
-
-      // 编辑按钮事件
-      li.querySelector(".edit-btn").addEventListener("click", () => {
-        editTrick(index);
-      });
-
-      // 删除按钮事件
-      li.querySelector(".delete-btn").addEventListener("click", () => {
-        deleteTrick(index);
-      });
-
-      DOM.trickList.appendChild(li);
-    });
   }
 
   // 编辑技能
   function editTrick(index) {
-    const trick = State.trickData[index];
+    const trick = R.trickData[index];
     if (trick) {
       State.isEditing = true;
       State.editingItemId = index;
@@ -943,8 +839,7 @@ export function component(el, meta, ctx) {
   // 删除技能
   function deleteTrick(index) {
     showConfirmDialog("确定要删除这个技能吗？", () => {
-      State.trickData.splice(index, 1);
-      renderTrickList();
+      R.trickData.splice(index, 1);
       State.hasChanges = true;
       showStatusMessage("技能已删除，点击保存以提交更改");
     });
@@ -961,15 +856,14 @@ export function component(el, meta, ctx) {
 
     if (State.isEditing && State.editingItemId !== null) {
       // 更新已有技能
-      State.trickData[State.editingItemId].name = name;
+      R.trickData[State.editingItemId].name = name;
       showStatusMessage("技能已更新，点击保存更改以提交", "success");
     } else {
       // 添加新技能
-      State.trickData.push({ name });
+      R.trickData.push({ name });
       showStatusMessage("技能已添加，点击保存更改以提交", "success");
     }
 
-    renderTrickList();
     resetTrickForm();
     State.hasChanges = true;
   }
@@ -989,12 +883,12 @@ export function component(el, meta, ctx) {
 
       if (State.currentTrickFile === "tricks") {
         // tricks.json 格式要求
-        dataToSave = State.trickData.map((trick) => ({ name: trick.name }));
+        dataToSave = R.trickData.map((trick) => ({ name: trick.name }));
       } else if (State.currentTrickFile === "tricks_for_group2") {
         // tricks_for_group2.json 仅保存技能名称
-        dataToSave = State.trickData.map((trick) => trick.name);
+        dataToSave = R.trickData.map((trick) => trick.name);
       } else {
-        dataToSave = State.trickData;
+        dataToSave = R.trickData;
       }
 
       // 发送请求
@@ -1111,19 +1005,19 @@ export function component(el, meta, ctx) {
         // 根据导入模式处理技能列表
         if (importMode === "replace") {
           // 替换模式：清空现有列表
-          State.trickData = trickNames.map((name) => ({ name }));
+          R.trickData = trickNames.map((name) => ({ name }));
           showStatusMessage(`已替换为${trickNames.length}个新技能`, "success");
         } else {
           // 添加模式：添加到现有列表
           let addedCount = 0;
           trickNames.forEach((name) => {
             // 检查重复技能
-            const exists = State.trickData.some(
+            const exists = R.trickData.some(
               (trick) => trick.name.toLowerCase() === name.toLowerCase()
             );
 
             if (!exists) {
-              State.trickData.push({ name });
+              R.trickData.push({ name });
               addedCount++;
             }
           });
@@ -1134,10 +1028,7 @@ export function component(el, meta, ctx) {
           );
         }
 
-        // 更新列表显示
-        renderTrickList();
-
-        // 标记为已修改
+        // 标记为已修改（列表由响应式自动更新）
         State.hasChanges = true;
       };
 
@@ -1152,8 +1043,7 @@ export function component(el, meta, ctx) {
   // ========== 4/5 set-awards.js：设置中心 - 奖励管理模块（处理奖励数据的加载、编辑和保存） ==========
 
   // ---- 原 set-awards.js DOMContentLoaded 初始化体（第 4 个监听器） ----
-  // 加载初始奖励数据
-  loadAwardData();
+  // 初始奖励加载移至响应式列表就绪后的异步初始化（原为同步 loadAwardData 调用）
 
   // 绑定奖励相关事件
   bindAwardEvents();
@@ -1184,11 +1074,13 @@ export function component(el, meta, ctx) {
     }, { signal });
   }
 
-  // 加载奖励数据
-  async function loadAwardData() {
+  // 加载奖励数据（silent 参数语义同 loadPlayerData）
+  async function loadAwardData(silent = false) {
+    if (!R) return; // 响应式列表未就绪（初始 showTab 同步调用）；真实加载在异步初始化中
     try {
-      // 显示加载中
-      DOM.awardList.innerHTML = '<li class="loading">加载中...</li>';
+      // 显示加载中（响应式：隐藏旧列表，仅渲染 loading 行）
+      R.awardLoading = true;
+      R.awardError = "";
 
       // 获取数据
       const data = await fetchAPI(ENDPOINTS.award);
@@ -1198,73 +1090,30 @@ export function component(el, meta, ctx) {
         throw new Error("获取到的奖励数据为空");
       }
 
-      console.log("获取到的奖励数据:", data);
-
-      // 确保数据是数组
-      State.awardData = Array.isArray(data) ? data : [];
-
-      // 数据清理 - 过滤掉任何非对象元素(如字符串)
-      State.awardData = State.awardData.filter(
+      // 确保数据是数组 + 过滤非对象元素（如字符串），按排名排序
+      let list = Array.isArray(data) ? data : [];
+      list = list.filter(
         (item) => item && typeof item === "object" && !Array.isArray(item)
       );
-
-      // 按排名排序
-      State.awardData.sort((a, b) => a.rank - b.rank);
-
-      // 渲染列表
-      renderAwardList();
+      list.sort((a, b) => a.rank - b.rank);
+      R.awardData = list;
 
       // 重置表单
       resetAwardForm();
 
-      showStatusMessage("奖励数据加载成功");
+      if (!silent) showStatusMessage("奖励数据加载成功");
     } catch (error) {
       console.error("加载奖励数据失败:", error);
-      DOM.awardList.innerHTML = `<li class="error">加载失败: ${error.message}</li>`;
+      R.awardError = `加载失败: ${error.message}`;
       showStatusMessage(`加载奖励数据失败: ${error.message}`, "error");
+    } finally {
+      R.awardLoading = false;
     }
-  }
-
-  // 渲染奖励列表
-  function renderAwardList() {
-    if (!State.awardData || State.awardData.length === 0) {
-      DOM.awardList.innerHTML = '<li class="empty">暂无奖励数据</li>';
-      return;
-    }
-
-    DOM.awardList.innerHTML = "";
-
-    // 已按排名排序
-    State.awardData.forEach((award, index) => {
-      const li = document.createElement("li");
-      li.dataset.index = index;
-      li.dataset.id = award.id || index;
-      li.innerHTML = `
-        <span class="item-name">第${award.rank}名: ${award.name}</span>
-        <div class="item-description">${award.description || ""}</div>
-        <div class="item-actions">
-          <button class="edit-btn" title="编辑">${icon("pencil", { size: 16, label: "编辑" })}</button>
-          <button class="delete-btn" title="删除">${icon("trash", { size: 16, label: "删除" })}</button>
-        </div>
-      `;
-
-      // 编辑按钮事件
-      li.querySelector(".edit-btn").addEventListener("click", () => {
-        editAward(index);
-      });
-
-      // 删除按钮事件
-      li.querySelector(".delete-btn").addEventListener("click", () => {
-        deleteAward(index);
-      });
-
-      DOM.awardList.appendChild(li);
-    });
   }
 
   // 编辑奖励
   function editAward(index) {
-    const award = State.awardData[index];
+    const award = R.awardData[index];
     if (award) {
       State.isEditing = true;
       State.editingItemId = index;
@@ -1275,28 +1124,13 @@ export function component(el, meta, ctx) {
     }
   }
 
-  // 删除奖励
+  // 删除奖励（P12：原内联 confirm-dialog 节点并入统一的 confirm 组件弹窗路径，
+  // 依赖的 dialogNodes/closeDialog 登记随之删除；降级语义与 showConfirmDialog 一致）
   function deleteAward(index) {
-    const confirmDialog = document.createElement("div");
-    confirmDialog.className = "confirm-dialog";
-    confirmDialog.innerHTML = `
-      <p>确定要删除这个奖励吗？</p>
-      <button class="confirm-yes">确定</button>
-      <button class="confirm-no">取消</button>
-    `;
-
-    document.body.appendChild(confirmDialog);
-
-    confirmDialog.querySelector(".confirm-yes").addEventListener("click", () => {
-      State.awardData.splice(index, 1);
-      renderAwardList();
+    showConfirmDialog("确定要删除这个奖励吗？", () => {
+      R.awardData.splice(index, 1);
       State.hasChanges = true;
       showStatusMessage("奖励已删除，点击保存以提交更改");
-      document.body.removeChild(confirmDialog);
-    });
-
-    confirmDialog.querySelector(".confirm-no").addEventListener("click", () => {
-      document.body.removeChild(confirmDialog);
     });
   }
 
@@ -1323,7 +1157,7 @@ export function component(el, meta, ctx) {
 
     // 检查是否有相同排名的奖励
     if (!State.isEditing) {
-      const existingAwardIndex = State.awardData.findIndex(
+      const existingAwardIndex = R.awardData.findIndex(
         (award) => award.rank === rank
       );
       if (existingAwardIndex !== -1) {
@@ -1331,24 +1165,23 @@ export function component(el, meta, ctx) {
           return;
         }
         // 找到该排名的索引并删除
-        State.awardData.splice(existingAwardIndex, 1);
+        R.awardData.splice(existingAwardIndex, 1);
       }
     }
 
     if (State.isEditing && State.editingItemId !== null) {
       // 更新已有奖励
-      State.awardData[State.editingItemId].rank = rank;
-      State.awardData[State.editingItemId].name = name;
-      State.awardData[State.editingItemId].description = description;
+      R.awardData[State.editingItemId].rank = rank;
+      R.awardData[State.editingItemId].name = name;
+      R.awardData[State.editingItemId].description = description;
     } else {
       // 添加新奖励
-      State.awardData.push({ rank, name, description });
+      R.awardData.push({ rank, name, description });
     }
 
     // 更新后重新排序
-    State.awardData.sort((a, b) => a.rank - b.rank);
+    R.awardData.sort((a, b) => a.rank - b.rank);
 
-    renderAwardList();
     resetAwardForm();
     State.hasChanges = true;
     showStatusMessage("奖励已更新，点击保存以提交更改");
@@ -1365,7 +1198,7 @@ export function component(el, meta, ctx) {
   async function saveAwardData() {
     try {
       // 数据已经是数组格式，直接保存
-      await fetchAPI(ENDPOINTS.award, "POST", State.awardData);
+      await fetchAPI(ENDPOINTS.award, "POST", R.awardData);
 
       State.hasChanges = false;
       showStatusMessage("奖励数据保存成功", "success");
@@ -1509,8 +1342,109 @@ export function component(el, meta, ctx) {
 
   // 初始化页面动画（已移入 component 体内执行，避免 DOM 缓存未就绪）
 
+  // ========== P11-R1 响应式列表改造：三个列表编辑器 ==========
+  // 列表行由 v-for 驱动：CRUD 只改数组（增删改/导入/排序），渲染自动更新；
+  // 加载态/错误态/空态经 loading/error 标志互斥渲染（替代旧 innerHTML 三态手写）。
+  // 插值默认转义，替代旧 escapeHtml 手工防线；行内编辑/删除按钮监听由 petite-vue
+  // 指令挂载并在 unmount 时统一解绑（替代旧逐项 addEventListener）。
+  const pencilIcon = icon("pencil", { size: 16, label: "编辑" });
+  const trashIcon = icon("trash", { size: 16, label: "删除" });
+
+  const PLAYER_LIST_TPL = `
+<li class="loading" v-if="playerLoading">加载中...</li>
+<li class="error" v-if="playerError">{{ playerError }}</li>
+<li class="empty" v-if="!playerLoading && !playerError && playerData.length === 0">暂无选手数据</li>
+<li v-for="(player, index) in playerLoading || playerError ? [] : playerData"
+  :key="index" :data-index="index" :data-id="player.id || index">
+  <span class="item-name">{{ player.name }}</span>
+  <div class="item-actions">
+    <button class="edit-btn" title="编辑" @click="editPlayer(index)" v-html="pencilIcon"></button>
+    <button class="delete-btn" title="删除" @click="deletePlayer(index)" v-html="trashIcon"></button>
+  </div>
+</li>`;
+
+  const TRICK_LIST_TPL = `
+<li class="loading" v-if="trickLoading">加载中...</li>
+<li class="error" v-if="trickError">{{ trickError }}</li>
+<li class="empty" v-if="!trickLoading && !trickError && trickData.length === 0">暂无技能数据</li>
+<li v-for="(trick, index) in trickLoading || trickError ? [] : trickData"
+  :key="index" :data-index="index" :data-id="trick.id || index">
+  <span class="item-name">{{ trick.name }}</span>
+  <div class="item-actions">
+    <button class="edit-btn" title="编辑" @click="editTrick(index)" v-html="pencilIcon"></button>
+    <button class="delete-btn" title="删除" @click="deleteTrick(index)" v-html="trashIcon"></button>
+  </div>
+</li>`;
+
+  const AWARD_LIST_TPL = `
+<li class="loading" v-if="awardLoading">加载中...</li>
+<li class="error" v-if="awardError">{{ awardError }}</li>
+<li class="empty" v-if="!awardLoading && !awardError && awardData.length === 0">暂无奖励数据</li>
+<li v-for="(award, index) in awardLoading || awardError ? [] : awardData"
+  :key="index" :data-index="index" :data-id="award.id || index">
+  <span class="item-name">第{{ Number(award.rank) || "?" }}名: {{ award.name }}</span>
+  <div class="item-description">{{ award.description || "" }}</div>
+  <div class="item-actions">
+    <button class="edit-btn" title="编辑" @click="editAward(index)" v-html="pencilIcon"></button>
+    <button class="delete-btn" title="删除" @click="deleteAward(index)" v-html="trashIcon"></button>
+  </div>
+</li>`;
+
+  (async () => {
+    R = await createReactiveScope({
+      playerData: [],
+      trickData: [],
+      awardData: [],
+      playerLoading: false,
+      trickLoading: false,
+      awardLoading: false,
+      playerError: "",
+      trickError: "",
+      awardError: "",
+      pencilIcon,
+      trashIcon,
+      // 行内按钮回调（闭包函数直挂：内部经闭包引用 R，不依赖 this 绑定）
+      editPlayer,
+      deletePlayer,
+      editTrick,
+      deleteTrick,
+      editAward,
+      deleteAward,
+    });
+    if (listsDisposed) return;
+    for (const [host, tpl] of [
+      [DOM.playerList, PLAYER_LIST_TPL],
+      [DOM.trickList, TRICK_LIST_TPL],
+      [DOM.awardList, AWARD_LIST_TPL],
+    ]) {
+      if (!host) continue;
+      listViews.push(mountReactiveSafe(host, { template: tpl, scope: R }));
+    }
+    // 初始加载（原 component 体内的三次同步 load 调用移入此处：R 就绪后才有渲染目标）
+    // silent=true：三列表并发初始化各自成功 toast 会与用户当前 tab 语义不匹配（UX-2）
+    loadPlayerData(State.currentPlayerFile, true);
+    loadTrickData(State.currentTrickFile, true);
+    loadAwardData(true);
+  })().catch((e) => console.error("[setting] 响应式列表初始化失败:", e));
+
   // ---- cleanup 契约：重渲染/卸载时解绑全部登记监听（signal abort 一次覆盖） ----
   return function cleanup() {
     bindAbort.abort();
+
+    // 响应式列表视图卸载（petite-vue effects + 指令监听随 unmount 释放）
+    listsDisposed = true;
+    for (const dispose of listViews) dispose();
+
+    // 一次性定时器（弹窗显形 / 状态消息隐去）：清空在飞任务，避免 teardown 后回调仍在飞
+    timers.dispose();
+
+    // P12：confirm-dialog 组件实例卸载（移除在开对话框 + 清组件在飞定时器）
+    if (disposeConfirm) disposeConfirm();
+    confirmApi = null;
+
+    // 兜底：清掉任何遗留的同类节点（例如非本实例创建但同 class 的残留）
+    document
+      .querySelectorAll(".dialog-container, .confirm-dialog")
+      .forEach((node) => node.remove());
   };
 }

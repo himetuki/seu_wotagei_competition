@@ -23,11 +23,29 @@
   display: flex;
   gap: 15px;
   align-items: center;
+  /* P11-B6 附带修复：320px 窄屏下「刷新/清空 + 搜索框」单行放不下（固定 180/120px 输入框
+     + 两枚按钮 + 间隙 + 面板内边距 ≈ 378px > 320px）→ 出现 52px 横向滚动。
+     允许换行后窄屏自动折成两行，宽屏不变（原本单行放得下，不会触发换行）。 */
+  flex-wrap: wrap;
 }
 
 .search-container {
   display: flex;
   align-items: center;
+}
+
+/* 清空全部（危险操作，UX-3）：与「刷新」拉开间距（叠加在 .header-actions gap 15px 上），
+   并补红色危险样式——HTML 已有 class="action-btn danger" 但此前无任何 .danger 规则，红色从未生效 */
+#clear-all-btn {
+  margin-left: 15px;
+}
+
+.action-btn.danger {
+  background-color: rgba(220, 53, 69, 0.85);
+}
+
+.action-btn.danger:hover {
+  background-color: rgba(235, 70, 85, 0.95);
 }
 
 #search-input {
@@ -39,9 +57,16 @@
   width: 180px;
 }
 
+/* 统计卡片（P11-B6）：排布由 /web/components/grid.css 的 .grid-cards 提供
+   （auto-fill，按容器宽度连续计算列数）。轨道覆盖为 minmax(min(280px,100%),1fr)：
+   宽屏三等分（与迁移前 flex:1 等宽一致），窄屏自动减列。
+   .stat-card 原 flex:1 在 grid 下由 1fr 轨道承接（等宽语义不变）。 */
+.records-stats.grid-cards {
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+}
+
 .records-stats {
-  display: flex;
-  gap: 20px;
+  gap: 20px; /* 原 flex gap 逐像素保留 */
   margin-bottom: 25px;
 }
 
@@ -169,10 +194,15 @@ tr:not(.loading-row):hover {
   font-style: italic;
 }
 
+/* 布局（P11-B6 有意不套 grid 原语）：本页 .navigation 的父级 main 是**居中收缩**的 flex 列，
+   auto-fit 在不定宽（无确定可用宽度）下退化为单列 → 两枚按钮会竖排。
+   取 width:100% 虽可解，但会把原"按内容收缩的居中横条"变成整幅横条（视觉变更），
+   故此处保留 flex 行（下方 gap/margin 与原逐像素一致）。 */
 .navigation {
   display: flex;
   justify-content: center;
-  gap: 20px;
+  flex-wrap: wrap;
+  gap: 20px; /* 原 flex gap 逐像素保留 */
   margin-top: 30px;
 }
 
@@ -322,8 +352,9 @@ tr:nth-child(10) {
 
 /* 响应式样式 */
 @media (max-width: 768px) {
-  .records-stats {
-    flex-direction: column;
+  /* 窄屏单列（原 flex-direction: column 的等价 grid 写法：轨道收成一列） */
+  .records-stats.grid-cards {
+    grid-template-columns: 1fr;
     gap: 10px;
   }
 
@@ -347,6 +378,7 @@ tr:nth-child(10) {
     padding: 10px;
   }
 
+  /* 窄屏单列（原 flex-direction: column 原样保留形式） */
   .navigation {
     flex-direction: column;
     gap: 10px;

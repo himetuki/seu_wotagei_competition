@@ -1,0 +1,67 @@
+/*
+ * web/components/grid.css —— 布局原语（L1 共享资产，P11-B2）
+ *
+ * 分层归属：L1（与 /web/icons.mjs 同级）——纯 CSS，无 JS、无插件、不进清单：
+ * 布局是样式职责，页面可直接引、可被模块 CSS 覆盖（P11 §3 问 4 / §6 决策 4）。
+ *
+ * 引入方式（模块 index.html）：
+ *   <link rel="stylesheet" href="/web/components/grid.css">          <!-- 绝对路径，origin 相对 -->
+ * 或模块 style.css 顶部：
+ *   @import url("/web/components/grid.css");
+ * 用法：
+ *   <div class="grid-cards"><section class="card">…</section>…</div>
+ *   <div class="grid-split"><section class="card">左</section><section class="card">右</section></div>
+ *
+ * ── auto-fill vs auto-fit（本次选择依据，P11 §3 问 4）─────────────────────────
+ *   auto-fill：按容器宽度铺满**轨道数**，空轨道保留 → 卡片恒为 minmax 最小宽、右侧留白，
+ *              "卡片尺寸一致"优先。本文件 .grid-cards 用（选手池/音乐库/榜单等数量多的网格）。
+ *   auto-fit ：空轨道折叠，剩余卡片拉伸铺满整行 → "卡片少时撑满画面"优先。
+ *              本文件 .grid-flow / .grid-split 用（流程块、两栏主从）。
+ *   两者都用 repeat(auto-*, minmax(min(<阈值>,100%),1fr))：min(...,100%) 保证 320px 窄屏
+ *   下最小轨道不超过容器宽度 —— 不出现横向滚动（含 1fr 拉伸合围）。
+ *
+ * ── 为什么零媒体查询（P11 §3 问 4）────────────────────────────────────────
+ *   媒体查询以**视口宽度**离散触发：断点之间只能取一档，且嵌套容器（卡片里的卡片）
+ *   宽度 ≠ 视口宽度时完全失效。repeat(auto-*, minmax(...)) 以**容器可用宽度**连续计算：
+ *   任意宽度都合理、可嵌套、一行代码顶多段覆盖规则。仅当布局结构发生质变
+ *   （如"侧栏+内容"变"上下单列"）才回到媒体查询——那属于结构，不是流式排布。
+ *
+ * 主题/可访问性：--card-bg 缺省为中性半透明灰（在深底 #0a0a0a 与浅底 #ffffff 上
+ *   均可辨，避免仅深色主题可见的 rgba(255,255,255,.06) 在浅色底上"消失"）。
+ *   页面按既有视觉覆盖：.card { --card-bg: rgba(255,255,255,.06); }
+ */
+
+:root {
+  --grid-gap: 16px;   /* 网格间距（行/列同值） */
+  --card-min: 280px;  /* 卡片流的最小卡片宽（不足则单列，不横向溢出） */
+}
+
+/* 卡片流（auto-fill）：尺寸统一、数量多——选手卡/音乐卡/榜单卡 */
+.grid-cards {
+  display: grid;
+  gap: var(--grid-gap);
+  grid-template-columns: repeat(auto-fill, minmax(min(var(--card-min), 100%), 1fr));
+}
+
+/* 自适应伸展（auto-fit）：卡片少时自动拉伸铺满整行——流程块/节点区 */
+.grid-flow {
+  display: grid;
+  gap: var(--grid-gap);
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+}
+
+/* 两栏主从（auto-fit）：宽屏左右（左选手/右流程），窄屏自动堆叠，零断点 */
+.grid-split {
+  display: grid;
+  gap: var(--grid-gap);
+  grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr));
+}
+
+.card {
+  min-width: 0;              /* grid 子项默认 min-width:auto 会撑破 minmax，必须归零 */
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg, rgba(127, 127, 127, 0.10));
+  border-radius: 12px;
+  padding: 16px;
+}

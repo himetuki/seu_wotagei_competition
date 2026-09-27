@@ -135,9 +135,14 @@ module.exports = function createStaticMiddleware(opts = {}) {
         const fileSize = stat.size;
         const etag = `W/"${fileSize}-${Math.floor(stat.mtimeMs)}"`;
 
-        // P8a：缓存头先于条件判定下发（200/206/304 共用；304 亦须保留协商元数据）
+        // P8a：缓存头先于条件判定下发（200/206/304 共用；304 亦须保留协商元数据）。
+        // P11：/web/** 是随代码发布的资产（kernel.js、lib/*.mjs、components/*.css、
+        // icons.mjs）——长缓存会让浏览器拿旧内核（P11 试点实际发生：组件 API 报
+        // "内核未升级"）。改 no-cache：每次导航用 ETag 重验，未变即 304（局域网代价
+        // 约 200B），已变更立即拿到新代码。图片/音乐仍是 7 天长缓存。
+        const isWebAsset = relPath.startsWith("/web/");
         res.set({
-          "Cache-Control": CACHE_CONTROL_STATIC,
+          "Cache-Control": isWebAsset ? "no-cache" : CACHE_CONTROL_STATIC,
           ETag: etag,
           "Last-Modified": stat.mtime.toUTCString(),
         });

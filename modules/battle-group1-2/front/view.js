@@ -1,29 +1,97 @@
 /**
- * 一年加组对战第二章节（battle-group1-2）— 前端组件（P4 插件化迁移）
+ * 一年加组对战第二章节（battle-group1-2）— 页面 flow（P11-B3「积木拼装」迁移后）
  *
- * 由原多脚本按加载顺序并入同一模块闭包（core → data → ui → match → events），
- * 函数体逐行保留；全局函数/变量 → 模块闭包作用域。原 b-g1-2-core.js 的
- * DOMContentLoaded 初始化改为组件体内直接执行（kernel render 时调用）。
- * 原 ui/match 两文件重复定义的 displayCurrentMatch，按脚本加载语义后声明者
- * （match.js）生效；ui.js 的早声明副本在经典脚本中本就被覆盖（死代码），
- * 模块严格模式不允许重复声明，故删除之（行为不变）。
+ * 分层（P11 §2.1）：本文件 = L4 页面专属 flow（双败赛程推进、赛程图渲染、胜者选择与记录、
+ * 章节冠军保存、数据加载与存档编排）。跨页同构能力已抽走，本文件不再各写一份：
+ *   · 抽音乐闪现动画 + 播放 + 比赛模式 → 组件 component-draw-machine / component-music-player
+ *     （注册名 "draw-machine" / "music-player"，装配见 front/plugin.js 与 web/front.json 的 compose）
+ *   · 洗牌 / 随机抽取              → /web/lib/random.mjs（pickN，Fisher–Yates）
+ *   · 存档双写 / 恢复 / 重置        → /web/lib/persist.mjs（createPersistence）
  *
- * 迁移差异（行为零回归前提下）：
- *   1. 原 b-g1-2-events.js 的 window.setWinner（供 HTML 内联 onclick 调用）改为
- *      模块内函数 setWinner，选手卡点击在组件入口以 addEventListener+signal 绑定；
- *   2. 静态骨架监听一律 { signal }（AbortController）登记，cleanup 统一解绑；
- *   3. 原 setupAutoSave 的 setInterval 句柄补记入 autoSaveTimer，cleanup 清理；
- *   4. 跨模块跳转按 P3 约定改 /m/<id>（原 "rank.html" 为平铺 HTML 时代路径，
- *      模块化后 404）。
+ * 有意行为变更（仅以下四类，其余逐行保留语义）：
+ *   1. 洗牌由 `[...].sort(() => Math.random() - 0.5)`（有偏）改为 Fisher–Yates（等概率）——
+ *      用户拍板统一修正（P11 §1.2 ③），只影响「随机匹配」的配对分布。
+ *   2. body 类名 `music-playing-mode` → `battle-mode`（组件规范类名，style.css 同步改名）。
+ *   3. 点击提示文案「双击任意位置停止」→「单击任意位置停止」：手势本就是单击
+ *      （组件的 exitOnClick，与迁移前 handleDocumentClick 同语义），仅文案与行为对齐。
+ *   4. 选手/获胜者数据加载容错统一（见「数据模块」段注释）：winners 数据缺失/格式不符
+ *      不再 throw，降级为默认选手并继续（修复用户实际遇到的红色报错）。
  *
- * 持久化继续用原生 fetch（/api/battle-group1-2-process 等端点）与原 localStorage
- * key，保持行为零回归；ctx 仅为后续可选用途保留（组件第三参）。
+ * 迁移前 → 迁移后 对照：
+ *   handleDrawMusic（15×80ms 闪现 + #fbbf24/#10b981 内联色）→ component-draw-machine
+ *   startMusicMode / stopMusicMode / handleDocumentClick / handlePlayMusic / playBattleStartAnimation
+ *     （遮罩/逐字动画/4500ms 待播/单击退出/audio onended） → component-music-player
+ *   saveGameState / initializeGameState 的服务端与本地恢复链 / clearCacheAndResetGame
+ *     → createPersistence（key "battleGroup1-2State" 与端点逐字保留）
+ *   已删除的死代码：playBattleStartAnimation、clearCache（均无调用点，且后者的清缓存语义
+ *   已由 clearCacheAndResetGame + persist.reset 覆盖）
+ *   双败赛程推进、赛程图、胜者记录、章节冠军 → 原样保留
+ *
+ * 组件降级：组件未注册/被 enabled:false 禁用时插槽留空，页面其余部分照常工作
+ * （原内联实现已删除，不做"回退到旧实现"的双路径——双路径会让禁用开关形同虚设）。
+ *
+ * 缺陷修复（本轮）：
+ *   · 比赛模式抖动：接组件新增的 onOverlayShown 钩子（进入模式、遮罩显示、打字动画开始前），
+ *     还原迁移前的两个时机——body 抖动（50ms 后加类、500ms 后移除）与 BATTLE START 文字抖动
+ *     （逐字动画走完的 1300ms）。原来误挂在 onStarted → 要等 readyMs=4500ms 才抖。
+ *   · 抖动定时器并入 timers 注册表/later()（原先单个 shakeTimer 句柄），cleanup 统一清句柄 + 摘 body 类。
  */
 
 import { icon, iconEl } from "/web/icons.mjs";
+import { pickN } from "/web/lib/random.mjs";
+import { createPersistence } from "/web/lib/persist.mjs";
+import { createTimerRegistry } from "/web/lib/timers.mjs";
 
 /* 自动保存定时器句柄（原代码未记录，cleanup 需要清理） */
 let autoSaveTimer = null;
+/* 初始化收尾的选手名补写定时器（原 500ms 延迟，未记录句柄） */
+let playerNameRetryTimer = null;
+/* 存档代数守卫：resetGame 递增；页面装配时采样当前代数，恢复回包落地前代数已变
+ * （期间发生过重置）则丢弃本次恢复，防在途存档覆写重置结果 */
+let restoreGeneration = 0;
+/* 本次页面装配采样的代数（battleGroup12Component 入口赋值） */
+let loadGeneration = 0;
+/* 一次性收尾定时器（播报/toast 自动移除、清缓存后的 reload、比赛模式抖动）——
+ * P12 起经 /web/lib/timers.mjs 注册表统一登记（替代原 pageTimers + later() 样板） */
+const timers = createTimerRegistry();
+/** 登记一次性定时器（cleanup 统一清理，避免 teardown 后回调仍在飞；别名保调用点零改动） */
+const later = (fn, ms) => timers.later(fn, ms);
+/* 存档控制器（组件入口创建：需要 ctx.api；键/端点逐字保留存档契约） */
+let persist = null;
+/* 组件实例 API 桥（front/plugin.js 传入、组件 onReady 回填；组件缺失时保持 null） */
+let apis = { music: null, draw: null };
+
+/**
+ * 抖动兜底清理：摘除 .shake 类（body + 遮罩文字节点）。
+ * 组件复用同一批遮罩节点，残留的 .shake 会顶掉下一次的 battle-start-animation 入场动画；
+ * 未到期的抖动定时器句柄由 timers 注册表统一清理（见 cleanup）。
+ */
+function clearBattleShake() {
+  if (document.body) document.body.classList.remove("shake");
+  document
+    .querySelectorAll(".battle-start.shake")
+    .forEach((node) => node.classList.remove("shake"));
+}
+
+/**
+ * 比赛模式抖动（组件 onOverlayShown 钩子：进入模式、遮罩显示、逐字动画开始前触发）。
+ * 迁移前 startMusicMode 的两个时机逐字保留：
+ *   · body 加 .shake（进入模式 50ms 后），500ms 后移除 → 整屏抖动
+ *   · BATTLE START 文字在逐字动画走完（1300ms）时加 .shake，抖动一次
+ */
+function shakeBattleOverlay({ text } = {}) {
+  clearBattleShake();
+  later(() => {
+    document.body.classList.add("shake");
+    later(() => document.body.classList.remove("shake"), 500);
+  }, 50);
+  if (!text) return;
+  later(() => {
+    text.classList.add("shake");
+    later(() => text.classList.remove("shake"), 500);
+  }, 1300);
+}
+
 /**
  * 一年加组对战系统 - 第二章节（核心模块）
  * 包含全局状态管理和基础初始化函数
@@ -62,9 +130,6 @@ const BattleState = {
   // 加载状态
   playersLoaded: false,
   musicLoaded: false,
-
-  // 音乐播放状态
-  isMusicPlaying: false,
 };
 
 // =============== DOM 元素引用缓存 ===============
@@ -94,7 +159,7 @@ function cacheDOMReferences() {
   // 赛程图
   DOM.bracketDisplay = document.getElementById("bracket-display");
 
-  // 功能按钮 (移除开始比赛按钮引用)
+  // 功能按钮
   DOM.drawMusicBtn = document.getElementById("draw-music-btn");
   DOM.playMusicBtn = document.getElementById("play-music-btn");
   DOM.nextMatchBtn = document.getElementById("next-match-btn");
@@ -102,9 +167,8 @@ function cacheDOMReferences() {
   DOM.clearCacheBtn = document.getElementById("clear-cache-btn");
   DOM.randomMatchBtn = document.getElementById("random-match-btn");
 
-  // 音乐播放器
+  // 音乐曲名展示节点（#music-player 音频本体由 music-player 组件按 id 复用，页面不再直取）
   DOM.musicName = document.getElementById("music-name");
-  DOM.musicPlayer = document.getElementById("music-player");
 }
 
 /**
@@ -143,99 +207,132 @@ function initializeData() {
 /**
  * 一年加组对战系统 - 第二章节（数据模块）
  * 包含数据加载和状态管理函数
+ *
+ * ★ 选手（胜者）数据容错（B3 统一）：
+ *   加载链 localStorage `chapter1Winners` → `/resource/json/winners.json` → 默认数据，
+ *   任何一级「数据缺失 / 格式不符 / 网络失败」都**降级为默认选手并继续**，绝不 throw。
+ *   背景：winners.json 文件缺失时，静态路由 /resource/json/:jsonfile 会回退查询同名
+ *   SQLite 库 `winners`（battle-group1 的「重置」会把它清成 {}），返回 200 {}；
+ *   迁移前此处的 `throw` 会打断整条链、弹红色报错 —— 现已改为 warn + 「使用默认数据」提示。
  */
 
-// 加载选手数据（从winners.json）
+/** winners 名单 → 选手对象数组（字段与迁移前逐字一致） */
+function playersFromWinners(winners) {
+  return winners.map((name) => ({ name, wins: 0, losses: 0 }));
+}
+
+/**
+ * 一级数据源：localStorage `chapter1Winners`（键逐字保留）。
+ * @returns {string[]|null} 合法获胜者名单；无记录 / JSON 损坏 / 空数组 → null（不抛错）
+ */
+function readChapter1Winners() {
+  let raw = null;
+  try {
+    raw = localStorage.getItem("chapter1Winners");
+  } catch (e) {
+    console.warn("[battle-group1-2] 读取 chapter1Winners 失败，忽略该级数据:", e);
+    return null;
+  }
+  console.log("localStorage中的chapter1Winners数据:", raw);
+  if (!raw) return null;
+  try {
+    const winnersData = JSON.parse(raw);
+    console.log("解析后的winners数据:", winnersData);
+    if (
+      winnersData &&
+      Array.isArray(winnersData.winners) &&
+      winnersData.winners.length > 0
+    ) {
+      return winnersData.winners;
+    }
+    return null;
+  } catch (e) {
+    console.warn("[battle-group1-2] chapter1Winners 解析失败，忽略该级数据:", e);
+    return null;
+  }
+}
+
+/**
+ * 二级数据源：winners.json 应答 → 第 1 章 1-4 轮胜者。
+ * 数据缺失 / 格式不符（含 `{}`、缺 chapter1、章节非对象）→ []（**不抛错**，由调用方降级）。
+ */
+function extractChapter1Winners(data) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return [];
+  if (!data.chapter1 || typeof data.chapter1 !== "object") return [];
+
+  // 从各轮次获取胜者
+  const winners = [];
+  for (let i = 1; i <= 4; i++) {
+    const roundKey = `round${i}`;
+    if (data.chapter1[roundKey]) {
+      winners.push(data.chapter1[roundKey]);
+      console.log(`找到第${i}轮获胜者:`, data.chapter1[roundKey]);
+    } else {
+      console.warn(`未找到第${i}轮获胜者`);
+    }
+  }
+  return winners;
+}
+
+// 加载选手数据（localStorage chapter1Winners → winners.json → 默认数据）
 function loadPlayers() {
   console.log("加载选手数据...");
 
-  // 添加调试信息，查看localStorage是否有chapter1Winners
-  const localStorageData = localStorage.getItem("chapter1Winners");
-  console.log("localStorage中的chapter1Winners数据:", localStorageData);
-
-  // 尝试从localStorage获取上一章的获胜者数据
-  if (localStorageData) {
-    try {
-      const winnersData = JSON.parse(localStorageData);
-      console.log("解析后的winners数据:", winnersData);
-
-      if (
-        winnersData &&
-        Array.isArray(winnersData.winners) &&
-        winnersData.winners.length > 0
-      ) {
-        // 使用上一章节的获胜者数据
-        const players = winnersData.winners.map((name) => ({
-          name,
-          wins: 0,
-          losses: 0,
-        }));
-        BattleState.players = players;
-        BattleState.playersLoaded = true;
-
-        console.log("成功从localStorage加载第一章节获胜者作为选手:", players);
-        return Promise.resolve();
-      }
-    } catch (e) {
-      console.error("解析localStorage中的chapter1Winners数据出错:", e);
-    }
+  // 一级：上一章节遗留的获胜者名单
+  const localWinners = readChapter1Winners();
+  if (localWinners) {
+    const players = playersFromWinners(localWinners);
+    BattleState.players = players;
+    BattleState.playersLoaded = true;
+    console.log("成功从localStorage加载第一章节获胜者作为选手:", players);
+    return Promise.resolve();
   }
 
-  // 如果从localStorage加载失败，尝试从winners.json加载
+  // 二级：winners.json（文件缺失时静态路由回退同名数据库，可能返回 {}）
   console.log("从localStorage加载失败，尝试从winners.json加载选手数据...");
   return fetch("/resource/json/winners.json")
     .then((response) => {
       if (!response.ok) {
-        throw new Error("获取winners.json失败");
+        throw new Error(`获取winners.json失败 (HTTP ${response.status})`);
       }
       return response.json();
     })
     .then((data) => {
       console.log("从winners.json获取的原始数据:", data);
 
-      // 从winners.json中提取第一章节的获胜者
-      if (!data || !data.chapter1) {
-        console.error("winners.json数据格式不正确，缺少chapter1字段:", data);
-        throw new Error("获胜者数据格式不正确");
-      }
-
-      // 从各轮次获取胜者
-      const winners = [];
-      for (let i = 1; i <= 4; i++) {
-        const roundKey = `round${i}`;
-        if (data.chapter1[roundKey]) {
-          winners.push(data.chapter1[roundKey]);
-          console.log(`找到第${i}轮获胜者:`, data.chapter1[roundKey]);
-        } else {
-          console.warn(`未找到第${i}轮获胜者`);
-        }
-      }
-
-      console.log("提取出的获胜者列表:", winners);
-
-      if (winners.length < 4) {
+      const winners = extractChapter1Winners(data);
+      if (winners.length === 0) {
+        // ★ 容错：不再 throw（原实现 throw 会打断加载链并弹红色报错），降级为默认数据
+        console.warn(
+          "[battle-group1-2] winners 数据不可用（缺少 chapter1 或为空），将使用默认数据:",
+          data
+        );
+        showToast("获胜者数据不可用，将使用默认数据", "warning");
+      } else if (winners.length < 4) {
         console.warn(
           `获胜者数据不足，只找到${winners.length}名获胜者，需要4名`
         );
-
-        // 添加默认选手补齐
-        while (winners.length < 4) {
-          winners.push(`默认选手${winners.length + 1}`);
-        }
-        console.log("添加默认选手后的列表:", winners);
       }
 
+      // 不足 4 名时补默认选手（原实现行为逐字保留）
+      const padded = [...winners];
+      while (padded.length < 4) {
+        padded.push(`默认选手${padded.length + 1}`);
+      }
+      console.log("添加默认选手后的列表:", padded);
+
       // 转换为选手对象数组
-      const players = winners.map((name) => ({ name, wins: 0, losses: 0 }));
+      const players = playersFromWinners(padded);
       BattleState.players = players;
       BattleState.playersLoaded = true;
 
-      // 保存到process.json以确保一致性
+      // 保存到 battle-group1-2-process，以确保一致性
       return updateBattleProcessOnServer(players);
     })
     .catch((error) => {
-      console.error("加载选手数据失败:", error);
-      showToast("加载选手数据失败，将使用默认数据", "error");
+      // 网络/解析失败：同样降级为默认数据，不阻断流程
+      console.warn("[battle-group1-2] 加载选手数据失败，将使用默认数据:", error);
+      showToast("加载选手数据失败，将使用默认数据", "warning");
 
       // 创建默认选手
       const defaultPlayers = [
@@ -251,7 +348,7 @@ function loadPlayers() {
     });
 }
 
-// 向服务器更新battle-group1-2-process.json中的选手数据
+// 向服务器更新battle-group1-2-process中的选手数据
 function updateBattleProcessOnServer(players) {
   return fetch("/api/update-battle-group1-2-players", {
     method: "POST",
@@ -262,9 +359,9 @@ function updateBattleProcessOnServer(players) {
   })
     .then((response) => {
       if (!response.ok) {
-        throw new Error("更新battle-group1-2-process.json中的选手数据失败");
+        throw new Error("更新battle-group1-2-process中的选手数据失败");
       }
-      console.log("成功更新battle-group1-2-process.json中的选手数据");
+      console.log("成功更新battle-group1-2-process中的选手数据");
       return response.text();
     })
     .catch((error) => {
@@ -273,7 +370,7 @@ function updateBattleProcessOnServer(players) {
     });
 }
 
-// 加载音乐数据（从musics_list_ex.json）
+// 加载音乐数据（从musics_list_ex.json；曲库目录 1yearplus_ex 由组件的 folder prop 承担）
 function loadMusic() {
   console.log("加载音乐数据...");
 
@@ -283,10 +380,10 @@ function loadMusic() {
       return response.json();
     })
     .then((data) => {
-      BattleState.musicList = data;
+      BattleState.musicList = Array.isArray(data) ? data : [];
       BattleState.musicLoaded = true;
-      console.log(`成功加载 ${data.length} 首音乐`);
-      return data;
+      console.log(`成功加载 ${BattleState.musicList.length} 首音乐`);
+      return BattleState.musicList;
     })
     .catch((error) => {
       console.error("音乐数据加载失败:", error);
@@ -296,81 +393,103 @@ function loadMusic() {
 }
 
 // 初始化游戏状态
-function initializeGameState() {
+async function initializeGameState() {
   console.log("初始化游戏状态...");
 
   // 先显示加载提示
   showToast("正在加载游戏状态...", "info");
 
-  // 尝试从服务器获取状态
-  fetch("/api/battle-group1-2-process")
-    .then((response) => response.json())
-    .then((data) => {
-      if (data && Object.keys(data).length > 0) {
-        // 恢复当前状态
-        restoreGameState(data);
-        console.log("游戏状态已从服务器恢复:", data);
-      } else {
-        console.log("未找到保存的进度，初始化新游戏");
-        // 初始化新游戏
-        initializeNewGame();
-      }
-    })
-    .catch((error) => {
-      console.error("从服务器恢复状态失败:", error);
+  // 恢复链（P11-B3：createPersistence，等价于迁移前的
+  // `fetch(GET /api/battle-group1-2-process)` → `.catch` 回退 localStorage 链）：
+  //   键 "battleGroup1-2State" 与端点 /api/battle-group1-2-process 逐字保留（老存档兼容）。
+  //   isValid 采「非 null 即算已应答」，从而 GET 成功但内容为空壳时按原实现走 initializeNewGame，
+  //   而不是被缺省判定误判为「无存档」再去读本地。
+  const { data, source } = await persist.load();
 
-      // 从本地存储恢复
-      const savedState = localStorage.getItem("battleGroup1-2State");
-      if (savedState) {
-        try {
-          const state = JSON.parse(savedState);
-          restoreGameState(state);
-          console.log("游戏状态已从本地存储恢复:", state);
-        } catch (error) {
-          console.error("恢复游戏状态失败:", error);
-          initializeNewGame();
-        }
-      } else {
-        console.log("本地也没有保存的进度，初始化新游戏");
-        initializeNewGame();
-      }
-    })
-    .finally(() => {
-      // 显示当前比赛
-      updateBracketDisplay();
-      updateRoundDisplay();
+  // 代数守卫：等待恢复回包期间若发生过重置，丢弃本次恢复并收敛到重置后状态
+  // （initializeNewGame 对"选手已加载/未加载"两种时序都能正确重建赛程）
+  if (loadGeneration !== restoreGeneration) {
+    console.info("[battle-group1-2] 存档恢复落地前检测到重置，丢弃本次恢复");
+    initializeNewGame();
+    updateBracketDisplay();
+    updateRoundDisplay();
+    showToast("游戏状态加载完成", "success");
+    return;
+  }
 
-      console.log("检查当前比赛...");
-      const currentMatch = getCurrentMatch();
-      console.log("当前比赛:", currentMatch);
+  if (source === "server") {
+    if (data && Object.keys(data).length > 0 && hasRestorableSave(data)) {
+      // 恢复当前状态
+      restoreGameState(data);
+      console.log("游戏状态已从服务器恢复:", data);
+    } else {
+      console.log("未找到保存的进度，初始化新游戏");
+      // 初始化新游戏
+      initializeNewGame();
+    }
+  } else if (source === "local") {
+    restoreGameState(data);
+    console.log("游戏状态已从本地存储恢复:", data);
+  } else {
+    console.log("本地也没有保存的进度，初始化新游戏");
+    initializeNewGame();
+  }
 
-      // 强制显示选手，即使没有当前比赛
-      if (currentMatch) {
-        console.log("显示当前比赛选手");
-        displayCurrentMatch();
-      } else if (BattleState.players && BattleState.players.length >= 2) {
-        // 如果没有当前比赛但有选手，显示第一对选手
-        console.log("没有当前比赛，但有选手数据，显示初始对阵");
+  // 显示当前比赛（原 .finally 块，逐行保留）
+  updateBracketDisplay();
+  updateRoundDisplay();
+
+  console.log("检查当前比赛...");
+  const currentMatch = getCurrentMatch();
+  console.log("当前比赛:", currentMatch);
+
+  // 强制显示选手，即使没有当前比赛
+  if (currentMatch) {
+    console.log("显示当前比赛选手");
+    displayCurrentMatch();
+  } else if (BattleState.players && BattleState.players.length >= 2) {
+    // 如果没有当前比赛但有选手，显示第一对选手
+    console.log("没有当前比赛，但有选手数据，显示初始对阵");
+    DOM.player1Name.innerText = BattleState.players[0].name;
+    DOM.player2Name.innerText = BattleState.players[1].name;
+    updatePlayerStatsDisplay();
+  }
+
+  // 确保选手名称已经正确设置（原 500ms 延迟补写；句柄已登记，cleanup 清理）
+  playerNameRetryTimer = setTimeout(() => {
+    playerNameRetryTimer = null;
+    if (!DOM.player1Name.innerText || !DOM.player2Name.innerText) {
+      console.log("选手名称为空，尝试重新设置");
+      if (BattleState.players && BattleState.players.length >= 2) {
         DOM.player1Name.innerText = BattleState.players[0].name;
         DOM.player2Name.innerText = BattleState.players[1].name;
         updatePlayerStatsDisplay();
       }
+    }
+  }, 500);
 
-      // 确保选手名称已经正确设置
-      setTimeout(() => {
-        if (!DOM.player1Name.innerText || !DOM.player2Name.innerText) {
-          console.log("选手名称为空，尝试重新设置");
-          if (BattleState.players && BattleState.players.length >= 2) {
-            DOM.player1Name.innerText = BattleState.players[0].name;
-            DOM.player2Name.innerText = BattleState.players[1].name;
-            updatePlayerStatsDisplay();
-          }
-        }
-      }, 500);
+  // 显示加载完成提示
+  showToast("游戏状态加载完成", "success");
+}
 
-      // 显示加载完成提示
-      showToast("游戏状态加载完成", "success");
-    });
+/**
+ * 空壳档案判定：clear 端点写回的是「键齐全但无选手、无赛程」的默认形，且
+ * loadPlayers 尾部的 updateBattleProcessOnServer 会在恢复 GET 之前把 players 字段
+ * 补成 4 人 —— 单看 players 分不出空壳与真存档。故以「有有效选手**且**赛程图
+ * 已建立（bracket 至少一轮）」为可恢复存档，否则按"无进度"走 initializeNewGame；
+ * 有真实数据的存档（对局中 bracket 恒非空）行为不变。
+ */
+function hasRestorableSave(data) {
+  if (!Array.isArray(data.players) || !data.players.some((p) => p && p.name)) {
+    return false;
+  }
+  const b = data.bracket;
+  return !!(
+    b &&
+    ((Array.isArray(b.winner) && b.winner.length > 0) ||
+      (Array.isArray(b.loser) && b.loser.length > 0) ||
+      (Array.isArray(b.final) && b.final.length > 0))
+  );
 }
 
 // 恢复游戏状态
@@ -410,7 +529,7 @@ function initializeNewGame() {
   // 确保至少有4名选手
   if (!BattleState.playersLoaded || BattleState.players.length < 4) {
     console.error("选手数据不足，无法初始化比赛");
-    showToast("选手数据不足，请检查winners.json", "error");
+    showToast("选手数据不足，请检查上一章节获胜者数据", "error");
     return;
   }
 
@@ -499,43 +618,39 @@ function initializeTournamentBracket() {
   ];
 }
 
-// 保存游戏状态
+/** 存档载荷（原 saveGameState 的 state 字面量，字段与顺序逐字保留） */
+function getPersisted() {
+  return {
+    currentRound: BattleState.currentRound,
+    currentBracket: BattleState.currentBracket,
+    currentMatchIndex: BattleState.currentMatchIndex,
+    currentWinner: BattleState.currentWinner,
+    players: BattleState.players,
+    playerStats: BattleState.playerStats,
+    matches: BattleState.matches,
+    bracket: BattleState.bracket,
+    chapter: 2, // 明确指定章节
+    lastUpdate: new Date().toISOString(),
+  };
+}
+
+// 保存游戏状态（双写：localStorage + POST；键与端点逐字保留，失败提示同迁移前）
 function saveGameState() {
-  try {
-    const state = {
-      currentRound: BattleState.currentRound,
-      currentBracket: BattleState.currentBracket,
-      currentMatchIndex: BattleState.currentMatchIndex,
-      currentWinner: BattleState.currentWinner,
-      players: BattleState.players,
-      playerStats: BattleState.playerStats,
-      matches: BattleState.matches,
-      bracket: BattleState.bracket,
-      chapter: 2, // 明确指定章节
-      lastUpdate: new Date().toISOString(),
-    };
+  if (!persist) return;
+  persist.save(getPersisted()).then(({ remote }) => {
+    if (remote) console.log("比赛状态已成功保存到服务器");
+  });
+}
 
-    // 保存到本地存储
-    localStorage.setItem("battleGroup1-2State", JSON.stringify(state));
-
-    // 保存到服务器
-    fetch("/api/battle-group1-2-process", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(state),
-    })
-      .then((response) => {
-        if (!response.ok) throw new Error("保存进度失败");
-        console.log("比赛状态已成功保存到服务器");
-      })
-      .catch((error) => {
-        console.error("服务器保存失败:", error);
-      });
-  } catch (error) {
+/** persist 失败上报：阶段 → 与迁移前一致的提示文案 */
+function handlePersistError(error, phase) {
+  if (phase === "save:local") {
     console.error("保存游戏状态失败:", error);
     showToast("自动保存失败", "error");
+  } else if (phase === "save:remote") {
+    console.error("服务器保存失败:", error);
+  } else {
+    console.warn("[battle-group1-2] 存档读写失败:", phase, error);
   }
 }
 
@@ -581,7 +696,6 @@ function saveChapter2Winner(winnerName) {
  * 一年加组对战系统 - 第二章节（UI模块）
  * 包含UI和显示相关函数
  */
-
 
 // 更新选手战绩显示
 function updatePlayerStatsDisplay() {
@@ -779,7 +893,7 @@ function showWinnerAnnouncement(winnerName) {
   document.body.appendChild(announcement);
 
   // 自动移除
-  setTimeout(() => {
+  later(() => {
     if (document.body.contains(announcement)) {
       document.body.removeChild(announcement);
     }
@@ -798,176 +912,9 @@ function showFinalWinnerAnnouncement(winnerName) {
   document.body.appendChild(announcement);
 
   // 5秒后跳转到排名页面
-  setTimeout(() => {
+  later(() => {
     window.location.href = "/m/rank";
   }, 5000);
-}
-
-// 播放比赛开始动画
-function playBattleStartAnimation() {
-  // 添加遮罩
-  const overlay = document.createElement("div");
-  overlay.classList.add("battle-overlay");
-  document.body.appendChild(overlay);
-
-  // 添加震动效果
-  document.body.classList.add("shake");
-  setTimeout(() => document.body.classList.remove("shake"), 500);
-
-  // 创建 Battle Start 动画
-  const battleStart = document.createElement("div");
-  battleStart.classList.add("battle-start");
-  battleStart.innerText = "BATTLE START";
-  document.body.appendChild(battleStart);
-
-  // 3秒后移除动画元素
-  setTimeout(() => {
-    if (document.body.contains(overlay)) {
-      document.body.removeChild(overlay);
-    }
-    if (document.body.contains(battleStart)) {
-      document.body.removeChild(battleStart);
-    }
-  }, 3000);
-}
-
-// 启动音乐播放模式
-function startMusicMode() {
-  // 立即添加音乐播放模式类以实现透明效果
-  document.body.classList.add("music-playing-mode");
-  console.log("进入音乐播放模式");
-
-  // 创建全屏遮罩
-  const overlay = document.createElement("div");
-  overlay.classList.add("battle-overlay");
-  document.body.appendChild(overlay);
-
-  // 创建Battle Start效果并立即添加到DOM
-  const battleStart = document.createElement("div");
-  battleStart.classList.add("battle-start");
-  // 先添加到DOM，再设置内容，确保动画效果显示
-  document.body.appendChild(battleStart);
-
-  // 添加震动效果
-  setTimeout(() => {
-    document.body.classList.add("shake");
-    setTimeout(() => {
-      document.body.classList.remove("shake");
-    }, 500);
-  }, 50);
-
-  // 分步骤显示文字 - 元素已在DOM中，只需改变内容
-  setTimeout(() => {
-    battleStart.innerText = "B";
-  }, 200);
-
-  setTimeout(() => {
-    battleStart.innerText = "BA";
-  }, 300);
-
-  setTimeout(() => {
-    battleStart.innerText = "BAT";
-  }, 400);
-
-  setTimeout(() => {
-    battleStart.innerText = "BATT";
-  }, 500);
-
-  setTimeout(() => {
-    battleStart.innerText = "BATTL";
-  }, 600);
-
-  setTimeout(() => {
-    battleStart.innerText = "BATTLE";
-  }, 700);
-
-  setTimeout(() => {
-    battleStart.innerText = "BATTLE ";
-  }, 800);
-
-  setTimeout(() => {
-    battleStart.innerText = "BATTLE S";
-  }, 900);
-
-  setTimeout(() => {
-    battleStart.innerText = "BATTLE ST";
-  }, 1000);
-
-  setTimeout(() => {
-    battleStart.innerText = "BATTLE STA";
-  }, 1100);
-
-  setTimeout(() => {
-    battleStart.innerText = "BATTLE STAR";
-  }, 1200);
-
-  setTimeout(() => {
-    battleStart.innerText = "BATTLE START";
-    battleStart.classList.add("shake");
-  }, 1300);
-
-  // 在动画结束后移除元素并播放音乐 - 延长到4500毫秒
-  setTimeout(() => {
-    if (document.body.contains(battleStart)) {
-      document.body.removeChild(battleStart);
-
-      // 移除遮罩
-      if (document.body.contains(overlay)) {
-        document.body.removeChild(overlay);
-      }
-
-      // 添加双击任意位置停止的提示
-      const clickToStop = document.createElement("div");
-      clickToStop.classList.add("click-to-stop");
-      clickToStop.innerText = "双击任意位置停止";
-      clickToStop.id = "click-to-stop-hint";
-      document.body.appendChild(clickToStop);
-
-      // 播放音乐
-      DOM.musicPlayer.currentTime = 0;
-      DOM.musicPlayer.play();
-      DOM.musicPlayer.style.display = "block";
-
-      // 更新状态
-      BattleState.isMusicPlaying = true;
-
-      // 添加事件监听
-      DOM.musicPlayer.onended = stopMusicMode;
-      document.addEventListener("click", handleDocumentClick);
-    }
-  }, 4500);
-}
-
-// 停止音乐播放模式
-function stopMusicMode() {
-  // 停止音乐
-  DOM.musicPlayer.pause();
-  DOM.musicPlayer.currentTime = 0;
-
-  // 移除样式
-  document.body.classList.remove("music-playing-mode");
-
-  // 移除事件监听
-  document.removeEventListener("click", handleDocumentClick);
-
-  // 移除遮罩和提示
-  const overlay = document.querySelector(".battle-overlay");
-  if (overlay && overlay.parentNode) {
-    overlay.parentNode.removeChild(overlay);
-  }
-
-  const hint = document.getElementById("click-to-stop-hint");
-  if (hint && hint.parentNode) {
-    hint.parentNode.removeChild(hint);
-  }
-
-  // 隐藏播放器
-  DOM.musicPlayer.style.display = "none";
-
-  // 更新状态
-  BattleState.isMusicPlaying = false;
-
-  console.log("音乐播放模式已停止");
 }
 
 // 显示提示信息
@@ -978,7 +925,7 @@ function showToast(message, type = "info") {
   document.body.appendChild(toast);
 
   // 自动移除
-  setTimeout(() => {
+  later(() => {
     if (document.body.contains(toast)) {
       document.body.removeChild(toast);
     }
@@ -1288,60 +1235,26 @@ function setupEventListeners(signal) {
     DOM.randomMatchBtn.addEventListener("click", randomizeMatches, { signal });
   }
 
-  // 抽取音乐按钮
-  if (DOM.drawMusicBtn) {
-    DOM.drawMusicBtn.addEventListener("click", handleDrawMusic, { signal });
-  }
-
-  // 播放音乐按钮
-  if (DOM.playMusicBtn) {
-    DOM.playMusicBtn.addEventListener("click", handlePlayMusic, { signal });
-  }
+  // 抽取音乐 / 播放音乐 两个按钮由组件绑定（draw-machine 的 trigger / music-player 的
+  // startTrigger），页面侧不再重复绑定，避免单击双跑
 
   // 下一场按钮
   if (DOM.nextMatchBtn) {
     DOM.nextMatchBtn.addEventListener("click", handleNextMatch, { signal });
   }
 
-  // 重置游戏按钮
+  // 重置游戏按钮（只清本地存档 + 重建赛程，不碰服务端；与迁移前一致）
   if (DOM.resetGameBtn) {
     DOM.resetGameBtn.addEventListener("click", resetGame, { signal });
   }
 
-  // 清除缓存按钮
+  // 清除缓存按钮（清两端存档 + 重载选手数据 + 刷新页面）
   if (DOM.clearCacheBtn) {
     DOM.clearCacheBtn.addEventListener("click", clearCacheAndResetGame, { signal });
   }
 
   // 添加自动保存功能
   setupAutoSave();
-}
-
-// 创建并添加随机匹配按钮
-function addRandomMatchButton() {
-  if (document.getElementById("random-match-btn")) return; // 避免重复添加
-
-  const actionsContainer = document.querySelector(".actions");
-  if (!actionsContainer) return;
-
-  const randomMatchBtn = document.createElement("button");
-  randomMatchBtn.id = "random-match-btn";
-  randomMatchBtn.innerText = "随机匹配";
-  randomMatchBtn.style.borderColor = "#28a745";
-  randomMatchBtn.style.boxShadow = "0 0 5px rgba(40, 167, 69, 0.3)";
-
-  // 插入到开始比赛按钮之前
-  if (DOM.startMatchBtn && DOM.startMatchBtn.parentNode) {
-    actionsContainer.insertBefore(randomMatchBtn, DOM.startMatchBtn);
-  } else {
-    actionsContainer.appendChild(randomMatchBtn);
-  }
-
-  // 更新缓存的DOM引用
-  DOM.randomMatchBtn = randomMatchBtn;
-
-  // 添加事件监听
-  DOM.randomMatchBtn.addEventListener("click", randomizeMatches);
 }
 
 // 随机匹配选手处理函数
@@ -1356,8 +1269,9 @@ function randomizeMatches() {
   // 获取当前的四名选手
   const currentPlayers = BattleState.players.slice(0, 4);
 
-  // 随机打乱选手顺序
-  const shuffledPlayers = [...currentPlayers].sort(() => Math.random() - 0.5);
+  // ★ 有意变更：原 `[...currentPlayers].sort(() => Math.random() - 0.5)` 是有偏洗牌，
+  //   改为 /web/lib/random.mjs 的 Fisher–Yates 等概率抽取（用户拍板统一修正）。
+  const shuffledPlayers = pickN(currentPlayers, 4);
 
   // 更新玩家数组
   for (let i = 0; i < 4 && i < shuffledPlayers.length; i++) {
@@ -1380,81 +1294,6 @@ function randomizeMatches() {
     showToast("选手已随机匹配", "success");
   } else {
     showToast("只能在比赛开始前随机匹配选手", "warning");
-  }
-}
-
-// 处理抽取音乐
-function handleDrawMusic() {
-  console.log("执行抽取音乐");
-
-  if (!BattleState.musicLoaded) {
-    showToast("音乐数据正在加载，请稍候", "info");
-    return;
-  }
-
-  if (BattleState.musicList.length === 0) {
-    showToast("音乐列表为空", "error");
-    return;
-  }
-
-  // 禁用抽取按钮
-  DOM.drawMusicBtn.disabled = true;
-
-  // 闪现效果参数
-  const flashCount = 15;
-  const flashInterval = 80;
-  let currentFlash = 0;
-
-  // 闪现动画
-  const flashTimer = setInterval(() => {
-    const randomIdx = Math.floor(Math.random() * BattleState.musicList.length);
-    const flashMusic = BattleState.musicList[randomIdx];
-
-    // 更新UI（闪现）
-    DOM.musicName.innerText = flashMusic;
-    DOM.musicName.style.color = "#fbbf24";
-
-    currentFlash++;
-
-    if (currentFlash >= flashCount) {
-      clearInterval(flashTimer);
-
-      // 最终随机选择
-      const finalIdx = Math.floor(Math.random() * BattleState.musicList.length);
-      const finalMusic = BattleState.musicList[finalIdx];
-
-      // 更新UI
-      DOM.musicName.innerText = finalMusic;
-      DOM.musicName.style.color = "#10b981";
-      DOM.musicPlayer.src = `/resource/musics/1yearplus_ex/${finalMusic}`;
-
-      DOM.drawMusicBtn.disabled = false;
-      showToast(`已抽取音乐: ${finalMusic}`, "success");
-    }
-  }, flashInterval);
-}
-
-// 处理播放音乐
-function handlePlayMusic() {
-  console.log("执行播放音乐");
-
-  if (!DOM.musicPlayer.src) {
-    showToast("请先抽取音乐", "warning");
-    return;
-  }
-
-  if (DOM.musicPlayer.paused) {
-    // 如果已在播放模式，先停止
-    if (BattleState.isMusicPlaying) {
-      stopMusicMode();
-      return;
-    }
-
-    // 启动音乐播放模式
-    startMusicMode();
-  } else {
-    // 停止播放
-    stopMusicMode();
   }
 }
 
@@ -1519,133 +1358,12 @@ function handleNextMatch() {
   saveGameState();
 }
 
-// 新增合并功能：清除缓存并重置游戏
-function clearCacheAndResetGame() {
-  try {
-    // 清除本地存储
-    localStorage.removeItem("battleGroup1-2State");
-    localStorage.removeItem("chapter1Winners");
-    localStorage.removeItem("chapter2Winner");
-
-    // 显示处理中提示
-    showToast("正在重置比赛并清除缓存...", "info");
-
-    // 清除服务器缓存
-    Promise.all([
-      // 清除battle-group1-2进度
-      fetch("/api/clear-battle-group1-2-process", {
-        method: "POST",
-      }),
-      // 获取最新的winners.json数据
-      fetch("/resource/json/winners.json", {
-        method: "GET",
-        headers: {
-          "Cache-Control": "no-cache",
-        },
-      }).then((response) => response.json()),
-    ])
-      .then(([clearResponse, winnersData]) => {
-        if (!clearResponse.ok) {
-          throw new Error("清除服务器缓存失败");
-        }
-
-        console.log("缓存已清除，获取到最新获胜者数据:", winnersData);
-
-        // 重新加载选手数据
-        loadPlayers().then(() => {
-          // 初始化新游戏
-          initializeNewGame();
-
-          // 更新UI
-          updateBracketDisplay();
-          updateRoundDisplay();
-
-          // 重置选手区域
-          DOM.player1Name.innerText = "";
-          DOM.player2Name.innerText = "";
-          DOM.player1.classList.remove("winner", "loser");
-          DOM.player2.classList.remove("winner", "loser");
-          updatePlayerStatsDisplay();
-
-          // 重置音乐
-          DOM.musicName.innerText = "音乐名称";
-          DOM.musicPlayer.src = "";
-
-          showToast("比赛已完全重置，使用最新数据", "success");
-
-          // 刷新页面以确保所有状态都是最新的
-          setTimeout(() => location.reload(), 1500);
-        });
-      })
-      .catch((error) => {
-        console.error("重置失败:", error);
-        showToast("重置失败: " + error.message, "error");
-      });
-  } catch (error) {
-    console.error("重置失败:", error);
-    showToast("重置失败: " + error.message, "error");
-  }
-}
-
-// 清除缓存 (保留原函数，但在新流程中不再单独使用)
-function clearCache() {
-  try {
-    // 确认对话框
-    if (!confirm("确定要清除所有缓存数据吗？此操作将无法恢复。")) {
-      return;
-    }
-
-    // 清除本地存储
-    localStorage.removeItem("battleGroup1-2State");
-    localStorage.removeItem("chapter1Winners");
-    localStorage.removeItem("chapter2Winner");
-
-    // 清除服务器缓存
-    fetch("/api/clear-battle-group1-2-process", {
-      method: "POST",
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("服务器响应错误");
-        }
-        return response.text();
-      })
-      .then(() => {
-        console.log("所有缓存已清除");
-
-        // 重置battle-group1-2-process.json文件
-        return fetch("/api/reset-battle-process", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            chapter: 2,
-            confirm: true,
-          }),
-        });
-      })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("重置battle-group1-2-process.json失败");
-        }
-        showToast("缓存已清除", "success");
-        // 重置游戏状态
-        setTimeout(() => location.reload(), 1000);
-      })
-      .catch((error) => {
-        console.error("清除缓存失败:", error);
-        showToast("清除缓存失败: " + error.message, "error");
-      });
-  } catch (error) {
-    console.error("清除缓存失败:", error);
-    showToast("清除缓存失败", "error");
-  }
-}
-
-// 重置游戏 (保留原函数，但在新流程中不再单独使用)
+// 重置游戏（只清本地存档并重建赛程；服务端存档与页面均不动，与迁移前一致）
 function resetGame() {
-  // 清除缓存
+  // 代数守卫：使在途存档恢复失效（重置结果不被恢复回包覆盖）
+  restoreGeneration++;
+
+  // 清除本地存档（key "battleGroup1-2State" 逐字保留；随后 saveGameState 会写回新状态）
   localStorage.removeItem("battleGroup1-2State");
 
   // 初始化新游戏
@@ -1662,11 +1380,61 @@ function resetGame() {
   DOM.player2.classList.remove("winner", "loser");
   updatePlayerStatsDisplay();
 
-  // 重置音乐
-  DOM.musicName.innerText = "音乐名称";
-  DOM.musicPlayer.src = "";
+  // 重置音乐（音乐展示/播放状态归 music-player 组件）
+  if (apis.music) apis.music.clearItem();
+  if (DOM.musicName) DOM.musicName.innerText = "音乐名称";
 
   showToast("游戏已重置", "success");
+}
+
+// 新增合并功能：清除缓存并重置游戏
+function clearCacheAndResetGame() {
+  try {
+    // 清除本地存储（battleGroup1-2State 由 persist.reset 清）
+    localStorage.removeItem("chapter1Winners");
+    localStorage.removeItem("chapter2Winner");
+
+    // 显示处理中提示
+    showToast("正在重置比赛并清除缓存...", "info");
+
+    // persist.reset：清 localStorage + POST /api/clear-battle-group1-2-process（端点逐字保留）
+    persist.reset().then(({ remote }) => {
+      if (!remote) {
+        console.error("清除服务器缓存失败");
+        showToast("清除服务器缓存失败", "error");
+        return;
+      }
+
+      // 重新加载选手数据（容错链：localStorage → winners.json → 默认数据）
+      loadPlayers().then(() => {
+        // 初始化新游戏
+        initializeNewGame();
+
+        // 更新UI
+        updateBracketDisplay();
+        updateRoundDisplay();
+
+        // 重置选手区域
+        DOM.player1Name.innerText = "";
+        DOM.player2Name.innerText = "";
+        DOM.player1.classList.remove("winner", "loser");
+        DOM.player2.classList.remove("winner", "loser");
+        updatePlayerStatsDisplay();
+
+        // 重置音乐（音乐展示/播放状态归 music-player 组件）
+        if (apis.music) apis.music.clearItem();
+        if (DOM.musicName) DOM.musicName.innerText = "音乐名称";
+
+        showToast("比赛已完全重置，使用最新数据", "success");
+
+        // 刷新页面以确保所有状态都是最新的
+        later(() => location.reload(), 1500);
+      });
+    });
+  } catch (error) {
+    console.error("重置失败:", error);
+    showToast("重置失败: " + error.message, "error");
+  }
 }
 
 // 设置获胜者（原 HTML 内联 onclick 调用，P4 改为组件入口 signal 绑定）
@@ -1726,19 +1494,6 @@ function setWinner(playerId) {
   updateBracketDisplay();
 }
 
-// 处理页面点击事件 (用于音乐播放模式)
-function handleDocumentClick(event) {
-  if (BattleState.isMusicPlaying) {
-    // 确保不是点击播放器或提示
-    if (
-      !DOM.musicPlayer.contains(event.target) &&
-      event.target.id !== "click-to-stop-hint"
-    ) {
-      stopMusicMode();
-    }
-  }
-}
-
 // 添加自动保存定时器
 function setupAutoSave() {
   // 每60秒自动保存一次
@@ -1746,13 +1501,84 @@ function setupAutoSave() {
 }
 
 /* =================================================================
+ *  组件装配（P11-B3）：页面侧只声明"运行时 props"，
+ *  静态 props（时序/颜色/文案）在 web/front.json 的 battle-group1-2 config.components
+ * ================================================================= */
+
+/**
+ * 运行时 props 工厂（front/plugin.js 挂载组件时取用）。
+ * 只放依赖页面状态与回调的部分；静态覆盖由清单 config 提供，运行时 props 优先级更高。
+ *
+ * 分工（两个组件的按钮归属刻意不重叠——共用 #draw-music-btn 会双跑动画）：
+ *   draw-machine  : 接管 #draw-music-btn 的闪现动画（保留 #fbbf24/#10b981 内联色）
+ *   music-player  : 不接管 trigger，只接管 #play-music-btn（播放/比赛模式/退出）
+ *   串联          : draw 定格 → bridge.music.setItem(item)（同步播放器 current + 预载 audio.src）
+ */
+export function componentProps(bridge) {
+  return {
+    "music-player": {
+      items: () => BattleState.musicList,
+      display: "#music-name",
+      startTrigger: "#play-music-btn",
+      onReady: (api) => {
+        bridge.music = api;
+      },
+      // 未抽到音乐即点播放（迁移前提示文案逐字保留）
+      onEmpty: () => showToast("请先抽取音乐", "warning"),
+      // 比赛模式抖动：组件在"进入模式、遮罩显示、逐字动画开始前"回调 ——
+      // 迁移前抖动发生在进入模式瞬间（body）与逐字动画走完时（文字），而非真正开播的 4500ms
+      onOverlayShown: shakeBattleOverlay,
+      onExited: () => {
+        document.body.classList.remove("shake");
+      },
+      onError: () => showToast("音乐播放失败，请重试", "error"),
+    },
+    "draw-machine": {
+      items: () => BattleState.musicList,
+      display: "#music-name",
+      trigger: "#draw-music-btn",
+      onReady: (api) => {
+        bridge.draw = api;
+      },
+      // 迁移前 handleDrawMusic 的两条前置校验（文案逐字保留）
+      onEmpty: () =>
+        showToast(
+          BattleState.musicLoaded ? "音乐列表为空" : "音乐数据正在加载，请稍候",
+          BattleState.musicLoaded ? "error" : "info"
+        ),
+      onResult: (item) => {
+        if (bridge.music) bridge.music.setItem(item);
+        showToast(`已抽取音乐: ${item}`, "success");
+      },
+    },
+  };
+}
+
+/* =================================================================
  *  组件入口（原 b-g1-2-core.js DOMContentLoaded 初始化，kernel render 时执行）
  * ================================================================= */
-export function battleGroup12Component(el, meta, ctx) {
+export function battleGroup12Component(el, meta, ctx, bridge) {
   // cleanup 契约：静态骨架节点的全部监听经 signal 登记，重渲染时 abort 统一解绑，
   // 防止不刷新页面的重复 render 造成双绑双触发
   const bindAbort = new AbortController();
   const { signal } = bindAbort;
+
+  // 组件实例 API（front/plugin.js 的 onReady 回填；组件缺失时保持 null）
+  apis = bridge || { music: null, draw: null };
+
+  // 代数采样：此后任何 resetGame 都会使在途存档恢复失效（见 initializeGameState）
+  loadGeneration = restoreGeneration;
+
+  // 存档控制器（键/端点逐字保留；远端失败经 onError 上报，与迁移前文案一致）
+  persist = createPersistence({
+    key: "battleGroup1-2State",
+    endpoint: "/api/battle-group1-2-process",
+    clearEndpoint: "/api/clear-battle-group1-2-process",
+    api: ctx && ctx.api ? ctx.api : null,
+    // 服务端"已应答"即不读本地（迁移前语义）：非 null 即算有效存档载荷
+    isValid: (data) => data !== null && data !== undefined,
+    onError: handlePersistError,
+  });
 
   console.log("页面加载完成，初始化系统...");
 
@@ -1772,14 +1598,11 @@ export function battleGroup12Component(el, meta, ctx) {
   // 加载数据
   initializeData();
 
-  // 等待DOM加载完成后添加按钮
-  setTimeout(addRandomMatchButton, 1000);
-
   return () => cleanupBattleGroup12Page(bindAbort);
 }
 
 /* =================================================================
- *  cleanup（重渲染/卸载时由 ctx.ui 调用）
+ *  cleanup（重渲染/卸载时由 ctx.ui 调用；组件实例的 cleanup 由 front/plugin.js 收集后调用）
  * ================================================================= */
 function cleanupBattleGroup12Page(bindAbort) {
   // signal 登记的静态骨架监听（按钮/选手卡）统一解绑
@@ -1791,15 +1614,25 @@ function cleanupBattleGroup12Page(bindAbort) {
     autoSaveTimer = null;
   }
 
-  // 音乐播放模式的 document 级监听与 audio 解绑（P3 定稿约定）
-  document.removeEventListener("click", handleDocumentClick);
-  BattleState.isMusicPlaying = false;
-  document.body.classList.remove("music-playing-mode");
-
-  const player = document.getElementById("music-player");
-  if (player) {
-    player.onended = null;
-    player.pause();
-    try { player.currentTime = 0; } catch (e) { /* 未加载媒体时可能抛错，忽略 */ }
+  // 初始化收尾的选手名补写定时器
+  if (playerNameRetryTimer) {
+    clearTimeout(playerNameRetryTimer);
+    playerNameRetryTimer = null;
   }
+
+  // 一次性收尾定时器（播报/toast 自动移除、清缓存后的 reload、抖动移除）：清空在飞任务，
+  // 否则 teardown 后回调仍在飞、播报/toast 节点会永久留在 body
+  timers.dispose();
+
+  // 比赛模式抖动类兜底移除（body + 遮罩文字）
+  clearBattleShake();
+
+  for (const node of document.querySelectorAll(
+    ".winner-announcement, .info-toast, .success-toast, .warning-toast, .error-toast"
+  )) {
+    node.remove();
+  }
+
+  // 音乐播放/比赛模式的清理（body 类、document 级监听、#music-player 的 onended/暂停）
+  // 由 music-player 组件的 cleanup 负责（front/plugin.js 收集后逐个调用），页面侧不再重复。
 }

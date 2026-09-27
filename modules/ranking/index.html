@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>一年内组排名页面</title>
     <link rel="preload" as="image" href="/resource/images/bg_index.jpg" />
+    <!-- P11：布局原语（L1 共享资产，origin 相对绝对路径）——先于 style.css，页面样式可覆盖 -->
+    <link rel="stylesheet" href="/web/components/grid.css" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -16,7 +18,9 @@
       <h1>一年内组排名</h1>
     </header>
 
-    <main>
+    <!-- 主区两栏：布局由 /web/components/grid.css 的 .grid-split 提供
+         （宽屏等宽两栏 / 窄屏自动堆叠，零断点；原 flex 25%/65% 固定比例已移除） -->
+    <main class="grid-split">
       <section id="playersSection">
         <h2>选手列表</h2>
         <ul id="playersList"></ul>

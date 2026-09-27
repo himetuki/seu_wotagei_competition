@@ -296,7 +296,15 @@ function createAssemblyService(deps) {
       front: ((front && Array.isArray(front.plugins) && front.plugins) || []).map((e) => {
         const id = entryIdOf(e);
         const meta = metaOf(id);
-        return { id, name: meta.name, icon: meta.icon, enabled: !(e && e.enabled === false) };
+        // P11：kind 为前端条目的可选元数据（如 "component"），供管理页分类展示；
+        // 既有字段与顺序不变，纯增量追加（后端 kind 语义不同：legacy/plugin，见上）。
+        return {
+          id,
+          name: meta.name,
+          icon: meta.icon,
+          enabled: !(e && e.enabled === false),
+          kind: e && typeof e === "object" && e.kind !== undefined ? e.kind : null,
+        };
       }),
     };
   }

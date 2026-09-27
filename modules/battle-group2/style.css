@@ -1,3 +1,19 @@
+/* P11-B3：布局原语（/web/components/grid.css）的页面级参数——
+   列表项为短标签，走 .grid-cards：
+     ① `width:100%`：main 的 `align-items:center` 会让 grid 收缩成单列，必须显式撑满；
+     ② 轨道覆盖为定宽 + `justify-content:center`（auto-fit 空轨道折叠）→ 条目保持迁移前
+        的「居中成行」节奏：条目少时居中、条目多时自动换行，窄屏列数连续减少，零媒体查询。
+   原 flex 换行 + li margin:5px 的 10px 间距节奏由 --grid-gap 承接。 */
+:root {
+  --grid-gap: 10px;
+}
+
+ul.grid-cards {
+  width: 100%;
+  grid-template-columns: repeat(auto-fit, 140px);
+  justify-content: center;
+}
+
 body {
   font-family: Arial, sans-serif;
   background-color: #000000;
@@ -81,18 +97,15 @@ h3.large-text {
   text-align: center;
 }
 
+/* 列表容器：排布由 /web/components/grid.css 的 .grid-cards 提供（auto-fill 120px） */
 ul {
   list-style-type: none;
   padding: 0;
   margin: 0;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
 }
 
 li {
   padding: 10px;
-  margin: 5px;
   background-color: rgba(255, 255, 255, 0.1);
   border: 1px solid #ddd;
   border-radius: 5px;
@@ -162,44 +175,47 @@ audio {
 }
 
 /* Battle Start动画效果 */
+/* ★ P11-B3：原 keyframes 只写 scale/rotate，未带 translate(-50%,-50%)——动画期间会把
+   `top/left:50%` 的覆盖层锚在右下角并溢出屏幕（bg1 / bg1-2 的 keyframes 一直是带 translate 的）。
+   属迁移前既有缺陷，本次与 bg1 统一补齐（视觉变更：BATTLE START 现居中播放）。 */
 @keyframes battle-start-animation {
   0% {
-    transform: scale(0.1) rotate(-5deg);
+    transform: translate(-50%, -50%) scale(0.1) rotate(-5deg);
     opacity: 0;
     filter: blur(20px);
   }
   5% {
-    transform: scale(1.8) rotate(5deg);
+    transform: translate(-50%, -50%) scale(1.8) rotate(5deg);
     opacity: 1;
     filter: blur(0px);
   }
   10% {
-    transform: scale(0.8) rotate(-3deg);
+    transform: translate(-50%, -50%) scale(0.8) rotate(-3deg);
     opacity: 1;
   }
   15% {
-    transform: scale(1.4) rotate(2deg);
+    transform: translate(-50%, -50%) scale(1.4) rotate(2deg);
     opacity: 1;
   }
   20% {
-    transform: scale(0.9) rotate(-1deg);
+    transform: translate(-50%, -50%) scale(0.9) rotate(-1deg);
     opacity: 1;
   }
   25% {
-    transform: scale(1.2) rotate(1deg);
+    transform: translate(-50%, -50%) scale(1.2) rotate(1deg);
     opacity: 1;
   }
   30% {
-    transform: scale(1) rotate(0deg);
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
     opacity: 1;
   }
   80% {
-    transform: scale(1);
+    transform: translate(-50%, -50%) scale(1);
     opacity: 1;
     filter: blur(0px);
   }
   100% {
-    transform: scale(2);
+    transform: translate(-50%, -50%) scale(2);
     opacity: 0;
     filter: blur(20px);
   }
@@ -346,55 +362,42 @@ audio {
   }
 }
 
-/* 音乐播放模式下的页面样式 - 完全重写这部分 */
-.music-playing-mode {
+/* 比赛模式下的页面样式（P11-B3：类名 music-playing-mode → battle-mode，
+   body 类的加/移由 component-music-player 负责） */
+.battle-mode {
   background-attachment: fixed;
 }
 
-/* 确保所有主要内容在音乐播放模式下不可见 */
-.music-playing-mode header,
-.music-playing-mode main,
-.music-playing-mode h1,
-.music-playing-mode h2,
-.music-playing-mode h3,
-.music-playing-mode p,
-.music-playing-mode ul,
-.music-playing-mode li,
-.music-playing-mode
-  div:not(.battle-start):not(.battle-overlay):not(.click-to-stop),
-.music-playing-mode button {
+/* 确保所有主要内容在比赛模式下不可见 */
+/* ★ P11-B3：`div:not(...)` 这条宽泛规则必须再排除组件插槽宿主（[data-slot]）——
+   插槽是组件覆盖层（battle-start / battle-overlay / click-to-stop）的父节点，
+   父级 opacity:0 无法被子级覆盖，会把整场 BATTLE START 动画与点击提示一并吃掉。 */
+.battle-mode header,
+.battle-mode main,
+.battle-mode h1,
+.battle-mode h2,
+.battle-mode h3,
+.battle-mode p,
+.battle-mode ul,
+.battle-mode li,
+.battle-mode
+  div:not(.battle-start):not(.battle-overlay):not(.click-to-stop):not([data-slot]),
+.battle-mode button {
   opacity: 0 !important;
   visibility: hidden !important;
   pointer-events: none !important;
   transition: opacity 0.5s ease;
 }
 
-/* 确保音乐播放器和停止提示可见 */
-.music-playing-mode #musicPlayer,
-.music-playing-mode #click-to-stop-hint {
+/* 确保停止提示可见（组件按 hintId 建的节点：#click-to-stop-hint 与 .click-to-stop 同一元素） */
+.battle-mode #click-to-stop-hint {
   opacity: 1 !important;
   visibility: visible !important;
   pointer-events: auto !important;
   z-index: 1001 !important;
 }
 
-/* 音乐控制器样式增强 */
-.music-playing-mode #musicPlayer {
-  position: fixed !important;
-  bottom: 20px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  width: 60px !important;
-  height: 40px !important;
-  background-color: rgba(0, 0, 0, 0.5) !important;
-  border-radius: 20px !important;
-  padding: 5px !important;
-  display: block !important;
-  opacity: 0.7 !important;
-}
-
-/* 确保停止提示可见 */
-.music-playing-mode .click-to-stop {
+.battle-mode .click-to-stop {
   position: fixed !important;
   bottom: 70px !important;
   left: 50% !important;
@@ -407,31 +410,6 @@ audio {
   z-index: 1001 !important;
   opacity: 1 !important;
   visibility: visible !important;
-}
-
-/* 隐藏音频播放器的进度条和其他控件 */
-#musicPlayer::-webkit-media-controls-timeline,
-#musicPlayer::-webkit-media-controls-current-time-display,
-#musicPlayer::-webkit-media-controls-time-remaining-display,
-#musicPlayer::-webkit-media-controls-mute-button,
-#musicPlayer::-webkit-media-controls-volume-slider {
-  display: none !important;
-}
-
-#musicPlayer::-webkit-media-controls-play-button {
-  display: block !important;
-}
-
-/* 确保只显示播放按钮 */
-audio::-webkit-media-controls-panel {
-  justify-content: center !important;
-}
-
-/* 隐藏Firefox和其他浏览器的控件 */
-#musicPlayer {
-  width: 60px;
-  height: 40px;
-  opacity: 0.7;
 }
 
 .click-to-stop {

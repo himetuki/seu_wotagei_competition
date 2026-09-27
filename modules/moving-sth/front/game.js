@@ -6,13 +6,21 @@
  * 原 core/ui 的 DOMContentLoaded 初始化改由 initMovingSthGame() 承接
  * （kernel 装配渲染时 DOM 已就绪）。
  *
- * 注意：设置加载继续用原生 fetch（/api/settings/moving-sth、
- * /resource/json/games_musics.json）与原 localStorage key "movingSthSettings"，
- * 保持行为零回归。
+ * 注意：设置加载继续用原生 fetch（/resource/json/games_musics.json），
+ * 设置存档键 "movingSthSettings" 与端点 /api/settings/moving-sth 逐字保留。
+ *
+ * P11-B6 迁移：
+ *   · 选曲随机 → /web/lib/random.mjs 的 pickOne（原 Math.floor(Math.random()*n)）
+ *   · 设置双写/恢复链 → /web/lib/persist.mjs 的 createPersistence
+ *     （server → localStorage → 默认设置；原子实现只有"请求失败才回退本地"）
+ *   · 烟花配色同形随机选取一并收敛到 pickOne；化棒位置/速度等**连续抖动值**仍用
+ *     Math.random（非"选曲/选人"，pickOne 不适用）
  *
  * cleanup 覆盖：signal 登记的静态监听（按钮/document keydown/window resize）、
  * 计时 interval、浮动化棒 rAF、倒计时链式 timeout 与其动态节点、audio 播放。
  */
+import { pickOne } from "/web/lib/random.mjs";
+import { createPersistence } from "/web/lib/persist.mjs";
 
 /* =================================================================
  *  core：游戏状态（原 moving_sth_core.js）
@@ -22,6 +30,7 @@ const GameState = {
   isPaused: false,
   timeLimit: 60, // 秒
   isGameOver: false,
+  isCountingDown: false, // 倒计时重入门闩（startGame 置位，倒计时结束/ cleanup 复位）
   availableMusics: [],
   currentMusic: null,
   interfaceOpacity: 0.8, // 添加界面透明度设置，默认80%
@@ -58,10 +67,8 @@ async function loadMusicList() {
 // 选择随机音乐
 function selectRandomMusic() {
   if (GameState.availableMusics.length > 0) {
-    const randomIndex = Math.floor(
-      Math.random() * GameState.availableMusics.length
-    );
-    GameState.currentMusic = GameState.availableMusics[randomIndex];
+    // 等概率单抽（Fisher–Yates 基座；替代原 Math.floor(Math.random() * n)）
+    GameState.currentMusic = pickOne(GameState.availableMusics);
 
     // 更新UI显示
     document.getElementById("music-name").textContent =
@@ -106,9 +113,15 @@ function stopGameMusic() {
 function startGame() {
   // 如果游戏已经在进行中，则不执行任何操作
   if (GameState.isPlaying) return;
+  // 倒计时进行中拒绝重入：此刻 isPlaying 仍为 false，重复点击会排两条倒计时链，
+  // 先后 resolve 使 startTimer 执行两次，旧 interval 句柄被覆盖成失控孤儿（每 10ms
+  // 空转并在时间到后反复触发 endGame → 结果弹窗/烟花无限循环）
+  if (GameState.isCountingDown) return;
+  GameState.isCountingDown = true;
 
   // 显示3秒倒计时
   showCountdown().then(() => {
+    GameState.isCountingDown = false;
     // 倒计时结束后，实际开始游戏
     GameState.isPlaying = true;
     GameState.isPaused = false;
@@ -339,6 +352,9 @@ function resetGame() {
 
 // 游戏结束
 function endGame() {
+  // 唯一调用点在计时 interval 内；一旦 isPlaying 已被置 false（已结束/失控 interval
+  // 重入），直接忽略——防止结果弹窗与烟花被反复触发
+  if (!GameState.isPlaying) return;
   GameState.isPlaying = false;
   GameState.isGameOver = true;
 
@@ -574,8 +590,9 @@ function addFireworks() {
       firework.style.zIndex = "1100";
 
       // 烟花动画
+      // 烟花大小/位置是连续抖动值（保留 Math.random）；配色是"从数组选一个"→ pickOne
       const size = Math.random() * 10 + 10;
-      const color = colors[Math.floor(Math.random() * colors.length)];
+      const color = pickOne(colors);
 
       firework.innerHTML = `
         <svg width="${size * 2}" height="${size * 2}" viewBox="0 0 100 100">
@@ -628,6 +645,9 @@ function startTimer() {
 
   // 更新计时器显示
   updateTimerDisplay();
+
+  // 防御性去重：先清旧句柄再起新 interval，杜绝双链并发时旧 interval 失控
+  if (timerInterval) clearInterval(timerInterval);
 
   // 启动定时器，每10毫秒更新一次
   timerInterval = setInterval(() => {
@@ -713,102 +733,73 @@ const defaultSettings = {
   interfaceOpacity: 0.8, // 添加默认透明度设置
 };
 
+/* -----------------------------------------------------------------
+ * 设置存档控制器（P11-B6：createPersistence 统一双写/恢复链）
+ *   key "movingSthSettings" 与端点 /api/settings/moving-sth 逐字保留（存档契约）。
+ *   isValid = "服务端已应答即以其为准"（非 null/undefined 即算存档）：
+ *   与迁移前 `if (response.ok) 用服务端 else 回退本地` 一致——服务端返回空壳时
+ *   仍以服务端为准，不会因缺字段而改读本地旧值。
+ * ----------------------------------------------------------------- */
+let apiRef = null; // ctx.api（页面 init 注入；未注入时仅本地读写，远端静默跳过）
+
+/** 页面 init 首行注入 ctx.api（origin 相对路径、非 2xx 抛错） */
+export function useMovingSthApi(api) {
+  apiRef = api || null;
+}
+
+function settingsStore() {
+  return createPersistence({
+    key: "movingSthSettings",
+    endpoint: "/api/settings/moving-sth",
+    api: apiRef,
+    isValid: (data) => data !== null && data !== undefined,
+  });
+}
+
 // 加载游戏设置
 async function loadGameSettings() {
-  try {
-    // 尝试从服务器加载设置
-    const response = await fetch(
-      "/api/settings/moving-sth"
-    );
+  // 恢复链（persist 契约）：server → localStorage → 默认设置
+  const { data, source } = await settingsStore().load();
 
-    if (response.ok) {
-      const settings = await response.json();
-
-      // 更新游戏状态
-      GameState.timeLimit = settings.timeLimit || defaultSettings.timeLimit;
-      GameState.interfaceOpacity =
-        settings.interfaceOpacity !== undefined
-          ? settings.interfaceOpacity
-          : defaultSettings.interfaceOpacity;
-
-      console.log("从服务器加载设置成功:", settings);
-      return settings;
-    } else {
-      console.log("无法从服务器加载设置，尝试从localStorage加载");
-
-      // 尝试从localStorage加载
-      const localSettings = localStorage.getItem("movingSthSettings");
-      if (localSettings) {
-        const settings = JSON.parse(localSettings);
-        GameState.timeLimit = settings.timeLimit || defaultSettings.timeLimit;
-        GameState.interfaceOpacity =
-          settings.interfaceOpacity !== undefined
-            ? settings.interfaceOpacity
-            : defaultSettings.interfaceOpacity;
-        console.log("从localStorage加载设置成功:", settings);
-        return settings;
-      }
-
-      // 如果都失败，使用默认设置
-      console.log("使用默认设置");
-      useDefaultSettings();
-      return defaultSettings;
-    }
-  } catch (error) {
-    console.error("加载设置出错:", error);
-
-    // 尝试从localStorage加载
-    const localSettings = localStorage.getItem("movingSthSettings");
-    if (localSettings) {
-      const settings = JSON.parse(localSettings);
-      GameState.timeLimit = settings.timeLimit || defaultSettings.timeLimit;
-      GameState.interfaceOpacity =
-        settings.interfaceOpacity !== undefined
-          ? settings.interfaceOpacity
-          : defaultSettings.interfaceOpacity;
-      console.log("从localStorage加载设置成功:", settings);
-      return settings;
-    }
-
-    // 使用默认设置
+  if (source === "none") {
+    // 两端都没有（或不可用）→ 使用默认设置
+    console.log("使用默认设置");
     useDefaultSettings();
     return defaultSettings;
   }
+
+  // 更新游戏状态
+  GameState.timeLimit = data.timeLimit || defaultSettings.timeLimit;
+  GameState.interfaceOpacity =
+    data.interfaceOpacity !== undefined
+      ? data.interfaceOpacity
+      : defaultSettings.interfaceOpacity;
+
+  console.log(
+    source === "server" ? "从服务器加载设置成功:" : "从localStorage加载设置成功:",
+    data
+  );
+  return data;
 }
 
 // 保存游戏设置
 async function saveGameSettings(settings) {
-  try {
-    // 先保存到本地
-    localStorage.setItem("movingSthSettings", JSON.stringify(settings));
+  // 双写：先 localStorage（同步、必达）后服务端 POST（异步、失败不抛）
+  const { local, remote } = await settingsStore().save(settings);
 
-    try {
-      // 再尝试保存到服务器
-      const response = await fetch(
-        "/api/settings/moving-sth",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(settings),
-        }
-      );
-
-      if (response.ok) {
-        console.log("设置保存到服务器成功");
-      } else {
-        console.log("设置保存到服务器失败，但已保存到本地");
-      }
-    } catch (serverError) {
-      console.log("服务器保存出错，但已保存到本地:", serverError);
-    }
-
-    return true;
-  } catch (error) {
-    console.error("保存设置出错:", error);
+  if (!local) {
+    // 迁移前：localStorage 写失败 → 外层 catch → false（服务端不再尝试）
+    console.error("保存设置出错: localStorage 写入失败");
     return false;
   }
+
+  if (remote) {
+    console.log("设置保存到服务器成功");
+  } else {
+    console.log("设置保存到服务器失败，但已保存到本地");
+  }
+
+  return true;
 }
 
 // 使用默认设置
@@ -820,11 +811,14 @@ function useDefaultSettings() {
 /* =================================================================
  *  组件入口（原 core/ui 的 DOMContentLoaded 初始化，kernel render 时执行）
  * ================================================================= */
-export function initMovingSthGame() {
+export function initMovingSthGame(ctx) {
   // cleanup 契约：静态骨架节点 + document/window 监听全部经 signal 登记，
   // 重渲染时 abort 统一解绑，防止不刷新页面的重复 render 双绑双触发
   const bindAbort = new AbortController();
   const { signal } = bindAbort;
+
+  // 持久化控制器取用 ctx.api（origin 相对路径；非 2xx 抛错 → 恢复链回退本地）
+  useMovingSthApi(ctx && ctx.api);
 
   // 原 core DOMContentLoaded：初始化游戏
   initGame();
@@ -914,6 +908,9 @@ function cleanupMovingSthGame(bindAbort) {
   GameState.isPlaying = false;
   GameState.isPaused = false;
   GameState.isGameOver = false;
+  // 倒计时链被上方 clearTimeout 中断时，.then 不会执行——标志必须在此复位，
+  // 否则重渲染后 startGame 被永久拒绝
+  GameState.isCountingDown = false;
   applyInterfaceOpacity(false);
 
   // audio 播放停止

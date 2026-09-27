@@ -16,8 +16,19 @@
 
 // DOM元素缓存（原 music_core.js）
 import { icon } from "/web/icons.mjs";
+import { createTimerRegistry } from "/web/lib/timers.mjs";
 
 const DOM = {};
+
+/* 一次性定时器句柄（cleanup 统一清理，避免 teardown 后回调仍在飞）——
+ * P12 起经 /web/lib/timers.mjs 注册表统一登记（替代原 pageTimers + later() 样板） */
+const timers = createTimerRegistry();
+/** 登记一次性定时器（别名保既有调用点零改动） */
+const later = (fn, ms) => timers.later(fn, ms);
+
+/* P12：确认弹窗归 component-confirm-dialog 组件实例——节点/监听/动画/单弹窗语义由组件
+   自管，onReady 回填模块级桥 confirmApi（组件缺失时降级 warn，见 showConfirmDialog） */
+let confirmApi = null;
 
 // 全局状态（原 music_core.js）
 const AppState = {
@@ -82,10 +93,23 @@ export default {
 /* =================================================================
  *  组件入口（原 DOMContentLoaded 初始化，kernel render 时执行）
  * ================================================================= */
-function musicImportComponent() {
+function musicImportComponent(el, meta, ctx) {
   // cleanup 契约：静态骨架/document.body 监听经 signal 登记，重渲染时 abort 统一解绑
   const bindAbort = new AbortController();
   const { signal } = bindAbort;
+
+  // P12：confirm-dialog 组件实例化（自挂 body；onReady 回填模块级桥 confirmApi；
+  // 组件缺失时桥接降级 warn，确认类操作不会被误触发）
+  let disposeConfirm = null;
+  const confirmFactory = ctx && ctx.ui ? ctx.ui.component("confirm-dialog") : null;
+  if (confirmFactory) {
+    const dispose = confirmFactory(
+      document.body,
+      { onReady: (api) => { confirmApi = api; } },
+      ctx
+    );
+    if (typeof dispose === "function") disposeConfirm = dispose;
+  }
 
   console.log("音乐导入页面初始化中...");
 
@@ -110,15 +134,16 @@ function musicImportComponent() {
   // 初始化上传目标选择
   initUploadTargetSelection(signal);
 
-  // 原 music_api.js：设置页"音乐导入"跳转按钮的委托监听（body 级，随 cleanup 解绑）
-  document.body.addEventListener("click", (event) => {
-    // 如果点击的是音乐导入跳转按钮
-    if (event.target.id === "goto-music-import-btn") {
-      window.location.href = "/m/music-import";
-    }
-  }, { signal });
+  // 注：「设置页 → 音乐导入」跳转按钮的 body 级委托监听已删除 —— 该按钮不在本页
+  //（#goto-music-import-btn 在 modules/setting/index.html），委托永不触发；
+  // 唯一活路径是 setting 组件内 { signal } 绑定的常规监听。
 
-  return () => cleanupMusicImportPage(bindAbort);
+  return () => {
+    cleanupMusicImportPage(bindAbort);
+    // P12：confirm-dialog 组件实例卸载（移除在开对话框 + 清组件在飞定时器）
+    if (disposeConfirm) disposeConfirm();
+    confirmApi = null;
+  };
 }
 
 /* =================================================================
@@ -390,7 +415,7 @@ function showStatusMessage(message, type = "info", duration = 3000) {
   DOM.statusMessage.className = `status-message ${type} show`;
 
   // 设置自动消失
-  setTimeout(() => {
+  later(() => {
     DOM.statusMessage.classList.remove("show");
   }, duration);
 }
@@ -484,7 +509,7 @@ function updateProgressBar(progress) {
 
   // 如果完成，3秒后隐藏进度条
   if (progress === 100) {
-    setTimeout(() => {
+    later(() => {
       DOM.progressContainer.classList.add("hidden");
     }, 3000);
   }
@@ -518,7 +543,7 @@ function showUploadResult(success) {
   DOM.progressContainer.classList.add(resultClass);
 
   // 3秒后移除效果
-  setTimeout(() => {
+  later(() => {
     DOM.progressContainer.classList.remove(resultClass);
   }, 3000);
 }
@@ -610,100 +635,11 @@ async function moveFileToRecycle(filename) {
   );
 }
 
-// 显示自定义确认对话框
+// 显示自定义确认对话框（P12 桥接：实现归 component-confirm-dialog 组件实例，
+// 调用点零改动。降级 = warn 且不回调 onConfirm——防组件被禁用时误触发移动/删除）
 function showConfirmDialog(message, onConfirm, onCancel) {
-  // 移除可能已存在的对话框
-  const existingDialog = document.querySelector(".confirm-dialog-container");
-  if (existingDialog) {
-    document.body.removeChild(existingDialog);
-  }
-
-  // 创建对话框容器
-  const dialogContainer = document.createElement("div");
-  dialogContainer.className = "confirm-dialog-container";
-
-  // 创建遮罩层
-  const overlay = document.createElement("div");
-  overlay.className = "confirm-dialog-overlay";
-
-  // 创建对话框内容
-  const dialog = document.createElement("div");
-  dialog.className = "confirm-dialog";
-
-  // 创建标题
-  const title = document.createElement("h3");
-  title.className = "confirm-dialog-title";
-  title.textContent = "确认操作";
-
-  // 创建消息内容
-  const content = document.createElement("p");
-  content.className = "confirm-dialog-message";
-  content.textContent = message;
-
-  // 创建按钮容器
-  const buttonContainer = document.createElement("div");
-  buttonContainer.className = "confirm-dialog-buttons";
-
-  // 确认按钮
-  const confirmBtn = document.createElement("button");
-  confirmBtn.className = "confirm-btn primary-btn";
-  confirmBtn.textContent = "确认";
-  confirmBtn.addEventListener("click", () => {
-    closeDialog();
-    if (typeof onConfirm === "function") {
-      onConfirm();
-    }
-  });
-
-  // 取消按钮
-  const cancelBtn = document.createElement("button");
-  cancelBtn.className = "cancel-btn secondary-btn";
-  cancelBtn.textContent = "取消";
-  cancelBtn.addEventListener("click", () => {
-    closeDialog();
-    if (typeof onCancel === "function") {
-      onCancel();
-    }
-  });
-
-  // 组装对话框
-  buttonContainer.appendChild(confirmBtn);
-  buttonContainer.appendChild(cancelBtn);
-  dialog.appendChild(title);
-  dialog.appendChild(content);
-  dialog.appendChild(buttonContainer);
-  dialogContainer.appendChild(overlay);
-  dialogContainer.appendChild(dialog);
-
-  // 添加到页面
-  document.body.appendChild(dialogContainer);
-
-  // 添加淡入效果
-  setTimeout(() => {
-    dialogContainer.classList.add("visible");
-    dialog.classList.add("visible");
-  }, 10);
-
-  // 点击遮罩层关闭对话框
-  overlay.addEventListener("click", () => {
-    closeDialog();
-    if (typeof onCancel === "function") {
-      onCancel();
-    }
-  });
-
-  // 关闭对话框函数
-  function closeDialog() {
-    dialogContainer.classList.remove("visible");
-    dialog.classList.remove("visible");
-
-    // 动画结束后移除DOM
-    setTimeout(() => {
-      if (document.body.contains(dialogContainer)) {
-        document.body.removeChild(dialogContainer);
-      }
-    }, 300);
-  }
+  if (confirmApi) confirmApi(message, onConfirm, onCancel);
+  else console.warn("[music-import] confirm-dialog 组件不可用，已忽略确认请求");
 }
 
 /* =================================================================
@@ -1232,7 +1168,7 @@ function handleApiError(error, retryFn = null, retryCount = 0) {
     // 延迟重试，每次时间增加
     const delay = 1000 * Math.pow(2, retryCount);
 
-    setTimeout(() => {
+    later(() => {
       retryFn(retryCount + 1);
     }, delay);
 
@@ -1251,8 +1187,12 @@ function handleApiError(error, retryFn = null, retryCount = 0) {
  *  cleanup（重渲染/卸载时由 ctx.ui 调用）
  * ================================================================= */
 function cleanupMusicImportPage(bindAbort) {
-  // signal 登记的静态骨架监听（按钮/拖放/文件选择/body 委托）统一解绑
+  // signal 登记的静态骨架监听（按钮/拖放/文件选择）统一解绑
   if (bindAbort) bindAbort.abort();
+
+  // 一次性定时器（状态消息隐去 / 进度条隐藏）：清空在飞任务，避免 teardown 后回调仍在飞
+  // （P12：弹窗节点/监听/动画归 confirm-dialog 组件实例，由组件 cleanup 自行回收）
+  timers.dispose();
 
   // 上传中重置上传状态（进行中的 XHR 与迁移前页面跳转语义一致：不强行中断）
   AppState.uploading = false;

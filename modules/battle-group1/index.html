@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prof对战</title>
     <link rel="preload" as="image" href="/resource/images/bg.jpg" />
+    <!-- P11：布局原语（L1 共享资产，origin 相对绝对路径）——先于 style.css，页面样式可覆盖 -->
+    <link rel="stylesheet" href="/web/components/grid.css" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -22,7 +24,8 @@
 
         <section id="players-section">
           <!-- 选手卡点击由前端插件以 addEventListener+signal 绑定（原内联 onclick 已移除） -->
-          <div class="players">
+          <!-- 布局：.grid-split（auto-fit 360px）宽屏两栏 / 窄屏单列，零媒体查询 -->
+          <div class="players grid-split">
             <div class="player" id="player1">
               <h3 id="player1-name"></h3>
             </div>
@@ -43,7 +46,8 @@
           </div>
         </section>
 
-        <section id="battle-display">
+        <!-- 布局：.grid-flow（auto-fit 320px）宽屏并排 / 窄屏堆叠 -->
+        <section id="battle-display" class="grid-flow">
           <div class="random-tricks">
             <h3>随机抽取的动作</h3>
             <div id="random-tricks-display">请抽取动作</div>
@@ -52,14 +56,14 @@
           <div class="music">
             <h3>随机抽取的音乐</h3>
             <p><span id="music-name">音乐名称</span></p>
-            <audio id="music-player" controls></audio>
           </div>
         </section>
 
         <section id="tricks-pool-section">
           <div class="tricks-pool">
             <h3>技池</h3>
-            <div class="tricks-pool-container">
+            <!-- 布局：.grid-split 宽屏两栏 / 窄屏单列 -->
+            <div class="tricks-pool-container grid-split">
               <div class="tricks-pool-player">
                 <h4>选手1技池</h4>
                 <div
@@ -85,6 +89,16 @@
         </section>
       </main>
     </div>
+
+    <!-- P11 组件插槽（组件宿主；必须放在 .container 之外：战斗模式对 .container 整棵子树
+         施加 opacity:0，插槽若在其内会让遮罩/点击提示一并不可见）。空容器，无视觉影响。 -->
+    <div data-slot="music"></div>
+    <div data-slot="draw"></div>
+
+    <!-- 宿主播放器（无 controls、恒 `#music-player{display:none}`：比赛页的播放/退出全靠
+         抽取/开始按钮与单击退出手势，任何状态都不显示播放器控件 UI；元素仅为音频播放保留，
+         music-player 组件按 id 复用本元素。） -->
+    <audio id="music-player"></audio>
 
     <!-- 前端插件挂载点（P4：页面 UI 由 /web/front.json 声明的 front/plugin.js 装配） -->
     <div id="plugin-root" hidden></div>

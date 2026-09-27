@@ -5,6 +5,12 @@
   box-sizing: border-box;
 }
 
+/* P11：沿用原布局节奏——grid.css 缺省 --grid-gap 为 16px，本页原 flex gap 为 25px，
+   覆盖变量即可保持三曲库卡片间距与迁移前一致（本页样式表在 grid.css 之后加载） */
+:root {
+  --grid-gap: 25px;
+}
+
 body {
   font-family: "Arial", sans-serif;
   background-color: #000000;
@@ -54,6 +60,9 @@ body.battle-mode #main-container {
   transition: opacity 0.8s ease;
 }
 
+/* 比赛模式下的遮罩 / 打字文字 / 退出提示（P11-B4：节点由 component-music-player 实例
+   在插槽内自建，带同名 class，本节规则与迁移前逐字一致；
+   body 类 battle-mode 的加/移由组件负责） */
 body.battle-mode .battle-overlay,
 body.battle-mode .battle-start-text,
 body.battle-mode .click-to-stop {
@@ -88,12 +97,14 @@ header h1 {
   vertical-align: middle;
 }
 
-/* ========== 音乐区域 ========== */
+/* ========== 音乐区域 ==========
+   布局由 /web/components/grid.css 的 .grid-cards 提供（宽屏三列 / 中屏两列 / 窄屏单列，
+   零媒体查询）；本节只保留卡片自身视觉。
+   align-content: start —— auto 行在定高网格容器里默认被 stretch 拉伸铺满，
+   会与迁移前"卡片按内容高、余量留白在下方"的观感不一致。 */
 #music-section {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
+  align-content: start;
 }
 
 .music-group {
@@ -102,6 +113,7 @@ header h1 {
   padding: 20px;
   border: 2px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
+  min-width: 0; /* grid 子项默认 min-width:auto 会撑破 minmax，必须归零 */
 }
 
 .music-group:hover {
@@ -133,17 +145,21 @@ header h1 {
 .button-group {
   display: flex;
   justify-content: center;
-  gap: 15px;
+  gap: 12px; /* 三列卡片内宽约 253px：12px 间距 + 单行不换行的按钮（见下）才排得下 */
+  flex-wrap: wrap;
 }
 
 button {
-  padding: 12px 25px;
+  /* P11：三曲库改为 grid-cards 三列后卡片变窄，按钮保持单行不折字
+     （内边距 25px → 18px 以适配 253px 内宽；字号/配色/交互不变） */
+  padding: 12px 18px;
   border: none;
   border-radius: 8px;
   font-size: 1.1em;
   cursor: pointer;
   transition: all 0.3s ease;
   font-weight: bold;
+  white-space: nowrap;
 }
 
 button:disabled {
@@ -336,7 +352,9 @@ footer {
   to { opacity: 1; }
 }
 
-/* ========== 响应式设计 ========== */
+/* ========== 响应式设计 ==========
+   三曲库卡片已改由 /web/components/grid.css 的 .grid-cards 按**容器宽度**连续自适应，
+   不再需要断点覆盖；本段只保留"布局结构发生质变"的场景：按钮组由横排改竖排。 */
 @media (max-width: 600px) {
   header h1 {
     font-size: 2rem;
@@ -348,5 +366,20 @@ footer {
 
   button {
     width: 100%;
+  }
+}
+
+/* 无障碍：减少动效偏好下停用装饰性动画（组件层已各自回退：
+   闪现直接定格、BATTLE START 不做逐字打字，页面侧同步停用其余 CSS 动画）。 */
+@media (prefers-reduced-motion: reduce) {
+  .battle-overlay,
+  .battle-start-text,
+  .click-to-stop,
+  .music-group,
+  .draw-btn,
+  .battle-btn,
+  #home-btn {
+    animation: none !important;
+    transition: none !important;
   }
 }

@@ -19,18 +19,22 @@ Y.Stage3/
 ├── modules/                    # ★ 功能模块 = 一对插件 + 页面资产
 │   ├── modules.json            # 页面元数据清单（19 条，单一显示名单来源）
 │   ├── _template/              # 旧脚手架模板（仅历史参考；新模块用 scripts/new-module.js 生成）
-│   └── <模块id>/               # 如 home / select / drag / plugin-manager ...
-│       ├── plugin.js           # 后端插件（CJS）：db.define + server.route + modules.registerPage
-│       ├── index.html          # 页面：静态骨架 DOM + #plugin-root + /web/kernel.js 内核标签
-│       ├── style.css
-│       ├── front/
-│       │   ├── plugin.js       # 前端插件（原生 ESM，不打包）：ctx.ui.register({ key, component })
-│       │   └── view*.js        # 组件实现（可拆多文件，同目录相对 import）
+│   ├── <模块id>/               # 页面模块：如 home / select / drag / plugin-manager ...
+│   │   ├── plugin.js           # 后端插件（CJS）：db.define + server.route + modules.registerPage
+│   │   ├── index.html          # 页面：静态骨架 DOM + #plugin-root + /web/kernel.js 内核标签
+│   │   ├── style.css
+│   │   └── front/
+│   │       ├── plugin.js       # 前端插件（原生 ESM，不打包）：ctx.ui.register({ key, component })
+│   │       └── view*.js        # 组件实现（可拆多文件，同目录相对 import）
+│   └── component-<名>/         # ★ 组件类插件（L2，P11）：仅 front/{plugin,view}.js；无 index.html / 后端 plugin.js
+│                               #   注册进 ctx.ui 组件表（非页面表），仅在 web/front.json 有条目（kind:component + pages）
 ├── web/
 │   ├── kernel.mjs              # 前端内核入口（esbuild → dist/kernel.js，浏览器 ESM bundle）
 │   ├── ui.mjs / api.mjs / state.mjs / loader.mjs   # 内置服务 + 装配清单纯逻辑（含 *.test.js）
 │   ├── icons.mjs               # ★ 共享图标基座（Tabler 内联 SVG 子集；icon/iconEl/ICON_NAMES，含 icons.test.js）
-│   ├── front.json              # ★ 前端装配清单（{ provider, plugins: [{ target, enabled }] }）
+│   ├── lib/                    # ★ L1 共享纯函数库（random / persist / undo，含 *.test.js）
+│   ├── components/             # ★ L1 共享装配器与布局原语（compose.mjs + grid.css，含 compose.test.js）
+│   ├── front.json              # ★ 前端装配清单（{ provider, plugins: [{ target, enabled, kind?, pages?, config? }] }）
 │   └── dist/kernel.js          # 构建产物（gitignored，npm run build:web 生成）
 ├── server/
 │   ├── plugins.json            # ★ 后端装配清单（{ provider, plugins: [{ target, enabled, config?, provides? }] }）
@@ -52,10 +56,10 @@ Y.Stage3/
 │   ├── module-registry.cjs     # /api/modules 元数据源开关（插件模式指向 ctx.modules）
 │   ├── paths.cjs               # ★ 路径解析中枢（dev/portable 双模式；env 覆盖 plugins/resource 层）
 │   ├── music-scanner.js        # 音乐文件扫描
-│   ├── run-unit-tests.js       # 单测统一入口（10 个 *.test.js 子进程运行）
+│   ├── run-unit-tests.js       # 单测统一入口（16 个 *.test.js 子进程运行）
 │   └── routes/                 # 共享路由（api / game / config / static / music / module-routes ...）
 ├── scripts/
-│   ├── new-module.js           # ★ 模块脚手架（生成一对插件骨架 + 追加三份清单）
+│   ├── new-module.js           # ★ 模块脚手架（生成一对插件骨架 + 追加三份清单；--component 生成组件类插件）
 │   ├── endpoint-diff.js        # HTTP 行为基线录制/回放（--record / --compare）
 │   ├── make-portable.js        # ★ 便携式打包（默认 bundle 形态；--loose 源码形态；--zip 出压缩包）
 │   └── endpoint-baseline.json  # 基线快照
@@ -207,11 +211,112 @@ ctx.modules.registerPage({ id: "my-feature", icon: "puzzle", ... });
 - **缺图标先补基座**：把准确的 Tabler path 追加进 `web/icons.mjs` 的 `ICON_PATHS`（自动并入 `ICON_NAMES`），再跑 `node web/icons.test.js` 守门（需求清单、SVG 规格、下游引用自检）。
 - **`label` 语义**：图标是唯一语义来源（无相邻文字）时传 `label`（渲染 `role="img"` + `aria-label`）；有可见文字说明时留空（渲染 `aria-hidden="true"`，避免屏幕阅读器重复朗读）。
 
+### 4.2 L1/L2 分层与组件体系（P11）
+
+**分层准入**——判据是**有没有生命周期**（无生命周期 = L1，有 = L2）：
+
+| 层 | 准入 | 落位 | 引入方式 |
+|----|------|------|----------|
+| L1 共享资产 | 纯函数/纯样式：无监听、无定时器、无网络、无模块级可变状态；必须配 `*.test.js`（可 node 单测） | `web/lib/*.mjs`、`web/components/compose.mjs`、`web/components/grid.css`（与 `web/icons.mjs` 同级） | 直接 `import`（origin 相对路径），**不注册插件、不进清单** |
+| L2 组件类插件 | 有生命周期（监听/定时器/网络/多媒体）且被 **≥2 个页面**复用 | `modules/component-<名>/`：仅 `front/{plugin,view}.js`（可选 `style.css`），**无 `index.html`、无后端 `plugin.js`、不进导航** | 只在 `web/front.json` 有条目（`kind:"component"` + `pages`）→ 享受 `enabled:false` 禁用与热开关 |
+
+**L1 资产清单**：
+
+| 资产 | 导出 | 说明 |
+|------|------|------|
+| `/web/lib/random.mjs` | `shuffle(arr, rng?)` / `pickN(arr, n, rng?)` / `pickOne(arr, rng?)` | 等概率随机（Fisher–Yates），返回新数组、不改入参，`rng` 可注入做确定性测试；**全仓禁用 `sort(() => Math.random() - 0.5)` 有偏洗牌** |
+| `/web/lib/persist.mjs` | `createPersistence(deps)` / `createMemoryStorage()` | §3.2 双写持久化的依赖注入实现（fetch/localStorage 由调用方注入，可 node 全流程单测） |
+| `/web/lib/undo.mjs` | `createUndoStack(opts?)` / `MAX_HISTORY`（= 50） | §3.4 撤销快照栈（push/undo/peek/canUndo/size/clear/toArray/load），超上限丢最旧 |
+| `/web/components/grid.css` | `.grid-cards` / `.grid-flow` / `.grid-split` / `.card` | 布局原语：**零媒体查询**，按容器宽度连续自适应（auto-fill 保卡片尺寸 / auto-fit 保铺满） |
+| `/web/components/compose.mjs` | `mountFromConfig(spec)` | 页面组件装配器（消除"读 config → 查组件 → 挂 data-slot → 收集 cleanup"样板） |
+
+**L2 组件表 API（`ctx.ui`）——与页面表分离的两张 Map**：
+
+```js
+ctx.ui.registerComponent(name, factory); // factory: (hostEl, props, ctx) => cleanup|void；同 name 后注册覆盖
+ctx.ui.component(name);                  // → factory | null（未注册/非字符串名 → null，调用方据此降级）
+ctx.ui.listComponents();                 // → string[]（插入序快照，调试/管理页/单测断言用）
+```
+
+页面表（`register({ key, component })`，key 必须 = 模块 id、由 kernel 按 URL 自动 render）与组件表**互不覆盖**：组件名永不被 kernel 自动渲染，只由页面 component 显式 `ctx.ui.component(name)` 实例化；本期无 `unregisterComponent`（组件生命周期 = 页面生命周期）。
+
+**页面侧取用 `mountFromConfig`**（单实例参考 `modules/drag/front/plugin.js`，多实例参考 `modules/music-draw/front/plugin.js`）：
+
+```js
+import { mountFromConfig } from "/web/components/compose.mjs";
+
+const mounted = mountFromConfig({
+  el, meta, ctx,
+  label: "my-feature",                  // 日志前缀（warn/error 消息带 [label]）
+  defaultSlots: DEFAULT_SLOTS,          // 模块缺省插槽表（键 = 组件名；清单 config.slots 可覆盖/追加）
+  runtimeProps: componentProps(bridge), // 可选：运行时 props（bridge 由组件 props.onReady 回填后消费）
+  names: ["draw-machine"],              // 可选：只装配这些组件（[] = 本页零装配；缺省 = 全装）
+});
+// → { cleanups, mountAll(), cleanup() }：cleanup() 逆序卸载全部已实例化组件（单个抛错不影响其余）
+```
+
+`mountAll()` **非幂等**（构造时已自动执行一次）：重复调用会在同一宿主再建一个实例并追加 cleanup；旧的监听、`body` class 等副作用需先 `cleanup()` 释放，**切勿当作"重渲染"使用**。
+
+`names` 带诊断：其中不存在于 compose/slots 推导结果的名字会逐条 warn `[<label>] names 中的组件 "<name>" 不在 compose/slots 中，已忽略` 并被忽略（不装配、也不查组件表）。`names: []` 是合法用法——本页零装配且零告警（movement-teaching 的记录页/设置页依赖此路径），缺省 `names` 与非数组畸形值均不过滤、零告警。
+
+**`web/front.json` 页面条目 `config` 三键**（内核作为 `meta` 传给页面 component）：
+
+| 键 | 值 | 语义 |
+|----|----|------|
+| `compose` | `["music-player","draw-machine"]` | 需要装配的组件名，**顺序 = 挂载顺序**；缺省 = `slots` 的键 |
+| `slots` | `{ "<组件名>": "[data-slot=x]" \| ["sel1","sel2"] }` | 宿主选择器（**键是组件名**）；数组 = 多实例，按**下标一一对应**（如 music-draw 三曲库三实例） |
+| `components` | `{ "<组件名>": { …props } \| [{ … }, …] }` | 组件静态 props（运行时 props 浅合并优先）；对象 = 各实例共用，数组 = 多实例按下标取 |
+
+宿主查找顺序：`el.querySelector(selector) || document.querySelector(selector)`。
+
+**优雅降级（不得崩）**：`ctx.ui.component(name)` 为 null（组件被 `enabled:false` 禁用或未注册）→ warn + 插槽留空，页面其余部分照常工作；槽位未声明、宿主不存在、选择器非法、`meta`/`slots`/`components` 畸形一律 warn 后跳过或按空表降级，**装配器自身的畸形输入一律降级不抛错**（组件工厂 `factory(host, props, ctx)` 自身抛错则**向上传播**、不吞，以免掩盖组件缺陷）。
+
+**L2 清单语义**：`{ "target": "modules/component-<名>", "enabled": true, "kind": "component", "pages": ["<模块id>", …] }`
+
+- `kind:"component"` 是**服务端放行该目录资源的白名单依据**（`server/routes/module-routes.js` 的 `resolveComponentDir`：仅 `kind=component` 且 `enabled !== false` 的条目允许 `/m/component-*/**` 被静态服务，禁用即不服务）
+- `pages` 决定被哪些页面加载（`web/loader.mjs` 的 `matchPage`）；无 `pages` 则只匹配 target 自身 id
+- 组件目录**不进** `modules/modules.json` / `server/plugins.json`、不进导航
+- 组件自带 `style.css` 属**可选兜底外观**（组件不自带 `<link>`）：需要组件独立外观、或宿主页无对应 CSS 时，由页面显式引入 `<link rel="stylesheet" href="/m/component-<名>/style.css">`；未引入不影响功能——组件与页面共用既有类名（如 `battle-overlay` / `rolling` / `selected`），现有 8 个接入页的外观均由各自页面 CSS 提供
+
+**组件纪律（P11 实战教训，违反必致缺陷）**：
+
+1. 所有监听传 `{ signal }`（AbortController），cleanup 里 `abort()` 一次解绑；定时器/interval 统一登记后全部清除。
+2. `document.body` 的 class 必须**成对增删**——组件可能被中途卸载，残留 class 会污染后续页面；同页多实例共享 body 类时用引用计数，最后一个退出者才移除。
+3. **禁模块级可变状态**——多实例串台根因（音乐播放器 P0 缺陷）；状态只存在于工厂调用局部。
+4. 宿主页既有 `<audio>` 只 pause/归零/摘 `onended`，**绝不删除**；只回滚本实例写入的改动。
+5. `[data-slot]` 宿主必须置于 `opacity:0` 祖先之外（否则比赛模式播放器不可见）。
+6. `config` 只放静态值（时序/颜色/文案），运行时 props 优先。
+7. 组件不得 import 其他组件——跨插件 import 会让「单独禁用」变成「级联崩溃」。
+
+**脚手架（组件模式）**：`node scripts/new-module.js <组件id> "<名称>" --component [--pages a,b]`——组件 id 自动补 `component-` 前缀，只生成 `front/{plugin,view}.js` 与 `web/front.json` 的 kind/pages 条目（`--server` 与 `--component` 互斥）。
+
+**已接入组件体系的 8 个页面**（统一 `import { mountFromConfig } from "/web/components/compose.mjs"`）：battle-group1 / battle-group1-2 / battle-group2 / battle-group2-2 / drag / music-draw / group-battle / movement-teaching。现有 L2 组件：`modules/component-music-player`（组件名 `music-player`，9 处音乐播放 + 比赛模式归一）、`modules/component-draw-machine`（组件名 `draw-machine`，抽签动画归一）。
+
+### 4.3 响应式资产（P11-R1）：细粒度状态 → DOM 同步
+
+**定位**：状态驱动的管理/表单/列表页用响应式消除"手动把状态刷进 DOM"的样板（搜索输入不再丢焦点、列表增删改不再 innerHTML 全量重建）；**动画 / audio / 计时器驱动的赛制页（battle-group 系、drag、group-battle、music-draw 及两个 L2 组件）保持命令式，禁止引入**。
+
+| 资产 | 说明 |
+|------|------|
+| `/web/lib/reactive.mjs` | L1 封装：`loadReactive()`（动态 import，按需加载）/ `createReactiveScope(init)`（reactive 状态）/ `mountReactiveSafe(host, { template, scope })` → 同步 cleanup（幂等 + 晚到守卫：卸载先于异步挂载完成时自动取消） |
+| `/web/lib/vendor/petite-vue.mjs` | **构建产物**（gitignored）：`npm run vendor:petite-vue` 从锁定的 devDependency（petite-vue 0.4.1，MIT）经 esbuild 生成；运行期本地静态文件 + 按需动态 import，未用响应式的页面零下载 |
+
+**契约与纪律**：
+
+1. 页面组件保持**同步返回 cleanup** 的内核契约——`mountReactiveSafe` 立即返回可用的 dispose；勿在组件体内 `await` 挂载后再返回。
+2. 状态变更后 DOM 更新排在**微任务**里：测试/脚本里断言 DOM 必须先过异步边界（`await` 一个宏任务），同步读取必然读到旧值。
+3. node 单测**永不加载 vendor**（其含 `document.currentScript` 自动初始化语句）——经 `mountReactiveSafe` 的 `deps` 参数注入 fake；见 `web/lib/reactive.test.js`（9 例）。
+4. **CSP 约束**：petite-vue 模板表达式经 `new Function` 编译——若将来为本站启用 CSP `script-src`，需整体换用无 eval 方案（如 preact + htm）。
+5. L1 纪律同 §5-1：改 `reactive.mjs` 须同步 `reactive.test.js` 并复跑两关口。
+
+**已接入**：plugin-manager（整页视图，644 → ~420 行，删保焦机器）、setting（三个列表编辑器 v-for 化）。新增接入页走 `createReactiveScope` + 挂载模板三件套，参照上述两页。
+
 ---
 
 ## 5. 注意事项
 
-1. **不要修改内核与共享设施**（`web/kernel.mjs`、`web/ui.mjs`、`server/http/`、`server/cordis/`、`server/database.js` 等）。新增功能一律自包含于 `modules/<id>/`；**唯一例外**是缺图标时向 `web/icons.mjs` 追加准确 path（见 4.1，改后跑 `web/icons.test.js`）。
+1. **不要修改内核与共享设施**（`web/kernel.mjs`、`web/ui.mjs`、`web/lib/`（random / persist / undo）、`web/components/`（grid.css、compose.mjs）、`server/http/`、`server/cordis/`、`server/database.js` 等）。新增功能一律自包含于 `modules/<id>/`；**唯一例外**是缺图标时向 `web/icons.mjs` 追加准确 path（见 4.1，改后跑 `web/icons.test.js`）。
+   **L1 资产：可 import ≠ 可随手改**——`web/lib/*.mjs`、`web/components/compose.mjs`、`web/components/grid.css` 与 `web/icons.mjs` 向所有模块开放 import（准入见 4.2），但它们是 8 个以上模块的共同依赖面：改动 `web/lib/*.mjs` / `compose.mjs` 必须同步其同名 `*.test.js`，且一律复跑 `node server/run-unit-tests.js` 与 `node scripts/endpoint-diff.js --compare`（不重录直绿）后才算完成。
 2. **前端 API 一律使用 origin 相对路径**（`/api/...`、`/resource/...`、`/web/...`），兼容任意部署环境（本地、预览代理、生产同域）；不要写死 `http://localhost:3000`（服务端代码内部仍可用 `process.env.PORT`）。
 3. **★ 三份清单同步追加铁律**：新模块必须同时在 `modules/modules.json`、`server/plugins.json`、`web/front.json` 追加条目（脚手架自动完成）。漏 `plugins.json` → 后端不挂载（路由/页面 404）；漏 `front.json` → 前端不装配（页面渲染占位）。`enabled:false` = 不挂载但 SQLite 数据保留；未列出 = 不挂载。
 4. **构建产物 gitignored，克隆/新环境需先构建**：`server/cordis/kernel.cjs`、`web/dist/kernel.js`、`dist-server/server.bundle.cjs` 分别由 `npm run build:kernel`、`npm run build:web`、`npm run build:server` 生成；分发打包走 `build.bat`（= build + `node scripts/make-portable.js --zip`，产出 bundle 形态便携目录 `YStage3-Portable/`；pkg 单文件 exe 已于 P6b 退役）。
@@ -319,7 +424,24 @@ statusEl.innerHTML = icon("circle-check", { size: 16 }) + " 已保存";
 
 完整约定（禁 emoji、禁内联复制 SVG path、缺图标补基座、`label` 语义）见 4.1 图标规范。
 
-前端内核服务：`ctx.ui`（register/unregister/render）、`ctx.api`（get/post/del，origin 相对路径）、`ctx.state`（跨插件内存键值，`set` 时广播 `state:changed` 事件，`ctx.on` 订阅）。
+**组件类插件（L2，P11）**——跨页复用的、**有生命周期**的 UI 能力（抽签动画/音乐播放等）做成组件类插件，注册进**组件表**而非页面表；准入、装配器与组件纪律见 4.2：
+
+```js
+// modules/component-<名>/front/plugin.js —— 无 index.html / 后端 plugin.js，仅 front/{plugin,view}.js
+import { createMyWidget } from "./view.js";
+
+export default {
+  name: "component-my-widget",
+  inject: ["ui"],
+  apply(ctx) {
+    ctx.ui.registerComponent("my-widget", createMyWidget); // factory(hostEl, props, ctx) => cleanup|void
+  },
+};
+```
+
+与页面插件的差异：页面插件用 `register({ key, component })`（key 必须 = 模块 id，kernel 按 URL 自动 render）；组件类插件用 `registerComponent(name, factory)`，**组件名永不被 kernel 自动 render**，只在页面 component 显式取用时实例化。清单只在 `web/front.json` 追加 `{ kind:"component", pages:[…] }`。
+
+前端内核服务：`ctx.ui`（页面表 register/unregister/render + 组件表 registerComponent/component/listComponents）、`ctx.api`（get/post/del，origin 相对路径）、`ctx.state`（跨插件内存键值，`set` 时广播 `state:changed` 事件，`ctx.on` 订阅）。
 
 页面 `index.html` 只需最小骨架（也可像 `modules/drag/` 一样放置静态骨架 DOM 由组件复用；多页面模块如 `moving-sth` 每页都有内核标签，组件内按 DOM 标记分发）：
 
@@ -339,20 +461,21 @@ statusEl.innerHTML = icon("circle-check", { size: 16 }) + " 已保存";
 |------|------|----------|
 | `modules/modules.json` | 页面元数据（导航/管理页显示名单） | `{ id, name, description, icon, nav, order }`（`icon` = `ICON_NAMES` 中的图标名） |
 | `server/plugins.json` | 后端装配（provider: y-router/sqlite） | `{ target: "modules/<id>", enabled, config?, provides? }` |
-| `web/front.json` | 前端装配（provider: dom） | `{ target: "modules/<id>", enabled, config? }` |
+| `web/front.json` | 前端装配（provider: dom） | 页面模块 `{ target: "modules/<id>", enabled, config? }`；组件类插件追加 `kind: "component"`（服务端放行 `/m/component-*/**` 的白名单依据）与 `pages: ["<模块id>", …]`（决定被哪些页面加载，缺省只匹配 target 自身 id） |
 
-语义：`enabled:false` 不挂载（后端路由/页面 404、前端代码不下载，SQLite 数据保留）；未列出 = 不挂载；`config` 作为插件配置传入（后端为 `apply(ctx, config)` 第二参，前端为组件 `meta`）。新模块**三份都要追加**——直接用脚手架，别手改。
+语义：`enabled:false` 不挂载（后端路由/页面 404、前端代码不下载，SQLite 数据保留）；未列出 = 不挂载；`config` 作为插件配置传入（后端为 `apply(ctx, config)` 第二参，前端为组件 `meta`）。新模块**三份都要追加**——直接用脚手架，别手改。组件类插件**只进 `web/front.json`**（不进 `modules.json` / `plugins.json`、不进导航，见 4.2）。
 
 ### 6.5 三步创建一个新模块
 
 1. **脚手架**（自动生成一对插件骨架并追加三份清单，条目已存在则跳过并提示）：
 
    ```cmd
-   node scripts/new-module.js my-feature "我的功能"
-   node scripts/new-module.js my-feature "我的功能" --server   :: plugin.js 附带 db.define + server.route 模板
+   node scripts/new-module.js my-feature "我的功能"                                    :: 页面模块（纯前端）
+   node scripts/new-module.js my-feature "我的功能" --server                           :: 页面模块 + db.define / server.route 模板
+   node scripts/new-module.js my-widget "我的组件" --component --pages drag,music-draw :: 组件类插件（L2，见 4.2）
    ```
 
-2. **填充逻辑**：编辑 `front/plugin.js`（/ `front/view.js`）写页面 UI；需要后端时编辑 `plugin.js`（改 `inject` 为 `["db","server","modules"]`，参照 6.2 注释模板）。页面内资源用**同目录相对路径**（`style.css`、`front/...`），共享资源用**绝对路径**（`/resource/...`、`/api/...`、`/web/...`）。
+2. **填充逻辑**：编辑 `front/plugin.js`（/ `front/view.js`）写页面 UI；需要后端时编辑 `plugin.js`（改 `inject` 为 `["db","server","modules"]`，参照 6.2 注释模板）。页面内资源用**同目录相对路径**（`style.css`、`front/...`），共享资源用**绝对路径**（`/resource/...`、`/api/...`、`/web/...`）。组件模式只生成 `front/{plugin,view}.js` 与 `web/front.json` 条目（不生成 `index.html` / `style.css` / 后端 `plugin.js`），页面侧用 `mountFromConfig` 取用（见 4.2）。
 
 3. **验证**：重启 `node server.js` → 日志出现 `[cordis] 装配完成` → 访问 `/m/my-feature/`；打开 `/m/plugin-manager/` 确认插件已列出且已挂载；跑 `node scripts/endpoint-diff.js --compare` 确认未破坏 HTTP 行为基线。
 
@@ -383,6 +506,9 @@ statusEl.innerHTML = icon("circle-check", { size: 16 }) + " 已保存";
 - [ ] 三份清单条目已同步追加（`modules.json` + `plugins.json` + `front.json`，字段与 `registerPage` 逐字段一致）
 - [ ] `registerPage` / `modules.json` 的 `icon` 为 `web/icons.mjs` 的 `ICON_NAMES` 成员；页面图标一律 `icon()` / `iconEl()`，无 emoji、无内联复制 SVG path（见 4.1）
 - [ ] 前端插件 `key` = 模块 id；事件监听传 `{ signal }`，组件返回 cleanup
+- [ ] 组件类插件（如适用）：仅 `web/front.json` 有条目（`kind:"component"` + `pages`），无 `index.html` / 后端 `plugin.js` / `modules.json` 条目；组件名 kebab-case，工厂签名 `(hostEl, props, ctx) => cleanup`
+- [ ] 组件纪律（见 4.2）：监听带 `{ signal }`、`body` class 成对增删、无模块级可变状态、不 import 其他组件、`config` 只放静态值
+- [ ] 页面组件装配走 `mountFromConfig`；手动禁用某组件插件后复验「插槽留空、页面照常工作」（降级不崩）
 - [ ] 后端路由全部经 `app.get/post(...)` 带路径前缀注册（**禁止 `scope.use(fn)` 无路径中间件**——热重载排空按路径模式拦截，pathless 层无锚点）
 - [ ] 重启后 `/m/plugin-manager/` 可见本插件且「已挂载」无 error
 - [ ] `node scripts/endpoint-diff.js --compare` 不破坏既有 HTTP 行为基线
@@ -395,7 +521,7 @@ statusEl.innerHTML = icon("circle-check", { size: 16 }) + " 已保存";
 |------|------|
 | `node server.js --test` | 数据库操作回归测试（6 项，结果输出在控制台） |
 | `node server.js --test-cordis` | cordis 装配自检 A1-A6（装配零错误/数据库基线/元数据投影/探针插件/inject 白名单/manager 管理链路），测完自动退出 |
-| `node server/run-unit-tests.js` | 单元测试统一入口（10 个 `*.test.js`：paths 1 个 + http 层 4 个 + cordis services 3 个 + web loader 1 个 + web icons 1 个） |
+| `node server/run-unit-tests.js` | 单元测试统一入口（16 个 `*.test.js`：server 侧 9 个 = utils 1 + paths 1 + http 层 4 + cordis services 3；web 侧 7 个 = loader / icons / ui + lib 的 random / persist / undo + components/compose） |
 | `node scripts/endpoint-diff.js --record` | 在当前服务上录制端点行为基线（35 用例 → `scripts/endpoint-baseline.json`；仅行为有意变更时重录，其余场合 --compare 必须不重录直绿） |
 | `node scripts/endpoint-diff.js --compare` | 起服后重放用例逐字节对比基线，全绿退出码 0（HTTP 层改动的合并关口） |
 

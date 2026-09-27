@@ -6,13 +6,27 @@
  *   - 原脚本顶层的 DOM 元素获取移入 init（调用时 DOM 早已就绪）
  *   - 静态骨架监听一律经 AbortController signal 登记（P3 定稿约定）
  *   - cleanup：abort 解绑 + 未关闭确认对话框移除（本页无 interval/rAF/audio）
+ *
+ * P11-B6：设置读/写改用 /web/lib/persist.mjs 的 createPersistence
+ *   （key "movingSthSettings" 与端点 /api/settings/moving-sth 逐字保留：
+ *    恢复链 server → localStorage → 默认设置；保存 = 先本地后远端双写，
+ *    远端失败仍保留本地备份并给出"已保存到本地，但服务器保存失败"提示）。
  */
+import { createPersistence } from "/web/lib/persist.mjs";
 
 // 组件入口（原 DOMContentLoaded 初始化，kernel render 时执行）
-export function initMovingSthSettings() {
+export function initMovingSthSettings(ctx) {
   // cleanup 契约：静态骨架监听经 signal 登记，重渲染时 abort 统一解绑
   const bindAbort = new AbortController();
   const { signal } = bindAbort;
+
+  /* 设置存档控制器（键/端点逐字保留；ctx.api 非 2xx 抛错 → 回退本地） */
+  const persist = createPersistence({
+    key: "movingSthSettings",
+    endpoint: "/api/settings/moving-sth",
+    api: ctx && ctx.api ? ctx.api : null,
+    isValid: (data) => data !== null && data !== undefined,
+  });
 
   // 获取表单元素
   const settingsForm = document.getElementById("settings-form");
@@ -138,20 +152,8 @@ export function initMovingSthSettings() {
   // 加载当前设置
   async function loadCurrentSettings() {
     try {
-      const settings = await fetch(
-        "/api/settings/moving-sth"
-      )
-        .then((response) => {
-          if (!response.ok) throw new Error("无法加载设置");
-          return response.json();
-        })
-        .catch(() => {
-          const localSettings = localStorage.getItem("movingSthSettings");
-          if (localSettings) {
-            return JSON.parse(localSettings);
-          }
-          return defaultSettings;
-        });
+      const { data, source } = await persist.load();
+      const settings = source === "none" ? defaultSettings : data;
 
       // 填充表单
       timeSettingInput.value = settings.timeLimit || defaultSettings.timeLimit;
@@ -197,9 +199,6 @@ export function initMovingSthSettings() {
         interfaceOpacity,
       };
 
-      // 保存到本地
-      localStorage.setItem("movingSthSettings", JSON.stringify(settings));
-
       // 添加表单保存动画效果
       settingsForm
         .closest(".settings-container")
@@ -210,24 +209,15 @@ export function initMovingSthSettings() {
           .classList.remove("settings-saved");
       }, 1000);
 
-      // 尝试保存到服务器
-      try {
-        const response = await fetch(
-          "/api/settings/moving-sth",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(settings),
-          }
-        );
+      // 双写：先 localStorage（迁移前"保存到本地失败"会走外层 catch）后服务端
+      const { local, remote } = await persist.save(settings);
 
-        if (!response.ok) {
-          throw new Error("保存到服务器失败");
-        }
-      } catch (error) {
-        console.log("保存到服务器失败，但已保存到本地:", error);
+      if (!local) {
+        throw new Error("保存到本地失败");
+      }
+
+      if (!remote) {
+        console.log("保存到服务器失败，但已保存到本地");
         showNotification("已保存到本地，但服务器保存失败", "warning");
         return;
       }

@@ -9,6 +9,11 @@ REM 安装依赖
 call npm install
 
 echo.
+echo [vendor] 生成 petite-vue 产物（web\lib\vendor\petite-vue.mjs，P12 响应式基座）...
+call npm run vendor:petite-vue
+if %errorlevel% neq 0 goto :fail
+
+echo.
 echo [内核] 构建 cordis 内核（create-root.cjs → server\cordis\kernel.cjs）...
 call npm run build:kernel
 if %errorlevel% neq 0 goto :fail

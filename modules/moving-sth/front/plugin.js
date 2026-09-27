@@ -10,20 +10,26 @@
  *
  * 组件复用既有静态骨架 DOM，不向 #plugin-root 写入内容；
  * cleanup 统一转交页面闭包返回的解绑函数（signal 监听 + interval/rAF/timeout/audio）。
+ *
+ * 形态说明（P11-B6）：本模块无 L2 组件可装配（不涉及 music-player / draw-machine——
+ * 抽曲为"单次随机即出结果"，无闪现动画），故保持"页面 init 直接渲染"的薄分发形态，
+ * 不引入 data-slot / compose 装配层；共享库（random / persist）接入在 game.js、settings.js 内。
+ * inject 增列 "api"：两页的持久化控制器需要 ctx.api（origin 相对路径、非 2xx 抛错）。
  */
 import { initMovingSthGame } from "./game.js";
 import { initMovingSthSettings } from "./settings.js";
 
 export default {
   name: "moving-sth-front",
-  inject: ["ui"],
+  inject: ["ui", "api"],
   apply(ctx) {
     ctx.ui.register({
       key: "moving-sth", // 必须 = 模块 id
-      component() {
+      component(el, meta, componentCtx) {
+        const pageCtx = componentCtx || ctx;
         const cleanups = [];
         const mount = (init) => {
-          const dispose = init();
+          const dispose = init(pageCtx);
           if (typeof dispose === "function") cleanups.push(dispose);
         };
 

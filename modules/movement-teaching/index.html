@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>体态传技 - Y.Stage</title>
     <link rel="preload" as="image" href="/resource/images/bg_index.jpg" />
+    <!-- P11：布局原语（L1 共享资产，origin 相对绝对路径）——先于 style.css，页面样式可覆盖 -->
+    <link rel="stylesheet" href="/web/components/grid.css" />
+    <link rel="stylesheet" href="/m/component-toast/style.css" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -32,7 +35,8 @@
             <div class="timer-label">计时</div>
           </div>
 
-          <div id="controls" class="button-container">
+          <!-- 布局：.grid-flow（auto-fit）宽屏一行 / 窄屏连续折行，零媒体查询 -->
+          <div id="controls" class="button-container grid-flow">
             <button id="draw-trick-btn" class="game-btn glow-btn action-btn">
               抽取技能
             </button>
@@ -52,7 +56,7 @@
           <h2>游戏结束</h2>
           <p>技的传递已结束: <span id="result-trick"></span></p>
           <p>用时: <span id="result-time"></span></p>
-          <div class="button-container">
+          <div class="button-container grid-flow">
             <button id="try-again-btn" class="game-btn glow-btn">
               再来一次
             </button>
@@ -63,7 +67,8 @@
         </section>
       </main>
 
-      <div class="navigation">
+      <!-- 布局：.grid-flow（auto-fit）宽屏一行 / 窄屏单列，零媒体查询 -->
+      <div class="navigation grid-flow">
         <button id="settings-btn" class="nav-btn glow-btn small">
           技能设置
         </button>
@@ -78,6 +83,10 @@
         <p>&copy; 2025 Y.Stage-X YUKAORI</p>
       </footer>
     </div>
+
+    <!-- P11 组件插槽（draw-machine 抽技名动画宿主）：空容器，无视觉影响；
+         放在 .container 之外（与 battle-group1 同口径），避免祖先 opacity/visibility 影响组件。 -->
+    <div data-slot="draw"></div>
 
     <!-- 前端插件挂载点（P4：页面 UI 由 /web/front.json 声明的 front/plugin.js 装配） -->
     <div id="plugin-root" hidden></div>

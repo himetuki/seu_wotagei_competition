@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>直接抽取音乐</title>
   <link rel="preload" as="image" href="/resource/images/bg.jpg" />
+  <!-- P11：布局原语（L1 共享资产，origin 相对绝对路径）——先于 style.css，页面样式可覆盖 -->
+  <link rel="stylesheet" href="/web/components/grid.css" />
+  <link rel="stylesheet" href="/m/component-toast/style.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -13,7 +16,7 @@
       <h1>直接抽取音乐</h1>
     </header>
 
-    <section id="music-section">
+    <section id="music-section" class="grid-cards">
       <!-- 1yearminus 曲库 -->
       <div class="music-group">
         <h2>1年-曲库</h2>
@@ -52,12 +55,15 @@
     <footer><p>&copy; 2025 Y.Stage-X YUKAORI</p></footer>
   </div>
 
-  <!-- Battle Start 动画元素 -->
-  <div id="battle-start-overlay" class="battle-overlay hidden"></div>
-  <div id="battle-start-text" class="battle-start-text hidden"></div>
-  <div id="click-to-stop" class="click-to-stop hidden">双击屏幕退出播放</div>
-
-  <audio id="music-player"></audio>
+  <!-- P11 组件插槽（每曲库一对：music-player / draw-machine）。组件宿主必须放在
+       #main-container 之外——比赛模式对 #main-container 施加 opacity:0 + visibility:hidden，
+       插槽若在其内会让遮罩/打字动画/退出提示一并不可见。空容器，无视觉影响。 -->
+  <div data-slot="music-1yearminus"></div>
+  <div data-slot="draw-1yearminus"></div>
+  <div data-slot="music-1yearplus"></div>
+  <div data-slot="draw-1yearplus"></div>
+  <div data-slot="music-1yearplus-ex"></div>
+  <div data-slot="draw-1yearplus-ex"></div>
 
   <!-- 前端插件挂载点（P4：页面 UI 由 /web/front.json 声明的 front/plugin.js 装配） -->
   <div id="plugin-root" hidden></div>

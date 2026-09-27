@@ -115,18 +115,15 @@ select {
   display: none;
 }
 
-/* 数据容器 */
+/* 数据容器两栏：布局由 /web/components/grid.css 的 .grid-split 提供
+   （宽屏「列表 | 编辑」等宽两栏 / 窄屏自动堆叠，零断点）。
+   原 flex 固定比例（列表 flex .8 / 编辑 flex 1.2）+ .reversed 反向排列 + 768px 断点
+   的 order 覆盖（编辑先、列表后）已移除：窄屏改为 DOM 顺序（列表 → 编辑），三个面板一致。 */
 .data-container {
-  display: flex;
-  gap: 30px;
-}
-
-.data-container.reversed {
-  flex-direction: row-reverse;
+  --grid-gap: 30px; /* 沿用原 flex gap 节奏（grid.css 缺省 16px） */
 }
 
 .data-list {
-  flex: 0.8;
   background-color: rgba(40, 40, 40, 0.8);
   border-radius: 8px;
   padding: 20px;
@@ -134,7 +131,6 @@ select {
 }
 
 .data-editor {
-  flex: 1.2;
   background-color: rgba(40, 40, 40, 0.8);
   border-radius: 8px;
   padding: 20px;
@@ -554,11 +550,19 @@ button[type="submit"]:hover,
   box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
 }
 
+/* 功能开关卡片流：布局由 /web/components/grid.css 的 .grid-cards 提供
+   （宽屏 2 列 / 窄屏自动单列，零断点）；--card-min 抬高到 420px 以免开关卡片被挤窄 */
 .feature-switches {
   background-color: rgba(40, 40, 40, 0.8);
   border-radius: 8px;
   padding: 20px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  --card-min: 420px;
+}
+
+/* 保存开关按钮跨满整行（非卡片） */
+.feature-switches > .action-buttons {
+  grid-column: 1 / -1;
 }
 
 .feature-item {
@@ -570,7 +574,7 @@ button[type="submit"]:hover,
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
   background-color: rgba(50, 50, 50, 0.4);
-  margin-bottom: 14px;
+  /* 原 margin-bottom:14px 由 .grid-cards 的 gap 取代（避免行距 16+14 叠加） */
 }
 
 .feature-text h3 {
@@ -674,12 +678,12 @@ button[type="submit"]:hover,
   box-shadow: 0 0 10px rgba(0, 123, 255, 0.3);
 }
 
-/* 状态消息 */
+/* 状态消息（右上角，对齐 records 页 toast 视觉——顶部中央会压住 H1「设置中心」） */
 #status-message {
   position: fixed;
   top: 20px;
-  left: 50%;
-  transform: translateX(-50%) translateY(-100px);
+  right: 20px;
+  transform: translateX(calc(100% + 40px));
   padding: 10px 20px;
   border-radius: 5px;
   background-color: rgba(30, 30, 30, 0.9);
@@ -691,7 +695,7 @@ button[type="submit"]:hover,
 }
 
 #status-message.show {
-  transform: translateX(-50%) translateY(0);
+  transform: translateX(0);
 }
 
 #status-message.success {
@@ -754,24 +758,8 @@ button[type="submit"]:hover,
   background: #555;
 }
 
-/* 响应式设计 */
+/* 响应式设计（数据容器两栏已由 .grid-split 按容器宽度连续自适应，此断点仅保留标签栏换行） */
 @media (max-width: 768px) {
-  .data-container {
-    flex-direction: column;
-  }
-
-  .data-container.reversed {
-    flex-direction: column;
-  }
-
-  .data-editor {
-    order: 1;
-  }
-
-  .data-list {
-    order: 2;
-  }
-
   .tab-nav {
     flex-wrap: wrap;
   }
@@ -884,5 +872,18 @@ button[type="submit"]:hover,
   }
   100% {
     transform: translateY(0);
+  }
+}
+
+
+/* 无障碍：减少动效偏好下停用装饰性动画（标签面板淡入/对话框浮动/列表项入场淡入）。
+   功能相关过渡（对话框显隐 transition、按钮 hover）保持不动。 */
+@media (prefers-reduced-motion: reduce) {
+  .tab-panel,
+  .custom-dialog,
+  #player-list li,
+  #trick-list li,
+  #award-list li {
+    animation: none !important;
   }
 }

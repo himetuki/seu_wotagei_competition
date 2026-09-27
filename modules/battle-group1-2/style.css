@@ -5,6 +5,12 @@
   box-sizing: border-box;
 }
 
+/* P11：沿用原布局节奏——grid.css 缺省 --grid-gap 为 16px，本页原 flex gap 为 20px，
+   覆盖变量即可保持卡片/两栏间距与迁移前一致（本页样式表在 grid.css 之后加载） */
+:root {
+  --grid-gap: 20px;
+}
+
 body {
   font-family: "Arial", sans-serif;
   background-color: #000000;
@@ -386,15 +392,10 @@ section {
   border-color: rgba(255, 215, 0, 0.3);
 }
 
-/* 选手区域 */
-.players {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-}
-
+/* 选手区域（布局由 /web/components/grid.css 的 .grid-split 提供：
+   auto-fit 360px → 宽屏两栏、窄屏单列，无需媒体查询） */
 .player {
-  flex: 1;
+  min-width: 0; /* grid 子项默认 min-width:auto 会撑破 minmax 轨道（长名字导致横向溢出） */
   background-color: rgba(40, 40, 40, 0.8);
   border-radius: 8px;
   padding: 15px;
@@ -498,8 +499,9 @@ button:active {
   box-shadow: 0 0 5px rgba(40, 167, 69, 0.3);
 }
 
-/* 音乐区域 */
+/* 音乐区域（布局由 /web/components/grid.css 的 .grid-flow 提供：宽屏铺满 / 窄屏堆叠） */
 .music {
+  min-width: 0; /* grid 子项最小宽度归零，避免内容撑破轨道 */
   background-color: rgba(40, 40, 40, 0.8);
   border-radius: 8px;
   padding: 15px;
@@ -518,10 +520,8 @@ button:active {
   margin: 10px 0;
 }
 
+/* 宿主播放器：恒隐藏（无 controls；播放控制靠单击/双击退出手势，与 drag/group-battle 同款） */
 #music-player {
-  width: 250px;
-  height: 40px;
-  margin: 0 auto;
   display: none;
 }
 
@@ -783,49 +783,35 @@ button:active {
   }
 }
 
-/* 音乐播放模式样式 */
-.music-playing-mode .container,
-.music-playing-mode main,
-.music-playing-mode header,
-.music-playing-mode section,
-.music-playing-mode .players,
-.music-playing-mode .actions,
-.music-playing-mode .random-tricks,
-.music-playing-mode .music,
-.music-playing-mode .navigation {
+/* 比赛模式样式（P11-B3：类名 music-playing-mode → battle-mode，与组件规范类名对齐；
+   body 类的加/移由 component-music-player 负责） */
+.battle-mode .container,
+.battle-mode main,
+.battle-mode header,
+.battle-mode section,
+.battle-mode .players,
+.battle-mode .actions,
+.battle-mode .random-tricks,
+.battle-mode .music,
+.battle-mode .navigation {
   opacity: 0 !important;
   pointer-events: none !important;
   visibility: hidden !important;
   transition: opacity 0.8s ease;
 }
 
-.music-playing-mode {
+.battle-mode {
   background-attachment: fixed;
 }
 
-.music-playing-mode .battle-start,
-.music-playing-mode .battle-overlay,
-.music-playing-mode #music-player,
-.music-playing-mode .click-to-stop {
+.battle-mode .battle-start,
+.battle-mode .battle-overlay,
+.battle-mode .click-to-stop {
   opacity: 1 !important;
   visibility: visible !important;
   pointer-events: auto !important;
   position: fixed !important;
   z-index: 1001 !important;
-}
-
-.music-playing-mode #music-player {
-  position: fixed !important;
-  bottom: 20px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  width: 60px !important;
-  height: 40px !important;
-  background-color: rgba(0, 0, 0, 0.5) !important;
-  border-radius: 20px !important;
-  padding: 5px !important;
-  display: block !important;
-  opacity: 0.7 !important;
 }
 
 .click-to-stop {
@@ -850,24 +836,6 @@ button:active {
   to {
     opacity: 1;
   }
-}
-
-/* 隐藏音频播放器的进度条和其他控件 */
-#music-player::-webkit-media-controls-timeline,
-#music-player::-webkit-media-controls-current-time-display,
-#music-player::-webkit-media-controls-time-remaining-display,
-#music-player::-webkit-media-controls-mute-button,
-#music-player::-webkit-media-controls-volume-slider {
-  display: none !important;
-}
-
-#music-player::-webkit-media-controls-play-button {
-  display: block !important;
-}
-
-/* 确保只显示播放按钮 */
-audio::-webkit-media-controls-panel {
-  justify-content: center !important;
 }
 
 /* 通知和消息样式 */

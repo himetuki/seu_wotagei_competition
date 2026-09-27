@@ -6,10 +6,11 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "build": "npm run build:kernel && npm run build:web && npm run build:server",
+    "build": "npm run vendor:petite-vue && npm run build:kernel && npm run build:web && npm run build:server",
     "build:kernel": "esbuild server/cordis/create-root.cjs --bundle --platform=node --format=cjs --outfile=server/cordis/kernel.cjs",
     "build:web": "esbuild web/kernel.mjs --bundle --format=esm --outfile=web/dist/kernel.js",
     "build:server": "esbuild server.js --bundle --platform=node --format=cjs --sourcemap=external --outfile=dist-server/server.bundle.cjs",
+    "vendor:petite-vue": "esbuild node_modules/petite-vue/dist/petite-vue.es.js --bundle --format=esm --outfile=web/lib/vendor/petite-vue.mjs",
     "portable": "node scripts/make-portable.js"
   },
   "keywords": [],
@@ -25,6 +26,7 @@
   },
   "devDependencies": {
     "esbuild": "0.28.2",
-    "nodemon": "^2.0.7"
+    "nodemon": "^2.0.7",
+    "petite-vue": "0.4.1"
   }
 }

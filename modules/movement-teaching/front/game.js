@@ -12,12 +12,21 @@
  * 共享数据层（GameData / loadTricks / 进度存取）抽至 ./game-data.js，
  * 等价于原版两页面共载 movement_without_hands_data.js。
  *
- * 注意：持久化继续用原生 fetch（/api/game_2_process、/api/movement-partys、
- * /api/game_2_settings、/resource/json/tricks_for_game.json）与原 localStorage key，
- * 保持行为零回归。
+ * 注意：持久化（/api/game_2_process、/api/movement-partys、/api/game_2_settings、
+ * /resource/json/tricks_for_game.json）与 localStorage key 均在 ./game-data.js 内
+ * 经 /web/lib/persist.mjs 封装，键/端点逐字保留，行为零回归。
  *
- * cleanup 覆盖：signal 登记的静态按钮监听、计时/节拍器/闪现 interval、
- * WebAudio 上下文、动态弹窗节点。
+ * P11-B6 迁移：
+ *   · 抽技名闪现动画 → L2 组件 draw-machine（items/display/trigger/colors/onResult），
+ *     原 game.js 内的 `trickFlashTimer` 闪现 interval 与局部 const 定时器一并移除
+ *     （组件自带 tick 定时器与 cleanup，另有 prefers-reduced-motion 直接定格回退）。
+ *     ★ 顺带消除既有缺陷：原 drawRandomTrick() 注册 interval 后**立即 return 旧值**
+ *       （结果 1.2s 后才赋值 → 返回值恒为 undefined）；改为组件接管后，结果只在
+ *       onResult 回调里交给调用方，不再有"返回值"这条竞态路径（调用方也从未依赖它）。
+ *   · 静默抽技（初始化/重置）仍为同步函数：game-data.js 的 drawRandomTrickSilent（pickOne）。
+ *
+ * cleanup 覆盖：signal 登记的静态按钮监听、计时/节拍器 interval、
+ * WebAudio 上下文、动态弹窗节点（draw-machine 的 tick interval 由其自身 cleanup 回收）。
  */
 import {
   GameData,
@@ -26,64 +35,69 @@ import {
   saveGameProgress,
   clearGameProgress,
   drawRandomTrickSilent,
+  useGameDataApi,
 } from "./game-data.js";
 import { icon } from "/web/icons.mjs";
 
-// 技能抽取闪现 interval（原 data.js drawRandomTrick 内局部变量，
-// P4 cleanup 提升到闭包级以便清除）
-let trickFlashTimer = null;
+/* -----------------------------------------------------------------
+ * 抽技名动画（P11-B6：改由 L2 组件 draw-machine 接管）
+ *
+ * 迁移前 drawRandomTrick() = 15 次 × 80ms 闪现 + 定格（内联色 #fbbf24 → #10b981），
+ * 现在等价配置为组件 props（见 movementTeachingDrawProps）：
+ *   items   候选池：游戏进行中返回空数组 —— 复刻原 handleDrawTrick 的
+ *           "游戏进行中无法更换技能" 守卫（组件对空池走 onEmpty，不产生动画与结果）
+ *   display "#current-trick"、trigger "#draw-trick-btn"、ticks 15、tickMs 80
+ *   colors  { rolling:"#fbbf24", result:"#10b981" }（原内联色逐字保留）
+ *   onResult 写 GameData.currentTrick + toast（原定格分支的最后两步）
+ * 组件缺失（enabled:false）→ 页面 init 走 fallbackDrawTrick：静默抽技 + 上屏，无动画。
+ * ----------------------------------------------------------------- */
 
-// 随机抽取一个技能（带闪现效果，用于按钮点击）
-function drawRandomTrick() {
-  if (!GameData.tricks || GameData.tricks.length === 0) {
-    console.error("没有可用的技能数据");
-    return null;
+/**
+ * draw-machine 组件 props（由 front/plugin.js 取用；运行时值，优先级高于清单 config.components）
+ * @param {{draw?: any}} bridge 组件实例 API 桥（onReady 回填；组件缺失时保持 null）
+ */
+export function movementTeachingDrawProps(bridge = {}) {
+  return {
+    "draw-machine": {
+      items: () => (GameState.isPlaying ? [] : GameData.tricks),
+      display: "#current-trick",
+      trigger: "#draw-trick-btn",
+      ticks: 15, // 原 flashCount
+      tickMs: 80, // 原 flashInterval
+      colors: { rolling: "#fbbf24", result: "#10b981" },
+      onEmpty: () => {
+        // 池为空只有两种来路：游戏进行中（原守卫文案）/ 技能数据未就绪
+        if (GameState.isPlaying) {
+          showToast("游戏进行中无法更换技能", "warning");
+        } else {
+          console.error("没有可用的技能数据");
+        }
+      },
+      onReady: (api) => {
+        bridge.draw = api;
+      },
+      onResult: (item) => {
+        GameData.currentTrick =
+          item && typeof item === "object" ? item.name : item;
+        // 原定格分支末步：toast（game.js 内 showToast 为原 record 版实现，语义不变）
+        showToast(`已抽取技能: ${GameData.currentTrick}`, "success");
+      },
+    },
+  };
+}
+
+// 组件不可用时的降级抽技（等价于"静默抽技 + 上屏"，无闪现动画）
+function fallbackDrawTrick() {
+  if (GameState.isPlaying) {
+    showToast("游戏进行中无法更换技能", "warning");
+    return;
   }
 
-  const trickElement = document.getElementById("current-trick");
-
-  // 禁用抽取按钮，防止重复点击
-  const drawBtn = document.getElementById("draw-trick-btn");
-  if (drawBtn) drawBtn.disabled = true;
-
-  // 闪现效果参数
-  const flashCount = 15;
-  const flashInterval = 80;
-  let currentFlash = 0;
-
-  // 闪现动画
-  trickFlashTimer = setInterval(() => {
-    const randomIdx = Math.floor(Math.random() * GameData.tricks.length);
-    const flashTrick = GameData.tricks[randomIdx].name;
-
-    if (trickElement) {
-      trickElement.textContent = flashTrick;
-      trickElement.style.color = "#fbbf24"; // 闪现时为黄色
-    }
-
-    currentFlash++;
-
-    if (currentFlash >= flashCount) {
-      clearInterval(trickFlashTimer);
-      trickFlashTimer = null;
-
-      // 最终随机选择
-      const finalIdx = Math.floor(Math.random() * GameData.tricks.length);
-      GameData.currentTrick = GameData.tricks[finalIdx].name;
-
-      if (trickElement) {
-        trickElement.textContent = GameData.currentTrick;
-        trickElement.style.color = "#10b981"; // 最终结果为绿色
-      }
-
-      // 启用按钮
-      if (drawBtn) drawBtn.disabled = false;
-
-      showToast(`已抽取技能: ${GameData.currentTrick}`, "success");
-    }
-  }, flashInterval);
-
-  return GameData.currentTrick;
+  const silentTrick = drawRandomTrickSilent();
+  if (silentTrick) {
+    updateTrickDisplay(silentTrick);
+    showToast(`已抽取技能: ${GameData.currentTrick}`, "success");
+  }
 }
 
 /* =================================================================
@@ -160,16 +174,9 @@ async function initializeGame() {
   console.log("游戏初始化完成");
 }
 
-// 手动抽取技能
-function handleDrawTrick() {
-  if (GameState.isPlaying) {
-    showToast("游戏进行中无法更换技能", "warning");
-    return;
-  }
-
-  // 抽取新技能并显示（drawRandomTrick 内部已处理闪现效果和 toast）
-  drawRandomTrick();
-}
+// 手动抽取技能：draw-machine 组件持有 #draw-trick-btn 的点击（含滚动期间 disabled）；
+// 组件缺失时才由页面兜底绑定 fallbackDrawTrick（见 initMovementTeachingGame）。
+// 原 handleDrawTrick 的"游戏进行中"守卫由组件 items 返回空池 + onEmpty 承接。
 
 // 开始游戏
 function startGame() {
@@ -1229,16 +1236,12 @@ function closeResultModal() {
 
 // 说明：formatTime 已在 core 节定义（三处重复声明之一，内容一致，ESM 仅保留一份）。
 
-// 显示toast消息 (复用UI模块中的函数)
+// toast 桥（P12）：toast 组件实例 onReady 回填（见 initMovementTeachingGame 内实例化）；
+// 调用点零改动。降级语义：组件缺失（enabled:false / 未注册）→ console.log（非关键 UX）
+let toastApi = null;
 function showToast(message, type = "info", duration = 3000) {
-  // 检查是否有全局的showToast函数可用，但避免递归调用
-  if (window.showToast && window.showToast !== showToast) {
-    // 调用全局函数，确保不是当前函数自身
-    window.showToast(message, type, duration);
-  } else {
-    // 如果没有全局函数或全局函数就是当前函数，则直接使用控制台输出
-    console.log(`[${type}] ${message}`);
-  }
+  if (toastApi) toastApi.show(message, type, duration);
+  else console.log("[toast]", type, message);
 }
 
 // 导出需要的函数给其他模块使用（原版桥接，保留）
@@ -1253,19 +1256,42 @@ window.RecordModule = {
 /* =================================================================
  *  组件入口（原 core.js 的 DOMContentLoaded 初始化，kernel render 时执行）
  * ================================================================= */
-export function initMovementTeachingGame() {
+export function initMovementTeachingGame(ctx, bridge) {
   // cleanup 契约：静态骨架监听经 signal 登记，重渲染时 abort 统一解绑，
   // 防止不刷新页面的重复 render 双绑双触发
   const bindAbort = new AbortController();
   const { signal } = bindAbort;
 
+  // P12：toast 组件实例化（自挂 body；onReady 回填模块级桥 toastApi，调用点零改动；
+  // 组件缺失时桥接降级 console.log）
+  let disposeToast = null;
+  const toastFactory = ctx && ctx.ui ? ctx.ui.component("toast") : null;
+  if (toastFactory) {
+    const dispose = toastFactory(
+      document.body,
+      { onReady: (api) => { toastApi = api; } },
+      ctx
+    );
+    if (typeof dispose === "function") disposeToast = dispose;
+  }
+
+  // 持久化控制器取用 ctx.api（origin 相对路径、非 2xx 抛错 → 恢复链回退本地）
+  useGameDataApi(ctx && ctx.api);
+
   console.log("页面已加载，开始初始化游戏...");
   initializeGame();
 
   // 绑定按钮事件
-  document
-    .getElementById("draw-trick-btn")
-    .addEventListener("click", handleDrawTrick, { signal });
+  // #draw-trick-btn 由 draw-machine 组件接管（trigger props）；
+  // 组件缺失（ctx.ui.component 返回 null / enabled:false）时页面自我兜底，功能不丢
+  if (!bridge || !bridge.draw) {
+    console.warn(
+      "[movement-teaching] draw-machine 组件不可用，#draw-trick-btn 走降级路径（静默抽技）"
+    );
+    document
+      .getElementById("draw-trick-btn")
+      .addEventListener("click", fallbackDrawTrick, { signal });
+  }
   document.getElementById("start-btn").addEventListener("click", startGame, { signal });
   document.getElementById("end-btn").addEventListener("click", endGame, { signal });
   document.getElementById("reset-btn").addEventListener("click", resetGame, { signal });
@@ -1291,7 +1317,12 @@ export function initMovementTeachingGame() {
   // 添加查看记录按钮事件
   document.getElementById("records-btn").addEventListener("click", viewRecords, { signal });
 
-  return () => cleanupMovementTeachingGame(bindAbort);
+  return () => {
+    cleanupMovementTeachingGame(bindAbort);
+    // P12：toast 组件实例卸载（移除容器 + 清在飞定时器），随后复位桥避免悬空引用
+    if (disposeToast) disposeToast();
+    toastApi = null;
+  };
 }
 
 /* =================================================================
@@ -1301,13 +1332,11 @@ function cleanupMovementTeachingGame(bindAbort) {
   // signal 登记的静态骨架监听统一解绑
   if (bindAbort) bindAbort.abort();
 
-  // 计时器 / 节拍器 / 技能闪现 interval 清除
+  // 计时器 / 节拍器 interval 清除
   stopTimer();
   stopContinuousMetronome();
-  if (trickFlashTimer) {
-    clearInterval(trickFlashTimer);
-    trickFlashTimer = null;
-  }
+
+  // draw-machine 的闪现 tick interval 由组件自身 cleanup 回收（front/plugin.js 收集）
 
   // WebAudio 上下文关闭（节拍器音效用，振荡器均已自停）
   try {

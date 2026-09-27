@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Rookies比赛界面</title>
     <link rel="preload" as="image" href="/resource/images/bg.jpg" />
+    <!-- P11：布局原语（L1 共享资产，origin 相对绝对路径）——先于 style.css，页面样式可覆盖 -->
+    <link rel="stylesheet" href="/web/components/grid.css" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -18,14 +20,16 @@
     <main>
       <section id="playerSection">
         <h2 class="small-text">选手列表</h2>
-        <ul id="playerList"></ul>
+        <!-- 布局：.grid-cards + 页面 CSS 覆盖为 auto-fit 140px + justify-content:center
+             （列表项是短标签，固定轨道宽以保持迁移前的条目尺寸） -->
+        <ul id="playerList" class="grid-cards"></ul>
         <h3 id="currentPlayer" class="large-text">打师名</h3>
         <h3 id="currentTrick" class="large-text">抽取技名</h3>
         <h3 id="currentMusic" class="large-text">抽取音乐</h3>
       </section>
       <section id="trickSection">
         <h2 class="small-text">技名列表</h2>
-        <ul id="trickList"></ul>
+        <ul id="trickList" class="grid-cards"></ul>
       </section>
       <div id="buttons">
         <button id="shuffleButton">随机排序</button>
@@ -34,8 +38,17 @@
         <button id="playMusicButton">播放音乐</button>
         <button id="nextPlayerButton">下一位</button>
       </div>
-      <audio id="musicPlayer" controls></audio>
     </main>
+
+    <!-- P11 组件插槽（组件宿主；放在 main 之外：比赛模式对 main 整棵子树施加 opacity:0，
+         插槽若在其内会让遮罩/点击提示一并不可见）。空容器，无视觉影响。 -->
+    <div data-slot="music"></div>
+    <div data-slot="draw"></div>
+
+    <!-- 宿主播放器（无 controls、恒 `audio{display:none}`：比赛页的播放/退出全靠抽取/开始
+         按钮与单击退出手势，任何状态都不显示播放器控件 UI；元素仅为音频播放保留，
+         music-player 组件按 id 复用本元素。） -->
+    <audio id="music-player"></audio>
 
     <!-- 前端插件挂载点（P4：页面 UI 由 /web/front.json 声明的 front/plugin.js 装配） -->
     <div id="plugin-root" hidden></div>

@@ -13,9 +13,32 @@
  *     自移除定时器），防止卸载后继续往骨架/容器追加节点
  *   - 动态渲染节点（top3 选手、bracket 卡片）无独立监听，随 innerHTML 重写一并释放
  *   - 冠军奖杯为内联 SVG（Tabler，经 /web/icons.mjs 渲染），替代原 emoji
+ *
+ * P11-B7 共享化（仅两处，语义逐行等价）：
+ *   - 烟花配色"等概率取 1 个" → /web/lib/random.mjs 的 pickOne（原 colors[floor(random*len)]，
+ *     分布一致；ranking 页同款用法 → 满足 R2 跨模块复用）
+ *   - 比赛流程图轮次栏（胜者组/败者组/决赛的等宽列）→ /web/components/grid.css 的 .grid-flow
+ *     （原 flex + flex:1 等宽列 + 移动端 min-width:600px 横向滚动 hack；改后按容器宽度
+ *     连续自适应，窄屏轮次纵向堆叠，不再需要横向滚动）
+ *   烟花本身（30 秒波次调度 + 粒子随机角度/距离/时长）为**本页专属视觉**，保留在页面内：
+ *   其随机量是数值区间（非"取 1 个"），现无共享 API；ranking 页的烟花算法不同
+ *   （CSS-only 单发爆点 + body 容器），强行统一需新增 L2 组件插件（超出本次文件域与插件预算）。
  */
 
 import { icon } from "/web/icons.mjs";
+import { pickOne } from "/web/lib/random.mjs";
+
+// HTML 转义：winners 数据可经后端接口被局域网任意客户端改写，插入 innerHTML 前须转义
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (ch) => HTML_ESCAPES[ch]);
+}
+const HTML_ESCAPES = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
 
 export default {
   name: "rank", // key 必须 = 模块 id，kernel 装配完按它 render
@@ -170,13 +193,14 @@ export default {
 
         // 显示第二章节前三名
         function displayChapter2Top3(winners) {
-          // 检查是否有第二章节数据
-          if (!winners || !winners.chapter2) return;
+          // 无数据时保留错误分支（调用方随后 showErrorMessage 覆盖容器）
+          if (!winners) return;
+
+          // ★ 缺陷修复：winners 存在但缺 chapter2 时不再提前 return ——
+          //   领奖台三个槽位仍要渲染各自写好的 "- 暂无 -" 占位（与 displayChampion 的兜底一致）。
+          const chapter2 = winners.chapter2 || {};
 
           console.log("准备显示第二章节前三名数据:", winners.chapter2);
-
-          // 获取第二章节数据
-          const chapter2 = winners.chapter2;
 
           // 解决同一个人可能出现在多个名次的问题
           let usedPlayers = new Set();
@@ -252,7 +276,7 @@ export default {
 
           container.innerHTML = `
             <div class="champion-trophy">${icon("trophy", { size: 50 })}</div>
-            <div class="champion-name">${chapter2Data.winner}</div>
+            <div class="champion-name">${escapeHtml(chapter2Data.winner)}</div>
             <p>恭喜获得总冠军！</p>
           `;
         }
@@ -334,7 +358,7 @@ export default {
             return "<p>暂无胜者组数据</p>";
           }
 
-          let html = '<div class="bracket-rounds winner-rounds">';
+          let html = '<div class="bracket-rounds grid-flow winner-rounds">';
 
           winnerBracket.forEach((round, roundIndex) => {
             html += `<div class="bracket-round" data-round="${round.round}">
@@ -364,7 +388,7 @@ export default {
             return "<p>暂无败者组数据</p>";
           }
 
-          let html = '<div class="bracket-rounds loser-rounds">';
+          let html = '<div class="bracket-rounds grid-flow loser-rounds">';
 
           loserBracket.forEach((round, roundIndex) => {
             html += `<div class="bracket-round" data-round="${round.round}">
@@ -394,7 +418,7 @@ export default {
             return "<p>暂无决赛数据</p>";
           }
 
-          let html = '<div class="bracket-rounds final-rounds">';
+          let html = '<div class="bracket-rounds grid-flow final-rounds">';
 
           finalBracket.forEach((round, roundIndex) => {
             let roundTitle = round.round === 1 ? "决赛" : "冠军决定战";
@@ -507,7 +531,7 @@ export default {
             "#ffd700",
             "#00ffff",
           ];
-          const color = colors[Math.floor(Math.random() * colors.length)];
+          const color = pickOne(colors); // /web/lib/random.mjs（等概率取 1 个，原 colors[floor(random*len)]）
 
           // 创建烟花元素
           const firework = document.createElement("div");

@@ -1,6 +1,6 @@
 {
   "meta": {
-    "recordedAt": "2026-09-17T05:41:16.620Z",
+    "recordedAt": "2026-09-18T17:23:03.579Z",
     "httpLayer": "y-router+cordis",
     "node": "v24.19.0",
     "port": 3210
@@ -93,9 +93,9 @@
         "content-type": "application/json; charset=utf-8",
         "access-control-allow-origin": "*"
       },
-      "bodySha256": "709c0561344d430350581843247c43ab5d1c035811f5ce360bc6df3a3095fecd",
-      "bodyLen": 17,
-      "preview": "<state-shape> {\"object\":[\"totalCount\"]}"
+      "bodySha256": "4a3d2d58bcf148cd88c7e21d64fafae3e959c19f89ce256f5c43d5d273eeb241",
+      "bodyLen": 19,
+      "preview": "<state-shape> {\"object\":[\"doubleElim\"]}"
     },
     {
       "name": "GET /api/drag-process",
@@ -107,7 +107,7 @@
         "access-control-allow-origin": "*"
       },
       "bodySha256": "5752905cadad5899d1cf872014d74c932f714e077347d34b26d793dcd5ba6dcf",
-      "bodyLen": 3620,
+      "bodyLen": 1388,
       "preview": "<state-shape> {\"object\":[\"allPlayers\",\"championId\",\"doubleElimActive\",\"doubleElimResetDone\",\"lastUpdate\",\"music\",\""
     },
     {
@@ -267,8 +267,8 @@
         "content-type": "text/html; charset=utf-8",
         "access-control-allow-origin": "*"
       },
-      "bodySha256": "e8d3cb26b6ddc264c5b8b23cf56e197d88a8eddbb352aafd19ecd73202cc783f",
-      "bodyLen": 3989,
+      "bodySha256": "c668935e99bfdf157b25d0b4f55fb6f98ce6677d025f8ba14a3dff21447109a5",
+      "bodyLen": 4587,
       "preview": "<!doctype html>\n<html lang=\"zh-CN\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=devic"
     },
     {
@@ -280,8 +280,8 @@
         "content-type": "text/html; charset=utf-8",
         "access-control-allow-origin": "*"
       },
-      "bodySha256": "e8d3cb26b6ddc264c5b8b23cf56e197d88a8eddbb352aafd19ecd73202cc783f",
-      "bodyLen": 3989,
+      "bodySha256": "c668935e99bfdf157b25d0b4f55fb6f98ce6677d025f8ba14a3dff21447109a5",
+      "bodyLen": 4587,
       "preview": "<!doctype html>\n<html lang=\"zh-CN\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=devic"
     },
     {
@@ -293,9 +293,9 @@
         "content-type": "application/javascript; charset=utf-8",
         "access-control-allow-origin": "*"
       },
-      "bodySha256": "34316a5daf0eb5022c35efac66151f0fc9003781d87249b3e47c1b1d9f1ff1d9",
-      "bodyLen": 639,
-      "preview": "/**\n * drag 前端插件（P3d 插件化迁移）\n *\n * 契约：原生 ESM，不 import 内核；apply 阶段只 register，DOM 操作统一发生在\n * component 被调用时（见 ./view.js dra"
+      "bodySha256": "d6656140189390ce8379baf0c3b530fdba33b54149c2d0ddfa365a0d7f3c7d97",
+      "bodyLen": 3183,
+      "preview": "/**\n * drag 前端插件（P11-B4：改为「积木拼装」薄壳）\n *\n * 契约：原生 ESM，不 import 内核；apply 阶段只 register，DOM 操作统一发生在 component 内。\n * key 必须 = "
     },
     {
       "name": "GET /m/notexist（404）",

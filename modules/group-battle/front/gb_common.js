@@ -3,7 +3,15 @@
  *
  * 纯函数直接具名导出；引用页面闭包状态（GBState/DOM/PlayerPools）的四个函数
  * 经 makePageHelpers 注入，各页面解构后调用点写法与原全局函数完全一致。
+ *
+ * P11-B5：`shuffle` 收敛到 L1 共享库 /web/lib/random.mjs（二选一裁决——原实现已是
+ * 正确的 Fisher-Yates，这里改为 re-export 以消除本模块最后一份 Math.random 与重复实现；
+ * 语义等价：等概率洗牌、返回新数组、不改入参。random.mjs 额外把随机下标夹到 i 以内，
+ * 注入越界 rng 时也不越界）。本模块内无调用点（纯导出），故 re-export 零行为影响。
  */
+import { shuffle } from "/web/lib/random.mjs";
+
+export { shuffle };
 
 export function normalizePlayerName(name) {
   return (name || "").trim();
@@ -24,15 +32,6 @@ export function showToast(message, type) {
   setTimeout(() => {
     if (toast.parentNode) toast.parentNode.removeChild(toast);
   }, 2500);
-}
-
-export function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
 }
 
 /**

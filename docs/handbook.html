@@ -394,7 +394,73 @@ statusEl.innerHTML = icon("circle-check", { size: 16 }) + " 已保存";
 - **禁止 emoji 图标、禁止内联复制 SVG path**；缺图标时把准确 path 追加进 `web/icons.mjs` 的 `ICON_PATHS`，再跑 `node web/icons.test.js` 守门
 - 模块元数据的 `icon` 字段填**图标名**（`ICON_NAMES` 成员，如 `puzzle`），不是 emoji
 
-## 6. 页面与静态骨架
+## 6. 组件与共享库（什么时候该写组件）
+
+页面代码里反复出现的交互（抽签动画、音乐播放）不要各页重写——按 **L1/L2 分层**沉淀，判据是**有没有生命周期**：
+
+| 层 | 落位 | 准入 | 引入方式 |
+|----|------|------|----------|
+| L1 共享资产 | `web/lib/*.mjs`、`web/components/compose.mjs`、`web/components/grid.css` | 纯函数/纯样式：无监听、无定时器、无网络、无模块级可变状态；必须配 `*.test.js` | 直接 `import`（origin 相对路径），不注册插件、不进清单 |
+| L2 组件类插件 | `modules/component-<名>/`（仅 `front/{plugin,view}.js`） | 有生命周期（监听/定时器/网络/多媒体）且被 **≥2 个页面**复用 | 进 `web/front.json`（`kind:"component"` + `pages`），享受 `enabled:false` 禁用与热开关 |
+
+现有 L1 资产：`/web/lib/random.mjs` 的 `shuffle/pickN/pickOne`（等概率随机，替代有偏洗牌）、`/web/lib/persist.mjs` 的 `createPersistence`（双写持久化）、`/web/lib/undo.mjs` 的 `createUndoStack`（撤销栈）、`/web/components/compose.mjs` 的 `mountFromConfig`（页面装配器）、`/web/components/grid.css`（零媒体查询布局原语 `.grid-cards` / `.grid-flow` / `.grid-split` / `.card`）。现有 L2 组件：`music-player`（音乐播放 + 比赛模式）、`draw-machine`（抽签动画）。
+
+组件表 API 共三个（`ctx.ui`）：`registerComponent(name, factory)`、`component(name)`（→ `factory | null`）、`listComponents()`——组件插件被 `enabled:false` 禁用后 `component(name)` 返回 `null`，页面据此降级。
+
+### 6.1 脚手架（组件模式）
+
+```bash
+node scripts/new-module.js my-widget "我的组件" --component --pages drag,music-draw
+```
+
+组件 id 自动补 `component-` 前缀，只生成 `front/{plugin,view}.js` + `web/front.json` 条目（**不生成** `index.html` / `style.css` / 后端 `plugin.js`）。组件名 = `registerComponent` 的公开标识（kebab-case），页面侧按名字取用。
+
+### 6.2 页面侧取用（最小范例，含降级）
+
+```js
+import { mountFromConfig } from "/web/components/compose.mjs";
+
+// 页面 component 内（el 即 #plugin-root）：
+const bridge = { draw: null };            // 组件 props.onReady 回填的实例 API，页面 flow 消费
+const mounted = mountFromConfig({
+  el, meta, ctx,
+  label: "my-feature",                    // 日志前缀
+  defaultSlots: { "draw-machine": "[data-slot=draw]" },
+  runtimeProps: { "draw-machine": { onReady: (api) => { bridge.draw = api; } } },
+});
+
+// 或命令式只取一个组件——组件被 enabled:false 禁用时返回 null，必须降级不崩：
+const factory = ctx.ui.component("draw-machine");
+if (factory) mounted.cleanups.push(factory(host, props, ctx));
+```
+
+`mountFromConfig` 返回 `{ cleanups, mountAll(), cleanup() }`：`cleanup()` 逆序卸载全部已实例化组件（单个抛错不影响其余），与页面 flow 的 cleanup 一起在页面卸载时调用。**组件缺失、插槽缺失、选择器非法一律 warn 后跳过——插槽留空、页面照常工作。**
+
+### 6.3 `front.json` 声明（页面条目 `config`）
+
+```json
+{
+  "target": "modules/my-feature",
+  "enabled": true,
+  "config": {
+    "compose": ["draw-machine"],
+    "slots": { "draw-machine": "[data-slot=draw]" },
+    "components": { "draw-machine": { "ticks": 15, "tickMs": 80 } }
+  }
+}
+```
+
+| 键 | 语义 |
+|----|------|
+| `compose` | 需要装配的组件名，**顺序 = 挂载顺序**；缺省 = `slots` 的键 |
+| `slots` | 组件宿主选择器，**键是组件名**；值为字符串 = 单实例 |
+| `components` | 组件静态 props（时序/颜色/文案）；运行时 props（页面 `view.js` 提供）浅合并优先 |
+
+**多实例**：`slots` 的值写成数组（多个宿主选择器），`components` 的值写成数组，**按实例下标一一对应**（数组取第 i 项；`components` 传对象则所有实例共用同一份）。范例：`modules/music-draw/` 三曲库 = 3 个 `music-player` + 3 个 `draw-machine`，宿主用 `data-slot="music-1yearminus"` 之类的短名承载。
+
+组件的完整 API 签名、装配器参数（`runtimeProps` / `names` 条件装配）、`kind` / `pages` 清单字段与组件纪律，见[插件开发技术参考](#plugin-development) §3.8 与 §4.1。
+
+## 7. 页面与静态骨架
 
 `index.html` 最小骨架：
 
@@ -407,7 +473,7 @@ statusEl.innerHTML = icon("circle-check", { size: 16 }) + " 已保存";
 
 也可以像 `modules/drag/` 那样把完整静态骨架（控制条、音频元素等）直接写进 HTML，组件只负责绑定既有 DOM 与渲染动态内容——改动更小、样式零回归，复杂页面推荐此法。多页面模块（如 `moving-sth` 的设置页）每页都放内核标签，前端组件内按 DOM 标记分发。
 
-## 7. 持久化双写模板（赛制类模块）
+## 8. 持久化双写模板（赛制类模块）
 
 前端保存采用 **localStorage + 服务器双写**，服务器失败静默跳过（比赛现场网络抖动不丢进度）；恢复时先服务器后本地：
 
@@ -425,35 +491,40 @@ function saveState() {
 // 恢复链：loadStateFromServer() 失败 → loadLocalState() → 都没有则 initNewGame()
 ```
 
-## 8. 生命周期：挂载、停用、热重载
+同类重复代码已沉淀成 L1 共享库：`createPersistence`（双写/恢复链/重置）、`createUndoStack`（撤销栈）、`shuffle/pickN/pickOne`（随机抽取）——新页面优先 import 它们，别再手写一遍（签名见[插件开发技术参考](#plugin-development) §3.8）。
+
+## 9. 生命周期：挂载、停用、热重载
 
 - **挂载**：内核按清单装配，register 后按 key 渲染
 - **停用**：物理生效——后端路由与页面 404、前端代码不再下载；**SQLite 数据保留**，重新启用即恢复
 - **热重载**：改盘上的插件文件 → 管理页点"重载"→ 请求排空（在飞请求安全完成后切换）→ require 缓存逐出 → 新代码生效，**全程无需重启**
-- 前端插件开关：落盘后刷新页面生效
+- 前端插件开关：落盘后刷新页面生效（组件类插件同理——`enabled:false` 时不被任何页面加载）
 
-## 9. 命名约定
+## 10. 命名约定
 
 | 类别 | 规则 | 示例 |
 |------|------|------|
 | 模块目录 | 小写+连字符 | `modules/music-draw/` |
+| 组件类插件目录 | `component-<组件名>` | `modules/component-music-player/` |
 | 后端/前端插件文件 | 固定名 | `plugin.js` / `front/plugin.js` |
 | API 端点 | `/api/{功能前缀}-{资源}` | `/api/drag-process` |
 | 数据库名 | 与 API 前缀对应 | `drag-process` |
 | localStorage key | 功能+描述 | `dragBattleState2_player1` |
 | CSS class / HTML id | 小写+连字符 | `.node-box`、`draw-music-btn` |
 | JS 变量/函数 | camelCase | `drawMusic` |
+| 组件名 | 小写+连字符（`registerComponent` 的公开标识） | `music-player`、`draw-machine` |
 | 图标名 | 小写+连字符，须 ∈ `ICON_NAMES` | `home`、`device-gamepad-2` |
 
-## 10. 验证清单（每步都要实际跑）
+## 11. 验证清单（每步都要实际跑）
 
 - [ ] 重启 `node server.js`，控制台 `[cordis] 装配完成` 且无 error
 - [ ] 访问 `/m/my-feature/` 正常渲染；`/m/plugin-manager/` 中本插件"已挂载"无 error
 - [ ] 管理页**停用再启用**：路由/页面 404 后恢复，数据不丢
 - [ ] 刷新页面、二次进入，无重复渲染、无控制台红错
+- [ ] 用到了组件时：管理页前端 tab 禁用该组件插件 → 刷新页面，插槽留空但页面照常工作（降级不崩）
 - [ ] `node scripts/endpoint-diff.js --compare` 全绿（不破坏既有 HTTP 行为基线）
 
-## 11. 实例索引（按需照抄）
+## 12. 实例索引（按需照抄）
 
 | 实例 | 学什么 |
 |------|--------|
@@ -462,8 +533,12 @@ function saveState() {
 | `modules/setting/` | 多文件前端聚合（set-*.js → front/view.js） |
 | `modules/moving-sth/` | 多页面模块（游戏页 + 设置页，DOM 标记分发） |
 | `modules/plugin-manager/` | 管理面：assembly 服务、config 机制、页面本身即可替换插件 |
+| `modules/component-music-player/` | L2 组件范例：音乐播放 + 比赛模式归一（`body` class 引用计数、宿主 audio 只 pause 不删） |
+| `modules/component-draw-machine/` | L2 组件范例：抽签/闪现动画归一（定时器登记、回调式结果交付、等概率 `pickOne`） |
+| `modules/music-draw/` | 多实例接入范例：三曲库 = 3 个 `music-player` + 3 个 `draw-machine`（数组槽位按下标一一对应） |
+| `web/components/compose.mjs` | L1 装配器实现：`mountFromConfig` 的降级 / props 合并 / 多实例下标语义（配 `compose.test.js`） |
 
-## 12. 常见坑
+## 13. 常见坑
 
 1. **三份清单不同步**——用脚手架，别手改
 2. **inject 拼写错误** → fiber 挂起（内核校验后跳过并报 error，去管理页看）
@@ -472,6 +547,11 @@ function saveState() {
 5. **写死 `localhost:3000`** → 换环境即坏，一律 origin 相对路径
 6. **改了内核/共享设施** → 后果自负；一切功能自包含于 `modules/<id>/`（唯一例外：缺图标时向 `web/icons.mjs` 追加 path）
 7. **用 emoji 或自绘/粘贴 SVG 当图标** → 多份事实来源必然漂移；统一走 `web/icons.mjs` 的 `icon()` / `iconEl()`
+8. **组件内模块级可变状态** → 页面同时挂载同一组件多个实例时串台（音乐播放器 P0 缺陷根因）；状态只放工厂调用的局部变量
+9. **给 `document.body` 加 class 未成对移除** → 组件可能被中途卸载，残留 class 污染后续页面；同页多实例共享 body 类时用引用计数，最后一个退出者才移除
+10. **多实例共享宿主 `<audio>` 不校正 `src`** → "点 A 的按钮播 B 的歌"；启动前按当前结果校正，且宿主 audio 只 pause/归零、绝不删除
+11. **`[data-slot]` 宿主放在 `opacity:0` 祖先里** → 比赛模式播放器不可见；插槽宿主必须在 opacity 作用域之外
+12. **组件 import 其他组件** → 单个组件禁用会级联崩溃；组件之间保持零依赖
 
 ---
 
@@ -520,6 +600,28 @@ modules/<模块id>/
 **后端**：进程启动 → 读 `server/plugins.json` → 创建根 Context → provide 内置服务（`server/db/modules/assembly`，在任何业务插件挂载之前）→ 按清单顺序 `await ctx.plugin(wrapped)` → `initializeAllDatabases()` → 挂共享路由 → listen。
 
 **前端**：页面加载 `/web/kernel.js` → 从 `location.pathname` 解析模块 id → `fetch("/web/front.json")` → 过滤 `enabled !== false` 且 target 匹配的条目 → 建前端 root、provide `ui/api/state` → 逐个 `await import(...)` + `ctx.plugin()` → 全部完成后 emit `kernel:ready` → 对当前模块 id 调 `ui.render`。
+
+### 1.4 组件类插件形态（L2，P11）
+
+组件类插件是**纯前端资产**：没有 `index.html`、没有后端 `plugin.js`，也不进 `modules/modules.json` / `server/plugins.json`、不进导航；只在 `web/front.json` 有一条 `kind:"component"` 条目。
+
+```
+modules/component-<名>/
+├── front/
+│   ├── plugin.js     # 组件注册（原生 ESM）：ctx.ui.registerComponent("<名>", factory)，inject 仅需 ["ui"]
+│   └── view.js       # 组件工厂：factory(hostEl, props, ctx) => cleanup|void
+└── style.css         # 可选；组件不自带 <link>，需要时由页面按 /m/component-<名>/style.css 引入
+```
+
+| | 页面插件 | 组件类插件 |
+|---|---|---|
+| 注册 API | `ctx.ui.register({ key, component })` | `ctx.ui.registerComponent(name, factory)` |
+| 注册表 | 页面表（key 必须 = 模块 id） | 组件表（name 自由命名，建议 kebab-case） |
+| 自动渲染 | kernel 按 URL 自动 `render` | **永不自动渲染**，只在页面 component 显式 `ctx.ui.component(name)` 取用时实例化 |
+| 清单条目 | `web/front.json` + `modules.json` + `plugins.json` | **仅** `web/front.json`：`{ kind: "component", pages: [...] }` |
+| 资源放行 | 由页面模块条目决定 | `kind:"component"` 且 `enabled !== false` 是 `/m/component-*/**` 可被静态服务的**白名单依据**（`server/routes/module-routes.js` 的 `resolveComponentDir`，fail closed：禁用即不服务） |
+
+跨页命中：`pages` 决定被哪些页面加载（`web/loader.mjs` 的 `matchPage`，缺省 = 只匹配 target 自身 id）；`enabled:false` 不 import、前端代码不下载。
 
 ## 2. 后端插件 API
 
@@ -682,19 +784,29 @@ export default {
 
 ```js
 ctx.ui = {
+  // ---- 页面表（kernel 按 URL 自动渲染；key 必须 = 模块 id）----
   register({ key, component }),
   unregister(key),
   render(key, meta, container),
+  // ---- 组件表（P11：页面显式取用，永不被 kernel 自动渲染）----
+  registerComponent(name, factory),
+  component(name),        // → factory | null
+  listComponents(),       // → string[]（插入序快照）
 };
 ```
 
 | API | 参数 | 行为 |
 |-----|------|------|
-| `register` | `key: string`；`component: (el, meta, ctx) => cleanup \| void` | 注册组件。`el` = 容器元素（`#plugin-root`）；`meta` = front.json 条目的 `config`（缺省 `null`）；`ctx` = 前端 Context（`ctx.on/emit` 可用） |
+| `register` | `key: string`；`component: (el, meta, ctx) => cleanup \| void` | 注册页面组件。`el` = 容器元素（`#plugin-root`）；`meta` = front.json 条目的 `config`（缺省 `null`）；`ctx` = 前端 Context（`ctx.on/emit` 可用） |
 | `unregister` | `key` | 注销并触发其 cleanup |
 | `render` | `key, meta, container` | 未注册 → 渲染占位 `<div class="plugin-placeholder">插件未启用…</div>`；重复 render **先调用旧 cleanup**；组件抛错 → 捕获、降级渲染占位并 console.error（不会白屏） |
+| `registerComponent` | `name: string`（建议 kebab-case）；`factory: (hostEl, props, ctx) => cleanup \| void` | 注册组件工厂；同 name **后注册覆盖先注册**；name 非字符串/空串或 factory 非函数 → 抛错 |
+| `component` | `name` | 返回工厂本体；未注册或非字符串名 → **`null`**（调用方据此优雅降级，不抛错） |
+| `listComponents` | — | 已注册组件名的**插入序快照**（防御性拷贝，调试/管理页/单测断言用） |
 
-**cleanup 契约**：返回的函数在"同容器再次 render"或"unregister 当前 key"时被调用（抛错被吞并 console.error，不阻断新渲染）。事件监听一律 `addEventListener(type, handler, { signal })` + `AbortController`，cleanup 里 `abort()`；定时器/rAF/audio 也应在 cleanup 中清理。
+**两张表互不覆盖**：页面表 key = 模块 id（kernel 按 URL 查表 render），组件表 name 自由命名、**永不被 kernel 自动渲染**。本期不提供 `unregisterComponent`——组件生命周期 = 页面生命周期（`front.json` 的 enabled 决定是否 import，热替换 = 刷新页面），刷新即重建整个 ctx。
+
+**cleanup 契约**：返回的函数在"同容器再次 render"或"unregister 当前 key"时被调用（抛错被吞并 console.error，不阻断新渲染）。事件监听一律 `addEventListener(type, handler, { signal })` + `AbortController`，cleanup 里 `abort()`；定时器/rAF/audio 也应在 cleanup 中清理。组件实例的 cleanup 由取用方持有与释放（见 3.8 的 `mountFromConfig`）。
 
 ### 3.3 `ctx.api`
 
@@ -783,6 +895,67 @@ statusEl.innerHTML = icon("circle-check", { size: 16 }) + " 已保存";
 - **缺失图标**：把准确的 Tabler path 追加进 `web/icons.mjs` 的 `ICON_PATHS`（键自动并入 `ICON_NAMES`），然后跑 `node web/icons.test.js`；该测试校验需求清单、SVG 统一规格、边界行为，并扫描 `modules/**` 中引用本基座的文件、报告缺失图标名。
 - 模块元数据 `registerPage({ icon })` 与 `modules/modules.json` 的 `icon` 填图标名（`ICON_NAMES` 成员），两处必须一致（见 2.4）。
 
+### 3.8 L1 共享资产与页面装配器（P11）
+
+**L1 分层**：纯函数/纯样式共享资产（与 `web/icons.mjs` 同级）——无生命周期、不进清单、可直接 import（origin 相对路径），必须配 `*.test.js`。
+
+| 资产 | 导出 | 说明 |
+|------|------|------|
+| `/web/lib/random.mjs` | `shuffle(arr, rng?)`、`pickN(arr, n, rng?)`、`pickOne(arr, rng?)` | 等概率随机（`shuffle` 为 Fisher–Yates，**替代有偏的 `sort(() => Math.random() - 0.5)`**）；均返回新数组、不改入参，入参非数组按空数组处理（不抛错）；`rng` 默认 `Math.random`（注入固定序列可做确定性测试）；`pickN` 长度 = `min(max(floor(n),0), arr.length)`，`pickOne([])` → `null` |
+| `/web/lib/persist.mjs` | `createPersistence(deps)`、`createMemoryStorage()` | 教程 §8 双写持久化模板的依赖注入实现（`key` 必填）；`deps = { key, storage?, api?, endpoint?, clearEndpoint?, initNewGame?, isValid?, now?, onError? }` |
+| `/web/lib/undo.mjs` | `createUndoStack(opts?)`、`MAX_HISTORY`（= 50） | 撤销快照栈：`push/undo/peek/canUndo/size/clear/toArray/load`；超上限丢最旧（FIFO），快照按引用保存 |
+| `/web/components/grid.css` | `.grid-cards` / `.grid-flow` / `.grid-split` / `.card` | 布局原语：**零媒体查询**（`repeat(auto-*, minmax(min(<阈值>,100%),1fr))` 按容器宽度连续自适应）；`.grid-cards` 用 auto-fill（卡片尺寸一致）、`.grid-flow` / `.grid-split` 用 auto-fit（少卡片时撑满） |
+| `/web/components/compose.mjs` | `mountFromConfig(spec)` | 页面组件装配器（见下） |
+
+`createPersistence` 返回 `{ load, save, reset }`（均为 Promise，**永不 reject**）：
+
+- `load()` → `{ data, source }`，`source: "server" | "local" | "new" | "none"`；恢复链 server → localStorage → `initNewGame`
+- `save(data)` → `{ local, remote }`（两端各自是否成功）；本地先写（同步必达），远端 POST 体 = `{ ...data, lastUpdate: now() }`（`data` 为数组/原始值时按原值发）
+- `reset()` → `{ local, remote }`；只清两端存档、不重建状态
+
+**`mountFromConfig(spec)`** —— 消除页面插件里"读 front.json config → 查 `ctx.ui.component` → 挂到 `data-slot` 宿主 → 收集 cleanup"的重复样板：
+
+```js
+import { mountFromConfig } from "/web/components/compose.mjs";
+
+const mounted = mountFromConfig({
+  el,               // 页面根容器（#plugin-root）
+  meta,             // front.json 中该页面条目的 config（可 null）
+  ctx,              // 前端 ctx（内部只用 ctx.ui.component(name)）
+  label,            // 日志前缀，如 "music-draw"（warn/error 消息带 [label]）
+  defaultSlots,     // 缺省插槽表 { "<组件名>": "[data-slot=x]" | [sel, ...] }；清单 config.slots 覆盖/追加
+  runtimeProps,     // 可选：运行时 props，按组件名索引（对象 = 单/共用；数组 = 多实例按下标）
+  names,            // 可选：只装配这些组件（与推导出的 compose 取交集、保持其顺序；[] = 本页零装配）
+});
+// → { cleanups, mountAll(), cleanup() }
+```
+
+| 返回成员 | 语义 |
+|----------|------|
+| `cleanups` | 已实例化组件的 cleanup 数组（按挂载顺序；调用方也可自行 push 页面 cleanup） |
+| `mountAll()` | 执行一次装配循环（构造时已自动执行一次）；**非幂等**：重复调用会在同一宿主再建一个实例并追加 cleanup，旧的监听、`body` class 等副作用需先 `cleanup()` 释放，**切勿当作"重渲染"使用** |
+| `cleanup()` | **逆序**调用 cleanups 并清空；单个抛错不影响其余（console.error 上报，不向外抛） |
+
+清单声明语义（`meta`，即 front.json 页面条目的 `config`）：
+
+| 键 | 值 | 语义 |
+|----|----|------|
+| `compose` | `["music-player","draw-machine"]` | 需要装配的组件名，**顺序 = 挂载顺序**；缺省 = `Object.keys(slots)` |
+| `slots` | `{ "<组件名>": "[data-slot=x]" \| ["sel1","sel2"] }` | 宿主选择器（**键 = 组件名**）；数组 = 多实例。`slots = { ...defaultSlots, ...meta.slots }`——模块缺省表兜底，清单可覆盖/追加 |
+| `components` | `{ "<组件名>": { …props } \| [{ … }, …] }` | 静态 props；数组 = 多实例按下标一一对应，对象 = 所有实例共用 |
+
+- 宿主查找顺序：`el.querySelector(selector) || document.querySelector(selector)`
+- props 优先级：静态 props < 运行时 props（浅合并）；多实例按**实例下标一一对应**取（`propsAtIndex` 语义）
+- 只有 `factory(host, props, ctx)` 返回函数才入 cleanups
+- `names` 诊断：不在 compose/slots 推导结果中的名字逐条 warn `[<label>] names 中的组件 "<name>" 不在 compose/slots 中，已忽略` 并忽略（不装配、不查组件表）；`names: []` = 本页零装配且零告警（movement-teaching 记录页/设置页依赖此路径），缺省 `names` 或非数组畸形值均不过滤、零告警
+- 组件自带样式：`style.css` 属**可选兜底外观**（组件不自带 `<link>`）——需要组件独立外观、或宿主页无对应 CSS 时，由页面显式引入 `<link rel="stylesheet" href="/m/component-<名>/style.css">`；未引入不影响功能，组件与页面共用既有类名（如 `battle-overlay` / `rolling` / `selected`），现有 8 个接入页的外观均由各自页面 CSS 提供
+
+**优雅降级（装配器自身的畸形输入不抛错）**：`ctx.ui.component(name)` 未注册（组件被 `enabled:false` 禁用）→ factory 为 null → warn 后跳过该组件（插槽留空），页面其余部分照常工作；槽位未声明、宿主不存在、选择器非法（非字符串 / DOM 拒收）、`meta` / `slots` / `components` / `runtimeProps` 畸形（null、数组、原始值）一律 warn 后跳过或按空表降级。组件工厂 `factory(host, props, ctx)` 自身抛错**不**被吞掉（**向上传播**，降级归调用方），以免掩盖组件真实缺陷。
+
+**组件纪律（P11 实战教训）**：监听传 `{ signal }` + AbortController；`body` class 成对增删（多实例共享时引用计数）；禁模块级可变状态（多实例串台根因）；宿主 audio 只 pause/归零、不删除；`[data-slot]` 宿主置于 `opacity:0` 祖先之外；`config` 只放静态值；**组件不得 import 其他组件**（禁用会级联崩溃）。
+
+参考实例：单实例 `modules/drag/front/plugin.js`、多实例 `modules/music-draw/front/plugin.js`、条件装配 `modules/movement-teaching/front/plugin.js`（`names` 传 `[]` 表达"本页零装配"）。
+
 ---
 
 ## 4. 结构参考
@@ -817,7 +990,10 @@ statusEl.innerHTML = icon("circle-check", { size: 16 }) + " 已保存";
   "plugins": [
     { "target": "modules/drag", "enabled": true,
       "config": { "keepBg": true },
-      "pages": ["drag", "performance"] }
+      "pages": ["drag", "performance"] },
+    { "target": "modules/component-draw-machine", "enabled": true,
+      "kind": "component",
+      "pages": ["drag", "music-draw", "movement-teaching"] }
   ]
 }
 ```
@@ -825,8 +1001,11 @@ statusEl.innerHTML = icon("circle-check", { size: 16 }) + " 已保存";
 | 字段 | 说明 |
 |------|------|
 | `enabled` | `false` = 不 import，**前端代码不下载**（效果等同没有该 script） |
-| `config` | 作为 `component(el, meta)` 的 `meta` 传入 |
+| `config` | 作为 `component(el, meta)` 的 `meta` 传入；页面条目用它声明组件装配（`compose` / `slots` / `components`，见 3.8） |
 | `pages` | 可选；覆盖默认的"target 即本模块页"匹配，用于跨页插件 |
+| `kind` | 组件类插件填 `"component"`——既是分类标记，也是服务端放行 `/m/component-*/**` 静态资源的**白名单依据**（`resolveComponentDir` 要求 `kind === "component"` 且 `enabled !== false`，fail closed；见 1.4） |
+
+组件类插件条目**只存在于 `web/front.json`**（不进 `modules/modules.json` / `server/plugins.json`、不进导航）；组件目录含 `index.html` 也无意义——kernel 不会自动渲染组件名。
 
 **`modules/modules.json`**（页面元数据）：`{ "modules": [ { id, name, description, icon, nav, order } ] }`——与后端插件 `registerPage` 逐字段一致（脚手架自动双写），其中 `icon` 为 `web/icons.mjs` 的 `ICON_NAMES` 图标名。
 
@@ -844,9 +1023,11 @@ statusEl.innerHTML = icon("circle-check", { size: 16 }) + " 已保存";
 ### 4.3 `/api/plugins` 快照结构（管理页数据源）
 
 ```json
-{ "backend": [ { "id", "kind": "plugin|legacy", "enabled", "mounted", "error", "config", "name" } ],
-  "front":   [ { "id", "target", "enabled" } ] }
+{ "backend": [ { "id", "name", "icon", "kind": "plugin|legacy", "enabled", "mounted", "error", "config" } ],
+  "front":   [ { "id", "name", "icon", "enabled", "kind" } ] }
 ```
+
+前端条目的 `kind` 是可选的分类元数据（P11 增量）：组件类插件为 `"component"`，普通页面条目为 `null`。`pkg` 单文件形态退役后（P6b）快照不再返回该字段。
 
 便携模式（`Y_STAGE_PLUGINS_DIR` / `Y_STAGE_RESOURCE_DIR` 环境变量注入）下清单即 `plugins/` 目录的真实文件，所有写操作 `persisted: true`。
 
@@ -870,13 +1051,14 @@ statusEl.innerHTML = icon("circle-check", { size: 16 }) + " 已保存";
 
 | 工具 | 命令 | 用途 |
 |------|------|------|
-| 脚手架 | `node scripts/new-module.js <id> "名称" [--server]` | 生成一对插件骨架 + 自动追加三份清单 |
+| 脚手架（页面） | `node scripts/new-module.js <id> "名称" [--server]` | 生成一对插件骨架 + 自动追加三份清单 |
+| 脚手架（组件） | `node scripts/new-module.js <组件id> "名称" --component [--pages a,b]` | 生成组件类插件骨架（仅 `front/{plugin,view}.js` + `web/front.json` 的 `kind`/`pages` 条目；id 自动补 `component-` 前缀；与 `--server` 互斥） |
 | 数据库回归 | `node server.js --test` | 6 项，测完自动退出 |
-| 装配自检 | `node server.js --test-cordis` | A1-A6 + A6.9 排空端到端，30 项断言 |
-| 单元测试 | `node server/run-unit-tests.js` | 10 个测试文件（含 `web/icons.test.js` 图标基座守门） |
+| 装配自检 | `node server.js --test-cordis` | A1-A6 + A6.9 排空端到端，32 项断言 |
+| 单元测试 | `node server/run-unit-tests.js` | 16 个测试文件（server 侧 9 + web 侧 7；含图标基座守门 `web/icons.test.js` 与 P11 新增 `web/ui.test.js`、`web/lib/{random,persist,undo}.test.js`、`web/components/compose.test.js`） |
 | HTTP 行为基线 | `node scripts/endpoint-diff.js --compare` | 35 用例逐字节回放，**不重录直绿**是改动零漂移的证明 |
 
-**发布前检查单**（完整版见 `AGENTS.md` §6.8）：契约正确、inject 合法、三清单同步、key=模块 id、signal+cleanup、管理页可见无 error、endpoint-diff 全绿。
+**发布前检查单**（完整版见 `AGENTS.md` §6.8）：契约正确、inject 合法、三清单同步、key=模块 id、signal+cleanup、组件装配降级不崩（组件禁用时插槽留空）、管理页可见无 error、endpoint-diff 全绿。
 
 ---
 

@@ -4,8 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>对阵树式淘汰赛</title>
-    <link rel="preload" as="image" href="/resource/images/bg.jpg" />
-    <link rel="stylesheet" href="style.css" />
+  <link rel="preload" as="image" href="/resource/images/bg.jpg" />
+  <!-- P11：布局原语（L1 共享资产，origin 相对绝对路径）——先于 style.css，页面样式可覆盖 -->
+  <link rel="stylesheet" href="/web/components/grid.css" />
+  <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <!-- 错误状态条 -->
@@ -48,8 +50,8 @@
         <div class="center-axis"></div>
       </div>
 
-      <!-- 音乐控制栏 -->
-      <div class="music-bar">
+      <!-- 音乐控制栏（布局：.grid-split 宽屏左右 / 窄屏堆叠，零媒体查询） -->
+      <div class="music-bar grid-split">
         <div class="music-info">
           <span class="music-label">当前音乐</span>
           <span id="music-display" class="music-display">—</span>
@@ -87,6 +89,12 @@
         <button id="modal-close-btn" class="modal-close-btn">进入比赛</button>
       </div>
     </div>
+
+    <!-- P11 组件插槽（music-player / draw-machine；组件宿主必须放在 .app-wrapper 之外——
+         比赛模式对该子树 display:none，插槽若在其内会让组件自建节点随之不可见。
+         空容器，无视觉影响。） -->
+    <div data-slot="music"></div>
+    <div data-slot="draw"></div>
 
     <!-- 前端插件挂载点（P3d：页面 UI 由 /web/front.json 声明的 front/plugin.js 装配） -->
     <div id="plugin-root" hidden></div>

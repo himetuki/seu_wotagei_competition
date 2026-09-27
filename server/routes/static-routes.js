@@ -24,11 +24,24 @@ const mimeMap = {
 };
 
 // 发送文件（P6b：inlined-assets 兜底随 pkg 退役，真实文件直读）
-function sendFileSafe(res, filePath) {
+// P11：模块代码/页面属"随代码发布的资产"，发 no-cache + ETag/Last-Modified，
+// 并支持 If-None-Match → 304——未变更时浏览器免下载，已变更立即拿到新代码
+//（否则模块 front/*.js 被启发式缓存后，迁移/修复的代码到不了浏览器）。
+function sendFileSafe(req, res, filePath) {
   try {
     const content = fs.readFileSync(filePath);
     const ext = path.extname(filePath).toLowerCase();
     res.type(mimeMap[ext] || "application/octet-stream");
+    const etag = `W/"${content.length}-${Math.floor(fs.statSync(filePath).mtimeMs)}"`;
+    res.set({
+      "Cache-Control": "no-cache",
+      ETag: etag,
+      "Last-Modified": fs.statSync(filePath).mtime.toUTCString(),
+    });
+    if (req && req.headers["if-none-match"] === etag) {
+      res.status(304).end();
+      return true;
+    }
     res.send(content);
     return true;
   } catch (e) {
@@ -72,7 +85,7 @@ function setupStaticRoutes(app, APP_ROOT, dataDir) {
   // 首页（直接服务 home 模块，避免存根跳转）
   app.get("/", (req, res) => {
     const filePath = path.join(paths.modulesDir(), "home", "index.html");
-    if (!sendFileSafe(res, filePath)) {
+    if (!sendFileSafe(req, res, filePath)) {
       res.status(404).send("首页不存在");
     }
   });
@@ -81,7 +94,7 @@ function setupStaticRoutes(app, APP_ROOT, dataDir) {
   app.use((req, res, next) => {
     if (req.path === "/" || req.path === "" || req.path === "/index") {
       const filePath = path.join(paths.modulesDir(), "home", "index.html");
-      if (!sendFileSafe(res, filePath)) {
+      if (!sendFileSafe(req, res, filePath)) {
         next();
       }
     } else {

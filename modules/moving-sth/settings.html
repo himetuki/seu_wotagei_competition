@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Y.Stage 4 - 定时搬化棒设置</title>
     <link rel="preload" as="image" href="/resource/images/bg_index.jpg" />
+    <!-- P11：布局原语（L1 共享资产，origin 相对绝对路径）——先于页面样式，页面样式可覆盖 -->
+    <link rel="stylesheet" href="/web/components/grid.css" />
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="settings.css" />
   </head>
@@ -49,7 +51,8 @@
               </p>
             </div>
 
-            <div class="button-group">
+            <!-- 布局：.grid-flow（auto-fit）宽屏一行 / 窄屏单列，零媒体查询 -->
+            <div class="button-group grid-flow">
               <button type="submit" id="save-settings-btn">保存设置</button>
               <button type="button" id="reset-default-btn">恢复默认</button>
             </div>
@@ -57,7 +60,8 @@
         </div>
       </main>
 
-      <div class="navigation">
+      <!-- 布局：.grid-flow（auto-fit）宽屏一行 / 窄屏单列，零媒体查询 -->
+      <div class="navigation grid-flow">
         <button id="back-to-game-btn">返回游戏</button>
         <button id="back-btn">返回游戏中心</button>
         <button id="home-btn">返回主页</button>

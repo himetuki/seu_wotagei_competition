@@ -1,13 +1,29 @@
 /**
- * Drag式比赛 — 前端组件（P3d 插件化迁移）
+ * Drag式比赛 — 页面 flow（P11-B4「积木拼装」迁移后）
  *
  * 由原多脚本按加载顺序并入同一闭包（main → data → bracket → render → drag → music），
  * 函数体逐行保留；全局函数/变量 → 模块闭包作用域。原 drag_main.js 的
  * DOMContentLoaded 初始化改为组件体内直接执行（kernel render 时调用）。
  *
- * 注意：持久化继续用原生 fetch（/api/drag-process、/api/clear-drag-process、
- * /api/drag-settings）与原 localStorage key，保持行为零回归；ctx 仅为后续
- * 可选用途保留（组件第三参）。
+ * 分层（P11 §2.1）：跨页同构能力已抽走，本文件不再是"第 6 份手抄实现"：
+ *   · 音乐抽取闪现动画（40 tick × 50ms 顺序循环） → 组件 component-draw-machine
+ *   · 播放 + 比赛模式（进入 battle-mode / onended / 双击退出） → component-music-player
+ *   · 持久化双写 + 恢复链 + 重置            → /web/lib/persist.mjs（createPersistence）
+ *   · 洗牌（原手写 Fisher–Yates 循环）        → /web/lib/random.mjs（shuffle）
+ *   · bracket / 拖拽 / undo 快照栈            → 本页专属 flow，原样保留（P11 §5.4 不做清单）
+ *
+ * 有意行为变更（仅以下五处，其余逐行保留语义）：
+ *   1. 音乐抽取动画改为 component-draw-machine：ticks/tickMs/cycle 与迁移前逐字一致
+ *      （40 × 50ms 顺序循环；末次定格随机），展示类 rolling/selected 同名前缀沿用 CSS。
+ *   2. 播放/比赛模式改为 component-music-player：body 类 battle-mode / battle-keep-bg 的加移
+ *      归组件（引用计数，卸载必释放）；「双击屏幕结束比赛」提示仍由本页 CSS
+ *      `body.battle-mode::after` 承担（组件 overlay.enabled:false，不渲染提示节点，无重复）。
+ *   3. 持久化改用 createPersistence：localStorage key（dragBattleState2_<source>）与 API 端点
+ *      （/api/drag-process、/api/clear-drag-process）**逐字保留**；保存体仍是
+ *      { ...getPersisted(), lastUpdate }，恢复链仍是 服务端 → 本地 → 重建。
+ *   4. shufflePlayers 的手写循环 → shuffle()（同为 Fisher–Yates，等概率、不改入参语义一致）。
+ *   5. 「抽取期间禁用开始按钮」保留（迁移前 drawMusic 的按钮态）：改由 draw-machine 的
+ *      onTick（滚动首个 tick 起）触发，不再由页面绑定 #draw-music-btn（避免与组件双跑）。
  *
  * 坐标系:
  *   1 GU = 容器宽度 / 50
@@ -19,6 +35,8 @@
  */
 
 import { iconEl } from "/web/icons.mjs";
+import { shuffle } from "/web/lib/random.mjs";
+import { createPersistence } from "/web/lib/persist.mjs";
 
 /* =================================================================
  *  常量（原 drag_main.js）
@@ -29,10 +47,43 @@ const BOX_H_GU = 1.2;
 const ROUND_STEP_GU = 5;
 
 /* =================================================================
- *  持久化 API
+ *  持久化 API（localStorage key 与端点逐字保留，经 createPersistence 双写/恢复/重置）
  * ================================================================= */
 const API_URL = "/api/drag-process";
 const API_CLEAR_URL = "/api/clear-drag-process";
+
+/* 两个选手源各一份存档（key 由 storageKey(source) 决定，控制器按源懒建并缓存）。
+   组件入口处注入 ctx.api；控制器复用 localStorage 与既有端点，键名不改。 */
+const persistBySource = new Map();
+let apiRef = null;
+
+/** 取（或建）指定选手源的持久化控制器；source 缺省 = 当前源 */
+function persistFor(source) {
+  const src = source || State.playerSource;
+  if (!persistBySource.has(src)) {
+    persistBySource.set(
+      src,
+      createPersistence({
+        key: storageKey(src), // "dragBattleState2_<source>"，逐字保留
+        storage: localStorage,
+        endpoint: API_URL,
+        clearEndpoint: API_CLEAR_URL,
+        api: apiRef,
+        // 迁移前 loadStateFromServer 的两条判定：有节点 + 源一致（源不同则视为未命中，
+        // 交给恢复链的本地分支），空载荷不算存档
+        isValid: (data) =>
+          !!data &&
+          Array.isArray(data.nodes) &&
+          data.nodes.length > 0 &&
+          (!data.playerSource || data.playerSource === src),
+      })
+    );
+  }
+  return persistBySource.get(src);
+}
+
+/* 组件实例 API 桥（front/plugin.js 传入、组件 onReady 回填；组件缺失时保持 null） */
+let apis = { music: null, draw: null };
 
 /* =================================================================
  *  全局状态
@@ -49,7 +100,6 @@ const State = {
   undoStack: [],
   music: { oldList: [], newList: [], exList: [], current: null },
   musicSource: "old",
-  battleKeepBg: true,
   doubleElim: false,
   doubleElimActive: false,
   doubleElimResetDone: false,
@@ -60,12 +110,10 @@ let canvasEl, nodesLayer, svgEl, containerW, containerH, GU, boxW, boxH;
 let dragData = null;
 
 /* =================================================================
- *  音乐抽取 & 比赛模式运行态（原 drag_music.js 顶层变量）
+ *  音乐抽取 & 比赛模式
+ *  运行态（滚动句柄 / 当前曲目 / battleActive）已归组件实例持有：
+ *  抽取 = draw-machine 实例，播放与比赛模式 = music-player 实例（见 componentProps）
  * ================================================================= */
-let musicRolling = null;
-let lastDrawnMusic = null;
-let lastDrawnMusicSource = null;
-let battleActive = false;
 
 /* =================================================================
  *  工具函数（原 drag_main.js）
@@ -131,11 +179,9 @@ function debounce(fn, ms) {
 
 /* =================================================================
  *  document/window 级监听（具名化，供 cleanup 解绑）
+ *  （原 handleGlobalDblClick「双击退出比赛」已随 music-player 组件化删除：
+ *    组件的双击监听只在播放生命周期内登记，退出/卸载都解绑）
  * ================================================================= */
-function handleGlobalDblClick() {
-  if (battleActive) exitBattle();
-}
-
 const handleWinResize = debounce(() => {
   if (!canvasEl) return;
   recomputeLayout();
@@ -143,21 +189,87 @@ const handleWinResize = debounce(() => {
 }, 150);
 
 /* =================================================================
+ *  组件运行时 props（front/plugin.js 挂载时取用）
+ *
+ * 静态 props（时序/文案）可由 web/front.json 的 drag config.components 覆盖，
+ * 运行时 props 优先级更高。按钮归属刻意不重叠（见 front/plugin.js 头注释）：
+ *   draw-machine  : #draw-music-btn（40×50ms 顺序循环）+ 抽取期间禁用开始按钮
+ *   music-player  : 不接管 trigger，只接管 #start-battle-btn（overlay 关闭：无倒计时/打字动画，
+ *                   与迁移前直接播放一致；keepBg 读既有 dragBattleKeepBg 键）
+ *   串联          : draw 定格 → bridge.music.setItem({ name, folder })（folder 来自曲库标签，
+ *                   与迁移前 lastDrawnMusicSource 决定播放目录同义）
+ * ================================================================= */
+export function componentProps(bridge) {
+  return {
+    "music-player": {
+      // 曲目池带曲库目录：music-player 取 item.folder 定 /resource/musics/<folder>/
+      //（与 setItem 传入的 { name, folder } 同形；trigger 为空时本项不参与抽取）
+      items: () => getTaggedMusicList().map((m) => ({ name: m.name, folder: m.source })),
+      display: "#music-display",
+      trigger: null, // 抽取归 draw-machine（同按钮双绑会双跑动画）
+      startTrigger: "#start-battle-btn",
+      overlay: { enabled: false }, // 迁移前无 BATTLE START 倒计时/打字动画
+      exitOnDblclick: true, // 迁移前 handleGlobalDblClick
+      exitOnClick: false,
+      exitOnEnded: true, // 迁移前 player.onended → exitBattle
+      keepBgKey: "dragBattleKeepBg", // 只读既有设置键（drag 原有语义）
+      onReady: (api) => {
+        bridge.music = api;
+      },
+      // 迁移前 exitBattle 尾部的重排（battle 期间 .app-wrapper display:none → 画布尺寸归零）
+      onExited: () => {
+        recomputeLayout();
+        renderAll();
+      },
+    },
+    "draw-machine": {
+      items: () => getTaggedMusicList(),
+      display: "#music-display",
+      trigger: "#draw-music-btn",
+      ticks: 40, // 迁移前 TOTAL_TICKS
+      tickMs: 50, // 迁移前 setInterval 间隔
+      cycle: true, // 迁移前为顺序循环（currentIdx+1），非随机跳
+      onReady: (api) => {
+        bridge.draw = api;
+      },
+      onEmpty: () => showHint("音乐列表为空"),
+      // 迁移前 drawMusic 在滚动期间禁用「开始比赛」按钮（首个 tick 即 50ms 后，玩家不可能抢点）
+      onTick: () => {
+        const startBtn = document.getElementById("start-battle-btn");
+        if (startBtn) startBtn.disabled = true;
+      },
+      onResult: (item) => {
+        // 迁移前：lastDrawnMusic = finalItem.name / lastDrawnMusicSource = finalItem.source
+        const startBtn = document.getElementById("start-battle-btn");
+        if (startBtn) startBtn.disabled = false;
+        // P11 缺陷台账 #3：抽取结果进 State（getPersisted 的 music.current 字段此前无人
+        // 写入，存档恒 null）→ saveState 双写，刷新后恢复链才有曲目可复原
+        State.music.current = { name: item.name, folder: item.source };
+        saveState();
+        if (bridge.music) bridge.music.setItem({ name: item.name, folder: item.source });
+      },
+    },
+  };
+}
+
+/* =================================================================
  *  组件入口（原 DOMContentLoaded 初始化，kernel render 时执行）
  * ================================================================= */
-export function dragComponent(el, meta, ctx) {
+export function dragComponent(el, meta, ctx, bridge) {
   // cleanup 契约：静态骨架节点的全部监听经 signal 登记，重渲染时 abort 统一解绑，
   // 防止不刷新页面的重复 render 造成双绑双触发
   const bindAbort = new AbortController();
   const { signal } = bindAbort;
 
+  // 组件实例 API（front/plugin.js 的 onReady 回填；组件缺失时保持 null）
+  apis = bridge || { music: null, draw: null };
+  apiRef = ctx && ctx.api ? ctx.api : null;
+
   canvasEl = document.getElementById("canvas");
   nodesLayer = document.getElementById("nodes-layer");
   svgEl = document.getElementById("lines-svg");
 
-  // 加载设置
-  const keepBg = localStorage.getItem("dragBattleKeepBg");
-  if (keepBg !== null) State.battleKeepBg = keepBg !== "false";
+  // 加载设置（battleKeepBg 不再读入页面：music-player 在开赛时按 keepBgKey 只读同一键）
   const doubleElim = localStorage.getItem("dragDoubleElim");
   if (doubleElim !== null) State.doubleElim = doubleElim === "true";
 
@@ -198,12 +310,9 @@ export function dragComponent(el, meta, ctx) {
   document.getElementById("switch-music-new-btn").addEventListener("click", () => switchMusicSource("new"), { signal });
   document.getElementById("switch-music-ex-btn").addEventListener("click", () => switchMusicSource("ex"), { signal });
 
-  // 音乐抽取 & 比赛按钮
-  document.getElementById("draw-music-btn").addEventListener("click", drawMusic, { signal });
-  document.getElementById("start-battle-btn").addEventListener("click", startBattle, { signal });
-
-  // 双击退出比赛模式
-  document.addEventListener("dblclick", handleGlobalDblClick, { signal });
+  // 音乐抽取 & 比赛按钮 + 双击退出比赛的监听全部归组件实例
+  // （draw-machine 的 trigger / music-player 的 startTrigger + 播放期 document dblclick），
+  // 页面侧不再绑定，避免与组件双跑。
 
   // 窗口大小变化重渲染
   window.addEventListener("resize", handleWinResize, { signal });
@@ -213,8 +322,12 @@ export function dragComponent(el, meta, ctx) {
     .then(() => Promise.all([loadPlayers(), loadMusic()]))
     .then(() => {
       const loadedSource = State.playerSource;
-      loadStateFromServer().then(ok => {
-        if (!ok) loadLocalState(State.playerSource);
+      // 恢复链：服务端 → 本地 → 无（重建），与迁移前 loadStateFromServer + loadLocalState 同序
+      return persistFor(State.playerSource).load().then(({ data, source }) => {
+        if (source === "server" || source === "local") {
+          restoreState(data);
+          restoreComponentCurrent(); // 存档曲目复原到组件实例（P11 缺陷台账 #3）
+        }
 
         const sourceChanged = State.playerSource !== loadedSource;
         const restoredCount = State.totalCount;
@@ -253,22 +366,14 @@ export function dragComponent(el, meta, ctx) {
  *  cleanup（重渲染/卸载时由 ctx.ui 调用）
  * ================================================================= */
 function cleanupDragPage(bindAbort) {
-  // signal 登记的静态骨架监听（按钮/document dblclick/window resize）统一解绑
+  // signal 登记的静态骨架监听（按钮/window resize）统一解绑
   if (bindAbort) bindAbort.abort();
 
-  if (musicRolling) { clearInterval(musicRolling); musicRolling = null; }
-  battleActive = false;
   dragData = null;
 
-  document.body.classList.remove("battle-mode");
-  document.body.classList.remove("battle-keep-bg");
-
-  const player = document.getElementById("music-player");
-  if (player) {
-    player.onended = null;
-    player.pause();
-    try { player.currentTime = 0; } catch (e) { /* 未加载媒体时可能抛错，忽略 */ }
-  }
+  // 音乐抽取定时器 / battle 运行态 / body 类（battle-mode、battle-keep-bg）/
+  // #music-player 的 onended+pause 归零，全部由组件实例的 cleanup 负责
+  // （front/plugin.js 收集后逐个调用），页面侧不再重复。
 }
 
 /* =================================================================
@@ -301,6 +406,7 @@ function switchPlayerSource(source) {
 
         if (compatible) {
           restoreState(data);
+          restoreComponentCurrent(); // 切源恢复存档：曲目同步复原到组件实例（同 #3）
           recomputeLayout();
           renderAll();
           showHint("已切换到" + (source === "player1" ? "加组" : "内组") + "（已恢复进度）");
@@ -322,10 +428,8 @@ function switchPlayerSource(source) {
 function shufflePlayers() {
   loadPlayers().then(() => {
     if (State.allPlayers.length === 0) return;
-    for (let i = State.allPlayers.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [State.allPlayers[i], State.allPlayers[j]] = [State.allPlayers[j], State.allPlayers[i]];
-    }
+    // 洗牌改用 L1 共享库（Fisher–Yates，等概率；返回新数组，等价于原手写循环的最终排列）
+    State.allPlayers = shuffle(State.allPlayers);
     buildOrResetBracket();
     saveState();
     renderAll();
@@ -394,21 +498,19 @@ function loadSettings() {
 function handleReset() {
   if (!confirm("确定要重置比赛？所有进度将丢失。")) return;
 
-  localStorage.removeItem(storageKey());
-  fetch(API_CLEAR_URL, { method: "POST" }).catch(() => {});
+  // 清两端存档（本地 key + POST /api/clear-drag-process），键/端点逐字保留
+  persistFor(State.playerSource).reset();
 
   State.music.current = null;
 
-  if (musicRolling) { clearInterval(musicRolling); musicRolling = null; }
-  lastDrawnMusic = null;
-  lastDrawnMusicSource = null;
-  battleActive = false;
-  document.body.classList.remove("battle-mode");
-  document.body.classList.remove("battle-keep-bg");
-  const player = document.getElementById("music-player");
-  player.pause();
-  player.currentTime = 0;
-  player.onended = null;
+  // 音乐运行态归组件实例：停止播放 + 退出比赛模式（body 类随组件引用计数释放）+ 清曲目 + 中止滚动
+  if (apis.music) {
+    apis.music.stop("manual");
+    apis.music.clearItem();
+  }
+  if (apis.draw) apis.draw.cancel();
+
+  // 展示与按钮复位（迁移前 handleReset 的既有观感）
   const musicDisplay = document.getElementById("music-display");
   musicDisplay.textContent = "—";
   musicDisplay.classList.remove("rolling", "selected");
@@ -451,34 +553,12 @@ function getPersisted() {
   };
 }
 
+/**
+ * 双写保存（localStorage + POST /api/drag-process）：键与端点逐字保留，
+ * 保存体仍是 { ...getPersisted(), lastUpdate }（createPersistence 负责，失败不抛）。
+ */
 function saveState() {
-  const data = getPersisted();
-  try { localStorage.setItem(storageKey(), JSON.stringify(data)); } catch (e) {}
-  fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...data, lastUpdate: new Date().toISOString() }),
-  }).catch(() => {});
-}
-
-function loadLocalState(source) {
-  try {
-    const raw = localStorage.getItem(storageKey(source));
-    if (!raw) return;
-    restoreState(JSON.parse(raw));
-  } catch (e) {}
-}
-
-function loadStateFromServer() {
-  return fetch(API_URL)
-    .then(r => r.json())
-    .then(data => {
-      if (!data || !data.nodes || data.nodes.length === 0) return false;
-      if (data.playerSource && data.playerSource !== State.playerSource) return false;
-      restoreState(data);
-      return true;
-    })
-    .catch(() => false);
+  persistFor(State.playerSource).save(getPersisted());
 }
 
 function restoreState(data) {
@@ -504,6 +584,20 @@ function restoreState(data) {
 
   document.getElementById("switch-player1-btn").classList.toggle("active", State.playerSource === "player1");
   document.getElementById("switch-player2-btn").classList.toggle("active", State.playerSource === "player2");
+}
+
+/**
+ * 把存档里的当前曲目复原到 music-player 组件实例（P11 缺陷台账 #3）。
+ * 恢复链原先只回填 State.music.current，组件实例的 current/display/audio.src 仍是空 ——
+ * 刷新后「开始比赛」无歌可放或须重抽。经 bridge.music 的 setItem 实例 API 复原
+ * （不捅组件内部状态），并解禁「开始比赛」按钮（与抽取定格 onResult 的按钮态一致）。
+ * 仅页面 flow 侧调用：组件被禁用（apis.music 为 null）或存档无曲目时为无操作。
+ */
+function restoreComponentCurrent() {
+  if (!apis.music || !State.music.current) return;
+  apis.music.setItem(State.music.current);
+  const startBtn = document.getElementById("start-battle-btn");
+  if (startBtn) startBtn.disabled = false;
 }
 
 /* =================================================================
@@ -1582,7 +1676,12 @@ function cascadeClear(node) {
 }
 
 /* =================================================================
- *  音乐抽取（原 drag_music.js）
+ *  音乐抽取 & 比赛模式
+ *
+ *  原 drag_music.js 的 drawMusic（40×50ms 顺序循环闪现）→ component-draw-machine；
+ *  startBattle / exitBattle（audio.src、body battle-mode / battle-keep-bg、双击退出、onended）
+ *  → component-music-player；两者在 componentProps 里按运行时 props 装配并串联。
+ *  本段只保留"曲库标签"这一页面语义：曲目需带曲库目录（播放时定 /resource/musics/<folder>/）。
  * ================================================================= */
 function getTaggedMusicList() {
   const tagged = [];
@@ -1596,89 +1695,6 @@ function getTaggedMusicList() {
   return tagged;
 }
 
-function drawMusic() {
-  const list = getTaggedMusicList();
-  if (list.length === 0) {
-    showHint("音乐列表为空");
-    return;
-  }
-
-  const display = document.getElementById("music-display");
-  const drawBtn = document.getElementById("draw-music-btn");
-  const startBtn = document.getElementById("start-battle-btn");
-
-  drawBtn.disabled = true;
-  startBtn.disabled = true;
-  display.classList.add("rolling");
-
-  let ticks = 0;
-  const TOTAL_TICKS = 40;
-  let currentIdx = 0;
-  const finalIdx = Math.floor(Math.random() * list.length);
-  const finalItem = list[finalIdx];
-
-  musicRolling = setInterval(() => {
-    ticks++;
-    if (ticks < TOTAL_TICKS) {
-      currentIdx = (currentIdx + 1) % list.length;
-      display.textContent = list[currentIdx].name;
-    } else {
-      clearInterval(musicRolling);
-      musicRolling = null;
-      lastDrawnMusic = finalItem.name;
-      lastDrawnMusicSource = finalItem.source;
-      display.textContent = lastDrawnMusic;
-      display.classList.remove("rolling");
-      display.classList.add("selected");
-      drawBtn.disabled = false;
-      startBtn.disabled = false;
-    }
-  }, 50);
-}
-
-/* =================================================================
- *  比赛模式
- * ================================================================= */
-function startBattle() {
-  if (!lastDrawnMusic) return;
-
-  const folder = lastDrawnMusicSource || "1yearplus";
-  const musicPath = "/resource/musics/" + folder + "/" + lastDrawnMusic;
-  const player = document.getElementById("music-player");
-  player.src = musicPath;
-  player.play().catch(() => {});
-
-  player.onended = () => {
-    if (battleActive) exitBattle();
-  };
-
-  battleActive = true;
-  document.body.classList.add("battle-mode");
-
-  if (State.battleKeepBg) {
-    document.body.classList.add("battle-keep-bg");
-  }
-}
-
-function exitBattle() {
-  const player = document.getElementById("music-player");
-  player.pause();
-  player.currentTime = 0;
-  player.onended = null;
-
-  battleActive = false;
-  document.body.classList.remove("battle-mode");
-  document.body.classList.remove("battle-keep-bg");
-
-  const startBtn = document.getElementById("start-battle-btn");
-  const drawBtn = document.getElementById("draw-music-btn");
-  drawBtn.disabled = false;
-  startBtn.disabled = !!lastDrawnMusic ? false : true;
-
-  recomputeLayout();
-  renderAll();
-}
-
 /* =================================================================
  *  音乐库切换
  * ================================================================= */
@@ -1690,8 +1706,10 @@ function switchMusicSource(source) {
   document.getElementById("switch-music-new-btn").classList.toggle("active", source === "new");
   document.getElementById("switch-music-ex-btn").classList.toggle("active", source === "ex");
 
-  lastDrawnMusic = null;
-  lastDrawnMusicSource = null;
+  // 迁移前：清 lastDrawnMusic/lastDrawnMusicSource（曲目作废）→ 组件侧的当前曲目同步清空
+  //（State 侧一并作废：否则下一次 saveState 会把已作废曲目写回存档，刷新后又给它复原）
+  State.music.current = null;
+  if (apis.music) apis.music.clearItem();
   const display = document.getElementById("music-display");
   display.textContent = "—";
   display.classList.remove("rolling", "selected");
@@ -1699,3 +1717,4 @@ function switchMusicSource(source) {
 
   showHint("已切换到" + (source === "old" ? "1year+" : source === "new" ? "1year-" : "1year+EX") + " 曲库");
 }
+

@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Y.Stage 4 - 设置</title>
     <link rel="preload" as="image" href="/resource/images/bg_index.jpg" />
+    <!-- P11：布局原语（L1 共享资产，origin 相对绝对路径）——先于 style.css，页面样式可覆盖 -->
+    <link rel="stylesheet" href="/web/components/grid.css" />
+    <link rel="stylesheet" href="/m/component-confirm-dialog/style.css" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -33,8 +36,20 @@
             </select>
           </div>
 
-          <div class="data-container reversed">
-            <!-- 编辑区域移到右侧上方 -->
+          <!-- 两栏：布局由 /web/components/grid.css 的 .grid-split 提供
+               （宽屏 列表 | 编辑 等宽两栏 / 窄屏自动堆叠，零断点）。
+               DOM 顺序统一为「列表在前、编辑在后」，与技能/奖励面板一致
+               （原 players 面板靠 .reversed 反向排列，已随 grid 化移除）。 -->
+          <div class="data-container grid-split">
+            <div class="data-list">
+              <h3>当前选手列表</h3>
+              <ul id="player-list"></ul>
+              
+              <!-- 将保存按钮移到选手列表下方 -->
+              <div class="action-buttons">
+                <button id="save-players-btn" class="primary-action-btn">保存更改</button>
+              </div>
+            </div>
             <div class="data-editor">
               <h3>选手编辑</h3>
               <form id="player-form">
@@ -78,16 +93,6 @@
               </div>
             </div>
             
-            <!-- 选手列表移到右侧 -->
-            <div class="data-list">
-              <h3>当前选手列表</h3>
-              <ul id="player-list"></ul>
-              
-              <!-- 将保存按钮移到选手列表下方 -->
-              <div class="action-buttons">
-                <button id="save-players-btn" class="primary-action-btn">保存更改</button>
-              </div>
-            </div>
           </div>
         </section>
 
@@ -103,7 +108,7 @@
             </select>
           </div>
 
-          <div class="data-container">
+          <div class="data-container grid-split">
             <div class="data-list">
               <h3>当前技能列表</h3>
               <ul id="trick-list"></ul>
@@ -163,7 +168,7 @@
             <h2>一年内组奖励管理</h2>
           </div>
 
-          <div class="data-container">
+          <div class="data-container grid-split">
             <div class="data-list">
               <h3>当前奖励列表</h3>
               <ul id="award-list"></ul>
@@ -208,7 +213,9 @@
           <div class="section-header">
             <h2>功能开关</h2>
           </div>
-          <div class="feature-switches">
+          <!-- 功能开关卡片流：布局由 /web/components/grid.css 的 .grid-cards 提供
+               （宽屏多列、窄屏自动单列；保存按钮跨满整行，见 style.css） -->
+          <div class="feature-switches grid-cards">
             <div class="feature-item">
               <div class="feature-text">
                 <h3>一年加组对战 - 抽取动作</h3>
@@ -274,7 +281,7 @@
           </div>
           <div class="music-import-intro">
             <p>在此页面可以批量导入音乐文件到不同组别。更详细的导入功能请使用专用页面：</p>
-            <button id="goto-music-import-btn" class="special-btn" onclick="window.location.href='/m/music-import/'">
+            <button id="goto-music-import-btn" class="special-btn">
               进入音乐导入页面
             </button>
           </div>

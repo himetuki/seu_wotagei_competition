@@ -1,40 +1,30 @@
 /**
- * 体态传技 — 记录页面前端组件（P4 迁移）
+ * 体态传技 — 记录页面前端组件（P4 迁移 + P11-R1 响应式改造）
  *
- * 由原 m-w-h_records_data.js + m-w-h_records_ui.js 按加载顺序并入同一闭包，
- * 函数体逐行保留；全局函数/变量 → 模块闭包作用域。
- * 原两个 DOMContentLoaded 初始化与脚本顶层 DOM 缓存改由 initMovementTeachingRecords()
- * 承接（kernel render 时 DOM 早已就绪）。
+ * 由原 m-w-h_records_data.js + m-w-h_records_ui.js 按加载顺序并入同一闭包。
+ * P11-R1：记录表（tbody#records-list）与统计卡片（.records-stats）改为 petite-vue
+ * 响应式视图——CRUD 只改 R.records 数组，行/统计自动更新（删 renderRecordsList/
+ * updateUI/updateStatsDisplay/escapeHtml 全量重建与手工转义：插值自带转义）；
+ * 搜索框经 input 事件桥接进 R.query（实时过滤，替代旧"点按钮/回车才筛"），
+ * 行内删除按钮改 @click 指令（删内联 onclick 与 window.confirmDeleteRecord 桥接）。
+ * 数字变化动画经 v-effect（依赖 stats 值，值变才脉冲）。
  *
- * 注意：记录行删除按钮走模板内联 onclick="confirmDeleteRecord(...)"，
- * 依赖 window.confirmDeleteRecord 全局桥接（原版行为，保留）。
- *
- * cleanup 覆盖：signal 登记的静态监听；toast/对话框均自清理（带 parentNode 守卫）。
+ * cleanup 覆盖：signal 登记的静态监听；响应式视图 dispose；toast/对话框均自清理。
  */
 
 import { icon } from "/web/icons.mjs";
+import { createReactiveScope, mountReactiveSafe } from "/web/lib/reactive.mjs";
 
-// 记录数据存储
-const RecordsData = {
-  // 所有记录列表
-  records: [],
-  // 当前筛选后的记录列表
-  filteredRecords: [],
-  // 记录统计数据
-  stats: {
-    totalRecords: 0,
-    correctPercentage: 0,
-    averageTime: 0,
-  },
-  // 是否正在加载
-  isLoading: true,
-};
+// 响应式状态（异步就绪前为 null）：records/loading/query 单一事实源，
+// filtered()/stats() 为派生方法（替代旧 filteredRecords/stats 存储字段）
+let R = null;
+const listViews = []; // 两个响应式视图（记录表 + 统计卡）的 dispose（cleanup 统一卸载）
+let listsDisposed = false;
 
 // 初始化数据
 async function initializeData() {
   try {
     await loadRecords();
-    updateStats();
     console.log("记录数据初始化完成");
   } catch (error) {
     console.error("初始化记录数据失败:", error);
@@ -44,8 +34,8 @@ async function initializeData() {
 
 // 加载所有记录
 async function loadRecords() {
-  RecordsData.isLoading = true;
-  updateUI();
+  if (!R) return;
+  R.isLoading = true;
 
   try {
     const response = await fetch("/api/movement-partys");
@@ -58,24 +48,20 @@ async function loadRecords() {
 
     if (data && data.records && Array.isArray(data.records)) {
       // 按时间降序排序，最新的排在前面
-      RecordsData.records = data.records.sort((a, b) => {
+      R.records = data.records.sort((a, b) => {
         return new Date(b.date) - new Date(a.date);
       });
-      RecordsData.filteredRecords = [...RecordsData.records];
     } else {
-      RecordsData.records = [];
-      RecordsData.filteredRecords = [];
+      R.records = [];
     }
 
-    console.log(`成功加载 ${RecordsData.records.length} 条记录`);
+    console.log(`成功加载 ${R.records.length} 条记录`);
   } catch (error) {
     console.error("加载记录数据失败:", error);
     showToast("无法连接到服务器", "error");
-    RecordsData.records = [];
-    RecordsData.filteredRecords = [];
+    R.records = [];
   } finally {
-    RecordsData.isLoading = false;
-    updateUI();
+    R.isLoading = false;
   }
 }
 
@@ -95,17 +81,8 @@ async function deleteRecord(id) {
       throw new Error(result.message || `删除失败: ${response.status}`);
     }
 
-    // 从记录列表中移除
-    RecordsData.records = RecordsData.records.filter(
-      (record) => record.id !== id
-    );
-    RecordsData.filteredRecords = RecordsData.filteredRecords.filter(
-      (record) => record.id !== id
-    );
-
-    // 更新统计数据和UI
-    updateStats();
-    updateUI();
+    // 从记录列表中移除（响应式：行与统计自动更新）
+    R.records = R.records.filter((record) => record.id !== id);
 
     showToast("记录已删除", "success");
     return true;
@@ -127,13 +104,8 @@ async function clearAllRecords() {
       throw new Error(`清空记录失败: ${response.status}`);
     }
 
-    // 清空记录列表
-    RecordsData.records = [];
-    RecordsData.filteredRecords = [];
-
-    // 更新统计数据和UI
-    updateStats();
-    updateUI();
+    // 清空记录列表（响应式：行与统计自动更新）
+    R.records = [];
 
     showToast("所有记录已清空", "success");
     return true;
@@ -141,51 +113,6 @@ async function clearAllRecords() {
     console.error("清空记录失败:", error);
     showToast("清空记录失败", "error");
     return false;
-  }
-}
-
-// 搜索记录
-function searchRecords(keyword) {
-  if (!keyword || keyword.trim() === "") {
-    RecordsData.filteredRecords = [...RecordsData.records];
-  } else {
-    const searchTerm = keyword.toLowerCase().trim();
-    RecordsData.filteredRecords = RecordsData.records.filter((record) => {
-      return (
-        record.teamName.toLowerCase().includes(searchTerm) ||
-        record.trickName.toLowerCase().includes(searchTerm)
-      );
-    });
-  }
-
-  updateUI();
-}
-
-// 更新统计数据
-function updateStats() {
-  const records = RecordsData.records;
-
-  // 总记录数
-  RecordsData.stats.totalRecords = records.length;
-
-  // 猜中率
-  if (records.length > 0) {
-    const correctCount = records.filter(
-      (record) => record.isGuessCorrect
-    ).length;
-    RecordsData.stats.correctPercentage = Math.round(
-      (correctCount / records.length) * 100
-    );
-  } else {
-    RecordsData.stats.correctPercentage = 0;
-  }
-
-  // 平均时间
-  if (records.length > 0) {
-    const totalTime = records.reduce((sum, record) => sum + record.duration, 0);
-    RecordsData.stats.averageTime = Math.round(totalTime / records.length);
-  } else {
-    RecordsData.stats.averageTime = 0;
   }
 }
 
@@ -210,105 +137,23 @@ function formatDate(dateString) {
   return `${year}-${month}-${day} ${hours}:${minutes}`;
 }
 
-// 显示toast消息
+// toast 桥（P12）：toast 组件实例 onReady 回填；13 个调用点零改动。
+// 降级语义：组件缺失（enabled:false / 未注册）→ console.log（toast 属非关键 UX，不保留旧实现副本）
+let toastApi = null;
 function showToast(message, type = "info", duration = 3000) {
-  // 检查toast容器是否存在，不存在则创建
-  let toastContainer = document.querySelector(".toast-container");
-
-  if (!toastContainer) {
-    toastContainer = document.createElement("div");
-    toastContainer.className = "toast-container";
-    document.body.appendChild(toastContainer);
-  }
-
-  // 创建toast元素
-  const toast = document.createElement("div");
-  toast.className = `toast ${type}`;
-  toast.textContent = message;
-
-  // 添加到容器
-  toastContainer.appendChild(toast);
-
-  // 显示动画
-  setTimeout(() => {
-    toast.classList.add("show");
-  }, 10);
-
-  // 设置自动消失
-  setTimeout(() => {
-    toast.classList.remove("show");
-
-    // 动画完成后移除元素
-    setTimeout(() => {
-      if (toast.parentNode) {
-        toast.parentNode.removeChild(toast);
-      }
-
-      // 如果没有更多toast，移除容器
-      if (toastContainer.children.length === 0) {
-        document.body.removeChild(toastContainer);
-      }
-    }, 300);
-  }, duration);
+  if (toastApi) toastApi.show(message, type, duration);
+  else console.log("[toast]", type, message);
 }
-
-// 添加CSS样式以支持toast消息
-(function addToastStyles() {
-  if (document.getElementById("toast-styles")) return;
-
-  const style = document.createElement("style");
-  style.id = "toast-styles";
-  style.textContent = `
-    .toast-container {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 9999;
-    }
-    
-    .toast {
-      background-color: #333;
-      color: white;
-      padding: 12px 20px;
-      border-radius: 5px;
-      margin-bottom: 10px;
-      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-      transform: translateX(100%);
-      opacity: 0;
-      transition: all 0.3s ease;
-    }
-    
-    .toast.show {
-      transform: translateX(0);
-      opacity: 1;
-    }
-    
-    .toast.success {
-      background-color: #28a745;
-    }
-    
-    .toast.error {
-      background-color: #dc3545;
-    }
-    
-    .toast.warning {
-      background-color: #ffc107;
-      color: #333;
-    }
-    
-    .toast.info {
-      background-color: #17a2b8;
-    }
-  `;
-
-  document.head.appendChild(style);
-})();
 
 // DOM元素引用（原脚本顶层缓存，改为 init 时填充）
 const DOM = {};
 
 // 初始化UI事件监听器
 function initializeUI(signal) {
+  // 搜索：input 事件桥接进响应式 query（实时过滤；搜索按钮/回车成为冗余但无害的
+  // 显式触发，保留监听以维持骨架交互契约）
+  DOM.searchInput.addEventListener("input", handleSearch, { signal });
+
   // 搜索按钮
   DOM.searchBtn.addEventListener("click", handleSearch, { signal });
 
@@ -336,16 +181,16 @@ function initializeUI(signal) {
   }, { signal });
 }
 
-// 处理搜索
+// 处理搜索：命令式桥接——把搜索框当前值同步进响应式 query
 function handleSearch() {
-  const keyword = DOM.searchInput.value;
-  searchRecords(keyword);
+  if (R) R.query = DOM.searchInput.value;
 }
 
 // 刷新记录
 function refreshRecords() {
-  // 清空搜索框
+  // 清空搜索框（同步响应式 query）
   DOM.searchInput.value = "";
+  if (R) R.query = "";
   // 重新加载记录
   loadRecords().then(() => {
     showToast("记录已刷新", "info");
@@ -368,145 +213,18 @@ function confirmDeleteRecord(id) {
   );
 }
 
-// 显示确认对话框
+// 确认对话框桥（P12）：confirm-dialog 组件实例 onReady 回填；调用点零改动。
+// 降级语义：组件缺失（enabled:false / 未注册）→ console.warn 且**不回调 onConfirm**（防误触发删除/清空）
+let confirmApi = null;
 function showConfirmDialog(message, onConfirm) {
-  // 克隆模板
-  const dialogNode = DOM.confirmDialogTemplate.content.cloneNode(true);
-  const dialogOverlay = dialogNode.querySelector(".confirm-dialog-overlay");
-  const dialog = dialogNode.querySelector(".confirm-dialog");
-  const messageElement = dialogNode.querySelector(".dialog-message");
-  const confirmBtn = dialogNode.querySelector(".confirm-btn");
-  const cancelBtn = dialogNode.querySelector(".cancel-btn");
-
-  // 设置消息
-  messageElement.textContent = message;
-
-  // 添加到页面
-  document.body.appendChild(dialogNode);
-
-  // 添加确认事件
-  confirmBtn.addEventListener("click", () => {
-    closeDialog();
-    if (typeof onConfirm === "function") {
-      onConfirm();
-    }
-  });
-
-  // 添加取消事件
-  cancelBtn.addEventListener("click", closeDialog);
-
-  // 点击背景关闭对话框
-  dialogOverlay.addEventListener("click", (e) => {
-    if (e.target === dialogOverlay) {
-      closeDialog();
-    }
-  });
-
-  // 显示动画
-  setTimeout(() => {
-    dialogOverlay.classList.add("visible");
-    dialog.classList.add("visible");
-  }, 10);
-
-  // 关闭对话框函数
-  function closeDialog() {
-    dialogOverlay.classList.remove("visible");
-    dialog.classList.remove("visible");
-
-    // 动画结束后移除
-    setTimeout(() => {
-      if (dialogOverlay.parentNode) {
-        document.body.removeChild(dialogOverlay);
-      }
-    }, 300);
-  }
+  if (confirmApi) confirmApi(message, onConfirm);
+  else console.warn("[records] confirm-dialog 组件不可用，已忽略确认请求");
 }
-
-// 更新UI
-function updateUI() {
-  // 更新记录列表
-  renderRecordsList();
-
-  // 更新统计信息
-  updateStatsDisplay();
-}
-
-// 渲染记录列表
-function renderRecordsList() {
-  const records = RecordsData.filteredRecords;
-
-  if (RecordsData.isLoading) {
-    DOM.recordsList.innerHTML = `
-      <tr class="loading-row">
-        <td colspan="6">正在加载记录...</td>
-      </tr>
-    `;
-    return;
-  }
-
-  if (records.length === 0) {
-    DOM.recordsList.innerHTML = `
-      <tr class="empty-row">
-        <td colspan="6">暂无游戏记录</td>
-      </tr>
-    `;
-    return;
-  }
-
-  DOM.recordsList.innerHTML = records
-    .map(
-      (record, index) => `
-    <tr data-id="${record.id}">
-      <td>${record.teamName}</td>
-      <td>${record.trickName}</td>
-      <td>${formatTime(record.duration)}</td>
-      <td class="${record.isGuessCorrect ? "correct" : "incorrect"}">
-        ${record.isGuessCorrect ? "猜中" + icon("check", { size: 16 }) : "未猜中" + icon("x", { size: 16 })}
-      </td>
-      <td>${formatDate(record.date)}</td>
-      <td>
-        <div class="record-actions">
-          <button class="btn-icon btn-delete" title="删除记录" onclick="confirmDeleteRecord(${
-            record.id
-          })">
-            <span class="icon">${icon("trash", { size: 16, label: "删除记录" })}</span>
-          </button>
-        </div>
-      </td>
-    </tr>
-  `
-    )
-    .join("");
-}
-
-// 更新统计信息显示
-function updateStatsDisplay() {
-  DOM.totalRecords.textContent = RecordsData.stats.totalRecords;
-  DOM.correctPercentage.textContent = `${RecordsData.stats.correctPercentage}%`;
-  DOM.averageTime.textContent = formatTime(RecordsData.stats.averageTime);
-
-  // 为数字添加视觉效果
-  animateNumberChange(DOM.totalRecords);
-  animateNumberChange(DOM.correctPercentage);
-  animateNumberChange(DOM.averageTime);
-}
-
-// 数字变化动画
-function animateNumberChange(element) {
-  element.classList.add("number-change");
-  setTimeout(() => {
-    element.classList.remove("number-change");
-  }, 500);
-}
-
-// 在全局作用域下暴露需要在HTML中直接调用的函数
-// （记录行删除按钮为内联 onclick，必须挂 window）
-window.confirmDeleteRecord = confirmDeleteRecord;
 
 /* =================================================================
  *  组件入口（原两个 DOMContentLoaded 初始化 + 顶层 DOM 缓存，kernel render 时执行）
  * ================================================================= */
-export function initMovementTeachingRecords() {
+export function initMovementTeachingRecords(ctx) {
   // cleanup 契约：静态骨架监听经 signal 登记，重渲染时 abort 统一解绑
   const bindAbort = new AbortController();
   const { signal } = bindAbort;
@@ -522,7 +240,7 @@ export function initMovementTeachingRecords() {
   DOM.clearAllBtn = document.getElementById("clear-all-btn");
   DOM.backBtn = document.getElementById("back-btn");
   DOM.homeBtn = document.getElementById("home-btn");
-  DOM.confirmDialogTemplate = document.getElementById("confirm-dialog-template");
+  // （confirm-dialog-template <template> 已弃用：P12 起确认弹窗由 component-confirm-dialog 提供）
 
   // 静态骨架图标：刷新 / 清空 / 搜索按钮（原 HTML 内 emoji，此处注入 Tabler SVG）
   const staticIcons = [
@@ -536,11 +254,135 @@ export function initMovementTeachingRecords() {
   }
 
   // 页面加载完成时初始化（原两个 DOMContentLoaded 按 data→ui 注册序触发）
-  initializeData();
+  // P11-R1：先建响应式视图（记录表 + 统计卡），数据加载写入 R.records 后自动渲染
+  const pencilCheck = icon("check", { size: 16 });
+  const pencilX = icon("x", { size: 16 });
+  const pencilTrash = icon("trash", { size: 16, label: "删除记录" });
+
+  const TABLE_TPL = `
+<tr class="loading-row" v-if="isLoading"><td colspan="6">正在加载记录...</td></tr>
+<tr class="empty-row" v-if="!isLoading && filtered().length === 0"><td colspan="6">暂无游戏记录</td></tr>
+<tr v-for="record in isLoading ? [] : filtered()" :key="record.id" :data-id="record.id">
+  <td>{{ record.teamName }}</td>
+  <td>{{ record.trickName }}</td>
+  <td>{{ formatTime(record.duration) }}</td>
+  <td :class="record.isGuessCorrect ? 'correct' : 'incorrect'">
+    {{ record.isGuessCorrect ? "猜中" : "未猜中" }}<span v-html="record.isGuessCorrect ? checkIcon : xIcon"></span>
+  </td>
+  <td>{{ formatDate(record.date) }}</td>
+  <td>
+    <div class="record-actions">
+      <button class="btn-icon btn-delete" title="删除记录" @click="confirmDelete(record.id)">
+        <span class="icon" v-html="trashIcon"></span>
+      </button>
+    </div>
+  </td>
+</tr>`;
+
+  const STATS_TPL = `
+<div class="stat-card">
+  <h3>总记录数</h3>
+  <p id="total-records" v-effect="pulse($el, stats().totalRecords)">{{ stats().totalRecords }}</p>
+</div>
+<div class="stat-card">
+  <h3>猜中率</h3>
+  <p id="correct-percentage" v-effect="pulse($el, stats().correctPercentage)">{{ stats().correctPercentage }}%</p>
+</div>
+<div class="stat-card">
+  <h3>平均时间</h3>
+  <p id="average-time" v-effect="pulse($el, stats().averageTime)">{{ formatTime(stats().averageTime) }}</p>
+</div>`;
+
   initializeUI(signal);
+
+  // 复位（P2-2 修复）：同文档重复 render 时从上次 cleanup 状态恢复——
+  // 放同步开头（IIFE await 前）：放 await 后会覆盖 cleanup 置位构成竞态
+  listsDisposed = false;
+  listViews.length = 0;
+  toastApi = null;
+  confirmApi = null;
+
+  (async () => {
+    // P12：toast / confirm-dialog 组件实例化（自挂 body；onReady 回填模块级桥）。cleanup 入
+    // listViews 随既有 dispose 统一卸载；组件缺失时各自桥接降级（toast→log / confirm→warn）
+    const toastFactory = ctx && ctx.ui ? ctx.ui.component("toast") : null;
+    if (toastFactory) {
+      listViews.push(
+        toastFactory(document.body, { onReady: (api) => { toastApi = api; } }, ctx)
+      );
+    }
+    const confirmFactory = ctx && ctx.ui ? ctx.ui.component("confirm-dialog") : null;
+    if (confirmFactory) {
+      listViews.push(
+        confirmFactory(document.body, { onReady: (api) => { confirmApi = api; } }, ctx)
+      );
+    }
+    R = await createReactiveScope({
+      isLoading: true,
+      query: "",
+      records: [],
+      checkIcon: pencilCheck,
+      xIcon: pencilX,
+      trashIcon: pencilTrash,
+      // 派生视图（闭包函数直挂：内部经闭包引用 R，不依赖 this 绑定）
+      filtered() {
+        const q = (this.query || "").trim().toLowerCase();
+        if (!q) return this.records;
+        return this.records.filter(
+          (record) =>
+            String(record.teamName || "").toLowerCase().includes(q) ||
+            String(record.trickName || "").toLowerCase().includes(q)
+        );
+      },
+      stats() {
+        const records = this.records;
+        const totalRecords = records.length;
+        let correctPercentage = 0;
+        let averageTime = 0;
+        if (totalRecords > 0) {
+          const correctCount = records.filter(
+            (record) => record.isGuessCorrect
+          ).length;
+          correctPercentage = Math.round((correctCount / totalRecords) * 100);
+          averageTime = Math.round(
+            records.reduce((sum, record) => sum + record.duration, 0) /
+              totalRecords
+          );
+        }
+        return { totalRecords, correctPercentage, averageTime };
+      },
+      formatTime,
+      formatDate,
+      confirmDelete: (id) => confirmDeleteRecord(id),
+      // 数字变化动画（v-effect 依赖对应 stats 值，值变才脉冲）
+      pulse: (el) => {
+        el.classList.add("number-change");
+        setTimeout(() => el.classList.remove("number-change"), 500);
+      },
+    });
+    // 复位已在 initMovementTeachingRecords 同步开头完成（P2-2 修复）：
+    // 此处不再复位——若在 await createReactiveScope 间隙 cleanup 置 listsDisposed=true，
+    // 异步块内复位会覆盖之导致双挂载。守卫保留（保护 await 间隙的 cleanup 竞态）。
+    if (listsDisposed) return;
+    if (DOM.recordsList) {
+      listViews.push(mountReactiveSafe(DOM.recordsList, { template: TABLE_TPL, scope: R }));
+    }
+    const statsHost = document.querySelector(".records-stats");
+    if (statsHost) {
+      listViews.push(mountReactiveSafe(statsHost, { template: STATS_TPL, scope: R }));
+    }
+    await initializeData();
+  })().catch((e) => console.error("[records] 响应式视图初始化失败:", e));
 
   return () => {
     // signal 登记的静态骨架监听统一解绑
     if (bindAbort) bindAbort.abort();
+    // 响应式视图卸载（petite-vue effects + 指令监听随 unmount 释放）
+    listsDisposed = true;
+    for (const dispose of listViews) dispose();
+    // 桥复位（P2-2 修复）：toast/confirm API 指向已 dispose 的实例——
+    // 不置 null 则迟到调用会触碰已卸载 DOM（全屏 opacity:0 遮罩致整页不可点）
+    toastApi = null;
+    confirmApi = null;
   };
 }

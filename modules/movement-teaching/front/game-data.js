@@ -5,7 +5,50 @@
  * 都加载 movement_without_hands_data.js 的共享方式。
  * 保留 window.GameData 全局桥接（原版行为）：设置页旧代码经 window.GameData
  * 访问 loadSettings/saveSettings，记录模块经 RecordModule 解耦。
+ *
+ * P11-B6 迁移：
+ *   · 进度/设置存档 → /web/lib/persist.mjs 的 createPersistence（双写 + server→local 恢复链）
+ *     键与端点逐字保留：movement_without_hands_progress / /api/game_2_process（+ clear 端点）、
+ *     movement_without_hands_settings / /api/game_2_settings。
+ *   · 静默抽技 → /web/lib/random.mjs 的 pickOne（替代 Math.floor(Math.random()*n)）。
+ *   · ctx.api 经 useGameDataApi(ctx.api) 由页面 init 注入（origin 相对路径、非 2xx 抛错）。
  */
+import { createPersistence } from "/web/lib/persist.mjs";
+import { pickOne } from "/web/lib/random.mjs";
+
+/** ctx.api 注入位（页面 init 首行调用 useGameDataApi；未注入 → 远端跳过、仅本地读写，不崩） */
+let apiRef = null;
+
+/** 页面 init 注入内核 API 服务（ctx.api） */
+export function useGameDataApi(api) {
+  apiRef = api || null;
+}
+
+/** "服务端已应答即以其为准"（非 null/undefined 即算存档载荷）——迁移前 .then 分支语义 */
+function serverAnswered(data) {
+  return data !== null && data !== undefined;
+}
+
+/** 进度存档控制器（键/端点逐字保留） */
+function progressStore() {
+  return createPersistence({
+    key: "movement_without_hands_progress",
+    endpoint: "/api/game_2_process",
+    clearEndpoint: "/api/clear-game_2_process",
+    api: apiRef,
+    isValid: serverAnswered,
+  });
+}
+
+/** 设置存档控制器（键/端点逐字保留） */
+function settingsStore() {
+  return createPersistence({
+    key: "movement_without_hands_settings",
+    endpoint: "/api/game_2_settings",
+    api: apiRef,
+    isValid: serverAnswered,
+  });
+}
 
 // 全局游戏数据对象
 const GameData = window.GameData || {
@@ -49,137 +92,79 @@ async function loadTricks() {
 
 // 加载当前游戏进度
 async function loadGameProgress() {
-  try {
-    const response = await fetch("/api/game_2_process");
+  // 恢复链（persist 契约）：server → localStorage；两端都无 → null（"创建新游戏"）
+  const { data, source } = await progressStore().load();
 
-    if (!response.ok) {
-      console.log("无法从服务器加载游戏进度，创建新游戏");
-      return null;
-    }
-
-    const data = await response.json();
-
-    // 更新游戏数据
-    GameData.currentTrick = data.currentTrick;
-    GameData.isPlaying = data.isPlaying;
-    GameData.startTime = data.startTime ? new Date(data.startTime) : null;
-    GameData.endTime = data.endTime ? new Date(data.endTime) : null;
-    GameData.elapsedTime = data.elapsedTime || 0;
-    GameData.lastUpdate = data.lastUpdate ? new Date(data.lastUpdate) : null;
-
-    // 加载设置
-    if (data.settings) {
-      GameData.settings = data.settings;
-    }
-
-    console.log("从服务器加载游戏进度:", data);
-    return data;
-  } catch (error) {
-    console.error("加载游戏进度失败:", error);
-
-    // 尝试从localStorage恢复
-    try {
-      const savedData = localStorage.getItem("movement_without_hands_progress");
-      if (savedData) {
-        const data = JSON.parse(savedData);
-
-        // 更新游戏数据
-        GameData.currentTrick = data.currentTrick;
-        GameData.isPlaying = data.isPlaying;
-        GameData.startTime = data.startTime ? new Date(data.startTime) : null;
-        GameData.endTime = data.endTime ? new Date(data.endTime) : null;
-        GameData.elapsedTime = data.elapsedTime || 0;
-        GameData.lastUpdate = data.lastUpdate
-          ? new Date(data.lastUpdate)
-          : null;
-
-        // 加载设置
-        if (data.settings) {
-          GameData.settings = data.settings;
-        }
-
-        console.log("从本地存储恢复游戏进度:", data);
-        return data;
-      }
-    } catch (localError) {
-      console.error("从本地存储恢复失败:", localError);
-    }
-
+  if (source === "none") {
+    console.log("无法从服务器加载游戏进度，创建新游戏");
     return null;
   }
+
+  // 更新游戏数据
+  GameData.currentTrick = data.currentTrick;
+  GameData.isPlaying = data.isPlaying;
+  GameData.startTime = data.startTime ? new Date(data.startTime) : null;
+  GameData.endTime = data.endTime ? new Date(data.endTime) : null;
+  GameData.elapsedTime = data.elapsedTime || 0;
+  GameData.lastUpdate = data.lastUpdate ? new Date(data.lastUpdate) : null;
+
+  // 加载设置
+  if (data.settings) {
+    GameData.settings = data.settings;
+  }
+
+  console.log(
+    source === "server" ? "从服务器加载游戏进度:" : "从本地存储恢复游戏进度:",
+    data
+  );
+  return data;
 }
 
 // 保存游戏进度
 async function saveGameProgress() {
-  try {
-    const progressData = {
-      currentTrick: GameData.currentTrick,
-      isPlaying: GameData.isPlaying,
-      startTime: GameData.startTime ? GameData.startTime.toISOString() : null,
-      endTime: GameData.endTime ? GameData.endTime.toISOString() : null,
-      elapsedTime: GameData.elapsedTime,
-      lastUpdate: new Date().toISOString(),
-      settings: GameData.settings,
-    };
+  const progressData = {
+    currentTrick: GameData.currentTrick,
+    isPlaying: GameData.isPlaying,
+    startTime: GameData.startTime ? GameData.startTime.toISOString() : null,
+    endTime: GameData.endTime ? GameData.endTime.toISOString() : null,
+    elapsedTime: GameData.elapsedTime,
+    settings: GameData.settings,
+  };
 
-    // 保存到本地存储作为备份
-    localStorage.setItem(
-      "movement_without_hands_progress",
-      JSON.stringify(progressData)
-    );
+  // 双写（persist 统一补 lastUpdate，等价于原 progressData.lastUpdate）
+  const { local, remote } = await progressStore().save(progressData);
 
-    // 保存到服务器
-    const response = await fetch("/api/game_2_process", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(progressData),
-    });
-
-    if (!response.ok) {
-      throw new Error(`保存游戏进度失败: ${response.status}`);
-    }
-
-    console.log("游戏进度已保存");
-    return true;
-  } catch (error) {
-    console.error("保存游戏进度出错:", error);
+  // 迁移前语义：本地写失败或服务端非 2xx 均算失败（返回值调用方未消费，仅日志可见）
+  const ok = apiRef ? local && remote : local;
+  if (!ok) {
+    console.error("保存游戏进度出错");
     return false;
   }
+
+  console.log("游戏进度已保存");
+  return true;
 }
 
 // 清除游戏进度
 async function clearGameProgress() {
-  try {
-    const response = await fetch(
-      "/api/clear-game_2_process",
-      {
-        method: "POST",
-      }
-    );
+  // 清两端存档（POST /api/clear-game_2_process + 移除本地键）
+  const { remote } = await progressStore().reset();
 
-    if (!response.ok) {
-      throw new Error(`清除游戏进度失败: ${response.status}`);
-    }
-
-    // 同时清除本地存储
-    localStorage.removeItem("movement_without_hands_progress");
-
-    // 重置游戏数据
-    GameData.currentTrick = null;
-    GameData.isPlaying = false;
-    GameData.startTime = null;
-    GameData.endTime = null;
-    GameData.elapsedTime = 0;
-    GameData.lastUpdate = null;
-
-    console.log("游戏进度已清除");
-    return true;
-  } catch (error) {
-    console.error("清除游戏进度出错:", error);
+  if (apiRef && !remote) {
+    console.error("清除游戏进度出错");
     return false;
   }
+
+  // 重置游戏数据
+  GameData.currentTrick = null;
+  GameData.isPlaying = false;
+  GameData.startTime = null;
+  GameData.endTime = null;
+  GameData.elapsedTime = 0;
+  GameData.lastUpdate = null;
+
+  console.log("游戏进度已清除");
+  return true;
 }
 
 // 随机抽取一个技能（无闪现，用于初始化）
@@ -189,8 +174,9 @@ function drawRandomTrickSilent() {
     return null;
   }
 
-  const randomIndex = Math.floor(Math.random() * GameData.tricks.length);
-  GameData.currentTrick = GameData.tricks[randomIndex].name;
+  // 等概率单抽（Fisher–Yates 基座；替代原 Math.floor(Math.random() * n)）
+  const trick = pickOne(GameData.tricks);
+  GameData.currentTrick = trick.name;
   return GameData.currentTrick;
 }
 
@@ -199,119 +185,59 @@ function drawRandomTrickSilent() {
 
 // 保存游戏设置
 GameData.saveSettings = async function (settings) {
-  try {
-    console.log("正在保存游戏设置...", settings);
+  console.log("正在保存游戏设置...", settings);
 
-    // 确保BPM是整数
-    const settingsToSave = { ...settings };
-    if (settingsToSave.beatsPerMinute) {
-      settingsToSave.beatsPerMinute = parseInt(
-        settingsToSave.beatsPerMinute,
-        10
-      );
-    }
+  // 确保BPM是整数
+  const settingsToSave = { ...settings };
+  if (settingsToSave.beatsPerMinute) {
+    settingsToSave.beatsPerMinute = parseInt(settingsToSave.beatsPerMinute, 10);
+  }
 
-    // 更新当前设置
-    GameData.settings = { ...GameData.settings, ...settingsToSave };
+  // 更新当前设置
+  GameData.settings = { ...GameData.settings, ...settingsToSave };
 
-    // 保存到服务器
-    const response = await fetch("/api/game_2_settings", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(settingsToSave),
-    });
+  // 双写：先本地备份，后 POST /api/game_2_settings
+  const { local, remote } = await settingsStore().save(settingsToSave);
 
-    if (!response.ok) {
-      throw new Error(`服务器保存失败 (${response.status})`);
-    }
-
-    // 备份到本地存储
-    localStorage.setItem(
-      "movement_without_hands_settings",
-      JSON.stringify(settingsToSave)
-    );
-
+  const ok = apiRef ? remote : local;
+  if (ok) {
     console.log("设置已保存成功");
     return true;
-  } catch (error) {
-    console.error("保存设置失败:", error);
-
-    // 即使服务器保存失败，也尝试保存到本地存储
-    try {
-      localStorage.setItem(
-        "movement_without_hands_settings",
-        JSON.stringify(settings)
-      );
-      console.log("设置已保存到本地存储(作为备份)");
-    } catch (e) {
-      console.warn("无法保存设置到本地存储:", e);
-    }
-
-    return false;
   }
+
+  // 迁移前：服务器失败仍保留本地备份（persist 的本地写已完成），返回值 false
+  console.error("保存设置失败");
+  return false;
 };
 
 // 加载游戏设置
 GameData.loadSettings = async function () {
-  try {
-    console.log("正在加载游戏设置...");
+  console.log("正在加载游戏设置...");
 
-    // 尝试从服务器加载
-    const response = await fetch("/api/game_2_settings");
+  // 恢复链（persist 契约）：server → localStorage → 当前设置（默认值）
+  const { data, source } = await settingsStore().load();
 
-    if (!response.ok) {
-      throw new Error(`无法从服务器加载设置 (${response.status})`);
-    }
-
-    const settings = await response.json();
-    console.log("从服务器加载的设置:", settings);
-
-    // 更新当前设置
-    GameData.settings = { ...GameData.settings, ...settings };
-
-    // 确保BPM是整数
-    if (GameData.settings.beatsPerMinute) {
-      GameData.settings.beatsPerMinute = parseInt(
-        GameData.settings.beatsPerMinute,
-        10
-      );
-    }
-
-    console.log("设置已加载:", GameData.settings);
-    return GameData.settings;
-  } catch (error) {
-    console.error("加载设置失败:", error);
-
-    // 尝试从本地存储加载
-    try {
-      const localSettings = localStorage.getItem(
-        "movement_without_hands_settings"
-      );
-      if (localSettings) {
-        const parsedSettings = JSON.parse(localSettings);
-        console.log("从本地存储恢复设置:", parsedSettings);
-
-        // 更新当前设置
-        GameData.settings = { ...GameData.settings, ...parsedSettings };
-
-        // 确保BPM是整数
-        if (GameData.settings.beatsPerMinute) {
-          GameData.settings.beatsPerMinute = parseInt(
-            GameData.settings.beatsPerMinute,
-            10
-          );
-        }
-
-        return GameData.settings;
-      }
-    } catch (e) {
-      console.warn("无法从本地存储恢复设置:", e);
-    }
-
+  if (source === "none") {
+    console.log("加载设置失败");
     return GameData.settings; // 返回当前设置（可能是默认值）
   }
+
+  // 更新当前设置
+  GameData.settings = { ...GameData.settings, ...data };
+
+  // 确保BPM是整数
+  if (GameData.settings.beatsPerMinute) {
+    GameData.settings.beatsPerMinute = parseInt(
+      GameData.settings.beatsPerMinute,
+      10
+    );
+  }
+
+  console.log(
+    source === "server" ? "从服务器加载的设置:" : "从本地存储恢复设置:",
+    GameData.settings
+  );
+  return GameData.settings;
 };
 
 export {

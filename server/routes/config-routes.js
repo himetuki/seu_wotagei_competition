@@ -186,9 +186,25 @@ function setupConfigRoutes(app) {
       const currentState = dbManager.get("battle-group1-2-process").getState();
       currentState.players = players;
 
-      const playerStats = {};
+      // ★ 缺陷修复（战绩刷新归零）：原实现无条件用全 0 的 playerStats 覆盖存档，
+      //   而页面每次加载都会经 loadPlayers() 调本端点（winners 缺省补位/默认选手两条路径），
+      //   导致"刷新页面 = 胜/负统计清零"。改为**合并保留**：
+      //   · 名单里已存在的选手 → 沿用其既有 wins/losses（仅做数值归一）
+      //   · 名单里新增的选手   → 补 { wins: 0, losses: 0 }
+      //   · 存档里其他选手的条目 → 原样保留（历史战绩不因名单变化丢失）
+      const prevStats =
+        currentState.playerStats && typeof currentState.playerStats === "object"
+          ? currentState.playerStats
+          : {};
+      const playerStats = { ...prevStats };
       players.forEach((player) => {
-        playerStats[player.name] = { wins: 0, losses: 0 };
+        const name = player && player.name;
+        if (name === undefined || name === null) return;
+        const prev = playerStats[name];
+        playerStats[name] =
+          prev && typeof prev === "object"
+            ? { wins: Number(prev.wins) || 0, losses: Number(prev.losses) || 0 }
+            : { wins: 0, losses: 0 };
       });
       currentState.playerStats = playerStats;
       currentState.lastUpdate = new Date().toISOString();

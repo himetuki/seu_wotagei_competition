@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Y.Stage 4 - 音乐导入管理</title>
     <link rel="preload" as="image" href="/resource/images/bg_index.jpg" />
+    <!-- P11：布局原语（L1 共享资产，origin 相对绝对路径）——先于 style.css，页面样式可覆盖 -->
+    <link rel="stylesheet" href="/web/components/grid.css" />
+    <link rel="stylesheet" href="/m/component-confirm-dialog/style.css" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -27,7 +30,10 @@
         </button>
       </div>
 
-      <main>
+      <!-- 两栏：布局由 /web/components/grid.css 的 .grid-split 提供
+           （宽屏「上传 | 预览」等宽两栏 / 窄屏自动堆叠，零断点）；
+           组别信息与音乐文件列表用 grid-column:1/-1 跨满整行 -->
+      <main class="grid-split">
         <div class="upload-section">
           <div class="upload-container" id="drop-area">
             <div class="upload-icon">

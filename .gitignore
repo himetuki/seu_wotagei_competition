@@ -420,5 +420,11 @@ FodyWeavers.xsd
 # web 前端内核构建产物（npm run build:web 生成）
 web/dist/
 
+# petite-vue vendor 产物（npm run vendor:petite-vue 从锁定的 devDependency 生成）
+web/lib/vendor/
+
 # 安全扫描工具产物（Mimosa）
 .mimosa/
+
+# 项目内临时目录（子智能体脚本/截图证据/临时产物；验证后可清理）
+.tmp/

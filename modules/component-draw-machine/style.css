@@ -1,0 +1,52 @@
+/**
+ * component-draw-machine 可选样式（组件自带，页面按需 <link rel="stylesheet"> 引入）
+ *
+ * 命名空间 .cmp-draw* 只作用于组件自建/授权的 display 节点；页面既有 CSS
+ * （如 drag 的 .music-display.rolling / .selected）优先级更高，无需引入本文件。
+ * 颜色用 CSS 变量，页面可覆盖；深浅色均按 4.5:1 以上对比取值。
+ */
+.cmp-draw__display {
+  color: var(--cmp-draw-color, #0e7490); /* light: 深青，白底 ≥ 4.5:1 */
+  font-variant-numeric: tabular-nums;
+  transition: color 0.2s ease;
+}
+
+.cmp-draw__display.rolling {
+  color: var(--cmp-draw-rolling-color, #b45309); /* light: 深琥珀 */
+  animation: cmp-draw-flash 0.08s steps(1) infinite;
+}
+
+.cmp-draw__display.selected {
+  color: var(--cmp-draw-result-color, #047857); /* light: 深绿 */
+}
+
+@media (prefers-color-scheme: dark) {
+  .cmp-draw__display {
+    color: var(--cmp-draw-color, #67e8f9);
+  }
+  .cmp-draw__display.rolling {
+    color: var(--cmp-draw-rolling-color, #fbbf24);
+  }
+  .cmp-draw__display.selected {
+    color: var(--cmp-draw-result-color, #34d399);
+  }
+}
+
+@keyframes cmp-draw-flash {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* 无障碍：减少动效偏好 → 不做闪烁动画（组件 JS 亦会直接定格） */
+@media (prefers-reduced-motion: reduce) {
+  .cmp-draw__display.rolling {
+    animation: none;
+  }
+  .cmp-draw__display {
+    transition: none;
+  }
+}

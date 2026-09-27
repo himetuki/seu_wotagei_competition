@@ -21,31 +21,265 @@
     },
     {
       "target": "modules/battle-group1",
-      "enabled": true
+      "enabled": true,
+      "config": {
+        "compose": [
+          "music-player",
+          "draw-machine"
+        ],
+        "slots": {
+          "music-player": "[data-slot=music]",
+          "draw-machine": "[data-slot=draw]"
+        },
+        "components": {
+          "music-player": {
+            "folder": "1yearplus",
+            "rollTicks": 15,
+            "tickMs": 80,
+            "exitOnClick": true,
+            "overlay": {
+              "textContent": "BATTLE START",
+              "textMs": 100,
+              "readyMs": 4500,
+              "hintMs": 4500,
+              "hintId": "click-to-stop-hint",
+              "hintText": "单击任意位置停止"
+            }
+          },
+          "draw-machine": {
+            "ticks": 15,
+            "tickMs": 80,
+            "colors": {
+              "rolling": "#fbbf24",
+              "result": "#10b981"
+            }
+          }
+        }
+      }
     },
     {
       "target": "modules/battle-group1-2",
-      "enabled": true
+      "enabled": true,
+      "config": {
+        "compose": [
+          "music-player",
+          "draw-machine"
+        ],
+        "slots": {
+          "music-player": "[data-slot=music]",
+          "draw-machine": "[data-slot=draw]"
+        },
+        "components": {
+          "music-player": {
+            "folder": "1yearplus_ex",
+            "rollTicks": 15,
+            "tickMs": 80,
+            "exitOnClick": true,
+            "overlay": {
+              "textContent": "BATTLE START",
+              "textMs": 100,
+              "readyMs": 4500,
+              "hintMs": 4500,
+              "hintId": "click-to-stop-hint",
+              "hintText": "单击任意位置停止"
+            }
+          },
+          "draw-machine": {
+            "ticks": 15,
+            "tickMs": 80,
+            "colors": {
+              "rolling": "#fbbf24",
+              "result": "#10b981"
+            }
+          }
+        }
+      }
     },
     {
       "target": "modules/battle-group2",
-      "enabled": true
+      "enabled": true,
+      "config": {
+        "compose": [
+          "music-player",
+          "draw-machine"
+        ],
+        "slots": {
+          "music-player": "[data-slot=music]",
+          "draw-machine": "[data-slot=draw]"
+        },
+        "components": {
+          "music-player": {
+            "folder": "1yearminus",
+            "rollTicks": 15,
+            "tickMs": 80,
+            "exitOnClick": true,
+            "overlay": {
+              "textContent": "BATTLE START",
+              "textMs": 100,
+              "readyMs": 4500,
+              "hintMs": 4500,
+              "hintId": "click-to-stop-hint",
+              "hintText": "单击任意位置停止"
+            }
+          },
+          "draw-machine": {
+            "ticks": 15,
+            "tickMs": 80,
+            "colors": {
+              "rolling": "#fbbf24",
+              "result": "#10b981"
+            }
+          }
+        }
+      }
     },
     {
       "target": "modules/battle-group2-2",
-      "enabled": true
+      "enabled": true,
+      "config": {
+        "compose": [
+          "music-player",
+          "draw-machine"
+        ],
+        "slots": {
+          "music-player": "[data-slot=music]",
+          "draw-machine": "[data-slot=draw]"
+        },
+        "components": {
+          "music-player": {
+            "folder": "1yearminus",
+            "rollTicks": 15,
+            "tickMs": 80,
+            "exitOnClick": true,
+            "preloadOnDraw": false,
+            "overlay": {
+              "textContent": "BATTLE START",
+              "textMs": 100,
+              "readyMs": 4500,
+              "hintMs": 4500,
+              "hintId": "click-to-stop-hint",
+              "hintText": "单击任意位置停止"
+            }
+          },
+          "draw-machine": {
+            "ticks": 15,
+            "tickMs": 80,
+            "colors": {
+              "rolling": "#fbbf24",
+              "result": "#10b981"
+            }
+          }
+        }
+      }
     },
     {
       "target": "modules/group-battle",
-      "enabled": true
+      "enabled": true,
+      "config": {
+        "compose": [
+          "music-player",
+          "draw-machine"
+        ],
+        "slots": {
+          "music-player": "[data-slot=music]",
+          "draw-machine": "[data-slot=draw]"
+        },
+        "components": {
+          "music-player": {
+            "rollTicks": 15,
+            "tickMs": 80,
+            "exitOnDblclick": true,
+            "exitOnClick": false,
+            "exitOnEnded": true,
+            "overlay": {
+              "enabled": true,
+              "textContent": "BATTLE START",
+              "textMs": 130,
+              "readyMs": 4500,
+              "hintMs": 1500,
+              "hintText": "双击任意位置停止",
+              "hintId": null,
+              "skipOnClick": true
+            }
+          },
+          "draw-machine": {
+            "ticks": 15,
+            "tickMs": 80
+          }
+        }
+      }
     },
     {
       "target": "modules/drag",
-      "enabled": true
+      "enabled": true,
+      "config": {
+        "compose": [
+          "music-player",
+          "draw-machine"
+        ],
+        "slots": {
+          "music-player": "[data-slot=music]",
+          "draw-machine": "[data-slot=draw]"
+        },
+        "components": {
+          "music-player": {
+            "overlay": {
+              "enabled": false
+            },
+            "exitOnDblclick": true,
+            "exitOnClick": false,
+            "exitOnEnded": true,
+            "keepBgKey": "dragBattleKeepBg"
+          },
+          "draw-machine": {
+            "ticks": 40,
+            "tickMs": 50,
+            "cycle": true
+          }
+        }
+      }
     },
     {
       "target": "modules/music-draw",
-      "enabled": true
+      "enabled": true,
+      "config": {
+        "compose": [
+          "music-player",
+          "draw-machine"
+        ],
+        "slots": {
+          "music-player": [
+            "[data-slot=music-1yearminus]",
+            "[data-slot=music-1yearplus]",
+            "[data-slot=music-1yearplus-ex]"
+          ],
+          "draw-machine": [
+            "[data-slot=draw-1yearminus]",
+            "[data-slot=draw-1yearplus]",
+            "[data-slot=draw-1yearplus-ex]"
+          ]
+        },
+        "components": {
+          "music-player": {
+            "overlay": {
+              "textContent": "BATTLE START",
+              "textMs": 130,
+              "readyMs": 4500,
+              "hintMs": 1500,
+              "hintId": null,
+              "hintText": "双击屏幕退出播放"
+            }
+          },
+          "draw-machine": {
+            "ticks": 15,
+            "tickMs": 80,
+            "colors": {
+              "rolling": "#fbbf24",
+              "result": "#10b981"
+            }
+          }
+        }
+      }
     },
     {
       "target": "modules/music-import",
@@ -77,7 +311,63 @@
     },
     {
       "target": "modules/movement-teaching",
-      "enabled": true
+      "enabled": true,
+      "config": {
+        "compose": [
+          "draw-machine"
+        ],
+        "slots": {
+          "draw-machine": "[data-slot=draw]"
+        }
+      }
+    },
+    {
+      "target": "modules/component-music-player",
+      "enabled": true,
+      "kind": "component",
+      "pages": [
+        "battle-group1",
+        "battle-group1-2",
+        "battle-group2",
+        "battle-group2-2",
+        "drag",
+        "group-battle",
+        "music-draw"
+      ]
+    },
+    {
+      "target": "modules/component-draw-machine",
+      "enabled": true,
+      "kind": "component",
+      "pages": [
+        "battle-group1",
+        "battle-group1-2",
+        "battle-group2",
+        "battle-group2-2",
+        "drag",
+        "group-battle",
+        "music-draw",
+        "movement-teaching"
+      ]
+    },
+    {
+      "target": "modules/component-toast",
+      "enabled": true,
+      "kind": "component",
+      "pages": [
+        "movement-teaching",
+        "music-draw"
+      ]
+    },
+    {
+      "target": "modules/component-confirm-dialog",
+      "enabled": true,
+      "kind": "component",
+      "pages": [
+        "movement-teaching",
+        "setting",
+        "music-import"
+      ]
     }
   ]
 }

@@ -100,6 +100,22 @@ test("matchPage：pages 数组覆盖默认单页匹配（跨页插件预留）",
   assert.strictEqual(pluginsForPage(m, "drag").length, 1);
 });
 
+test("matchPage/pluginsForPage：可选元数据 kind 不影响匹配（组件库条目 kind:'component'）", async () => {
+  const { pluginsForPage } = await importLoader();
+  // P11：front.json 条目可带 kind（组件库），loader 只读 target/pages/enabled，未知字段原样透传
+  const m = {
+    plugins: [
+      { target: "modules/component-music-player", kind: "component", pages: ["drag", "battle-group1"] },
+      { target: "modules/drag" },
+      { target: "modules/component-off", kind: "component", pages: ["drag"], enabled: false },
+    ],
+  };
+  const hit = pluginsForPage(m, "drag");
+  assert.deepStrictEqual(hit.map((e) => e.target), ["modules/component-music-player", "modules/drag"]);
+  assert.strictEqual(hit[0].kind, "component", "kind 原样透传（kernel 不解释该字段）");
+  assert.deepStrictEqual(pluginsForPage(m, "select"), []);
+});
+
 test("primaryEntry：本模块条目优先，缺省回退首条", async () => {
   const { primaryEntry } = await importLoader();
   const entries = [

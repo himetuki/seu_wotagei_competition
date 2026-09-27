@@ -30,11 +30,11 @@ h1 {
 }
 
 main {
-  display: flex;
-  flex-direction: row; /* 改为水平布局 */
+  /* 两栏布局由 /web/components/grid.css 的 .grid-split 提供（宽屏等宽两栏 / 窄屏自动堆叠，
+     零断点）。原 flex-direction:row + #playersSection/#rankingSection 固定比例
+     （25% / 65% + max-width:250px）已移除——固定比例无窄屏适配，且与 auto-fit 原语不可兼得。 */
+  --grid-gap: 20px; /* 沿用原 flex gap 节奏（grid.css 缺省 16px） */
   padding: 20px;
-  justify-content: center;
-  gap: 20px;
 }
 
 section {
@@ -43,15 +43,6 @@ section {
   padding: 20px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-bottom: 0; /* 移除底部外边距 */
-}
-
-#playersSection {
-  flex-basis: 25%; /* 缩小选手列表区域宽度 */
-  max-width: 250px; /* 限制最大宽度 */
-}
-
-#rankingSection {
-  flex-basis: 65%; /* 扩大排名区域宽度 */
 }
 
 h2 {
@@ -310,5 +301,21 @@ button:active {
     transform: scale(30);
     opacity: 0;
     box-shadow: 0 0 0 0 currentColor;
+  }
+}
+
+
+/* 无障碍：减少动效偏好下停用装饰性动画（奖品卡发光/入场缩放/烟花爆点）。
+   功能相关过渡（奖品 opacity transition、`.rank-award` 淡入）保持不动。 */
+@media (prefers-reduced-motion: reduce) {
+  .award-container,
+  .player-item,
+  .firework {
+    animation: none !important;
+  }
+
+  /* 烟花为纯装饰爆点：减少动效偏好下不再显示静态残点 */
+  .firework {
+    display: none !important;
   }
 }

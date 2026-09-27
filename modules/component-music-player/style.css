@@ -1,0 +1,83 @@
+/**
+ * component-music-player 可选样式（组件自带，页面按需 <link rel="stylesheet"> 引入）
+ *
+ * 命名空间 .cmp-music* 只作用于组件自建节点；battle-mode / battle-overlay / battle-start /
+ * click-to-stop 等既有类名由页面 CSS（bg1/bg2/drag/gb/music-draw 各自的 style.css）负责，
+ * 引入本文件不会与页面既有规则冲突（页面规则优先级更高）。
+ *
+ * 无障碍：prefers-reduced-motion 回退（打字动画与闪烁停用）；深浅色对比均 >= 4.5:1；
+ *        遮罩层 pointer-events 保持可点击（双击退出依赖 document 监听，不依赖遮罩命中）。
+ */
+.cmp-music__display {
+  color: var(--cmp-music-color, #0e7490); /* light: 深青 */
+  font-variant-numeric: tabular-nums;
+  transition: color 0.2s ease;
+}
+
+.cmp-music__display.rolling {
+  color: var(--cmp-music-rolling-color, #b45309); /* light: 深琥珀 */
+}
+
+.cmp-music__display.selected {
+  color: var(--cmp-music-result-color, #047857); /* light: 深绿 */
+}
+
+.cmp-music__audio {
+  display: block;
+  max-width: 100%;
+  margin: 8px auto 0;
+}
+
+/* 全屏遮罩：只在组件独立使用（页面无 battle-* 样式）时提供最小可用外观 */
+.cmp-music__overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 900;
+}
+
+.cmp-music__text {
+  color: var(--cmp-music-text-color, #ffffff);
+  font-size: clamp(1.5rem, 6vw, 3rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-align: center;
+  padding: 0 16px;
+}
+
+.cmp-music__hint {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--cmp-music-hint-color, rgba(255, 255, 255, 0.75));
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+  z-index: 901;
+}
+
+@media (prefers-color-scheme: dark) {
+  .cmp-music__display {
+    color: var(--cmp-music-color, #67e8f9);
+  }
+  .cmp-music__display.rolling {
+    color: var(--cmp-music-rolling-color, #fbbf24);
+  }
+  .cmp-music__display.selected {
+    color: var(--cmp-music-result-color, #34d399);
+  }
+}
+
+/* 无障碍：减少动效偏好 → 停用文字闪烁/过渡（逐字打字动画由组件 JS 直接跳过） */
+@media (prefers-reduced-motion: reduce) {
+  .cmp-music__display {
+    transition: none;
+  }
+  .cmp-music__text {
+    animation: none;
+  }
+}

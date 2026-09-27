@@ -201,14 +201,6 @@ button:hover::after {
   margin: 15px auto;
 }
 
-#musicPlayer {
-  width: 300px;
-  margin: 20px auto;
-  border-radius: 15px;
-  background-color: #1e1e1e;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-}
-
 /* 自定义第二章节的样式 - 添加不同的颜色来区分 */
 header {
   background-color: rgba(0, 0, 0, 0.8);

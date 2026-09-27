@@ -40,3 +40,16 @@ SOFTWARE.
 
 > 维护约定：新增图标时，从官方图标集提取准确 path 数据写入 `web/icons.mjs`（禁止手绘/凭记忆），
 > 并保持 `ICON_NAMES` 与需求清单一致；`web/icons.test.js` 会守门清单完整性与下游引用正确性。
+
+---
+
+## petite-vue
+
+- **用途**：`web/lib/reactive.mjs` 响应式装配基座的底层（细粒度状态 → DOM 同步，AGENTS §4.3）。
+  供 plugin-manager 整页视图与 setting 三个列表编辑器使用；经 `web/lib/vendor/petite-vue.mjs`
+  以浏览器原生 ESM 按需动态加载，未使用响应式的页面不产生任何请求。
+- **来源**：<https://github.com/vuejs/petite-vue>
+- **版本**：0.4.1（npm devDependencies 精确锁定）。`web/lib/vendor/petite-vue.mjs` 为**构建产物**
+  （gitignored，`npm run vendor:petite-vue` 经 esbuild 从 node_modules 生成），运行期零网络依赖。
+- **许可**：MIT License（Copyright (c) 2020-present Evan You），全文与上方 Tabler 段的 MIT
+  条款相同。

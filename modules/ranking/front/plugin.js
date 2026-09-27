@@ -15,7 +15,18 @@
  *     烟花容器或对已释放节点回调
  *   - 选手列表 li / 排名 player-item 为动态节点（click 监听随节点释放），
  *     cleanup 时清空 #playersList；rank-award 恢复初始 opacity
+ *
+ * P11-B7 共享化（仅两处，语义逐行等价）：
+ *   - 烟花配色"等概率取 1 个" → /web/lib/random.mjs 的 pickOne（原 colors[floor(random*len)]，
+ *     分布一致；rank 页同款用法 → 满足 R2 跨模块复用）
+ *   - 主区两栏（选手列表 / 排名）→ /web/components/grid.css 的 .grid-split：原 flex 固定
+ *     比例（25% / 65% + max-width:250px）无任何窄屏适配，320px 下靠 flex 收缩硬挤；
+ *     改后按容器宽度连续自适应、窄屏自动上下堆叠（零断点）。宽屏由 25/65 变为等宽两栏。
+ *   烟花爆点（15 发 CSS-only 动画，随机 left/top 百分比）为本页专属视觉，保留在页面内：
+ *   rank 页烟花为 30 秒波次 + 粒子系统，算法不同；统一需新增 L2 组件插件（超出本次文件域）。
  */
+
+import { pickOne } from "/web/lib/random.mjs";
 
 export default {
   name: "ranking", // key 必须 = 模块 id，kernel 装配完按它 render
@@ -184,8 +195,7 @@ export default {
               firework.className = "firework";
               firework.style.left = Math.random() * 100 + "%";
               firework.style.top = Math.random() * 100 + "%";
-              firework.style.color =
-                colors[Math.floor(Math.random() * colors.length)];
+              firework.style.color = pickOne(colors); // /web/lib/random.mjs（等概率取 1 个）
               fireworkContainer.appendChild(firework);
 
               // 烟花动画结束后移除
@@ -253,6 +263,11 @@ export default {
           // 烟花/动画等全部延时任务终止
           timers.forEach((t) => clearTimeout(t));
           timers.clear();
+          // 清 timer 会连带取消烟花容器自身的 2s 移除回调——卸载窗口内补扫，
+          // 否则 .firework-container 永久残留 body
+          document
+            .querySelectorAll(".firework-container")
+            .forEach((n) => n.remove());
           // 动态节点（选手 li / 排名 player-item）连同监听一并释放
           if (playersList) playersList.innerHTML = "";
           document

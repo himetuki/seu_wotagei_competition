@@ -161,10 +161,11 @@ section {
 }
 
 /* ========== 4组席位列席 ========== */
+/* 布局原语 .grid-cards（/web/components/grid.css）：auto-fill 自适应列数，零媒体查询。
+   --card-min 覆盖为 240px：≥1080px 容器内宽时恒为 4 列（与迁移前 repeat(4,1fr) 同观感），
+   窄屏自动降到 3/2/1 列（原 900px / 500px 两段媒体查询由此取代）。 */
 .groups-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 15px;
+  --card-min: 240px;
 }
 
 .group-card {
@@ -850,9 +851,7 @@ body.screen-shake {
 
 /* ========== 响应式设计 ========== */
 @media (max-width: 900px) {
-  .groups-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  /* .groups-grid 的列数由 .grid-cards 的 minmax(min(--card-min,100%),1fr) 自适应，无需断点 */
   .arena-vs {
     flex-direction: column;
     gap: 15px;
@@ -867,9 +866,6 @@ body.screen-shake {
 }
 
 @media (max-width: 500px) {
-  .groups-grid {
-    grid-template-columns: 1fr;
-  }
   .actions {
     flex-direction: column;
   }

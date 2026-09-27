@@ -78,19 +78,35 @@ header h1 {
   box-shadow: 0 0 10px rgba(0, 195, 255, 0.3);
 }
 
-/* 主体内容区域 */
+/* 主体内容区域：两栏由 /web/components/grid.css 的 .grid-split 提供，但此处**显式覆盖为两轨**：
+   .grid-split 的 auto-fit/minmax(360px) 在 1160px 容器下会算出 3 轨，而本页那两个跨列项
+   （group-info / music-files-section 的 grid-column: 1 / -1）会使空轨无法被折叠 →
+   上传/预览各占 1/3、右侧留白（P11 终审 [P1] 实测）。显式两轨 + 窄屏单列与迁移前
+   「grid-template-columns:1fr 1fr + 768 断点」等价。 */
+main.grid-split {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* grid 子项默认 min-width:auto 以 min-content 为下限，会撑破 minmax 轨道
+   （grid.css 对 .card 归零的同款约定；本页子项是裸 div 不带 .card，须自补）。
+   缺其一时 320px 视口下被 #music-files-table 的 min-content 撑出横向滚动
+   （实测 docScrollWidth 361 > 320，P11 缺陷台账 #1） */
+main.grid-split > * {
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  main.grid-split {
+    grid-template-columns: 1fr;
+  }
+}
+
 main {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  --grid-gap: 20px; /* 沿用原 gap 节奏（grid.css 缺省 16px） */
   margin-bottom: 30px;
 }
 
-/* 上传区域 */
-.upload-section {
-  grid-column: 1 / 2;
-}
-
+/* 上传区域（auto-fit 第 1 列自动落位，无需 grid-column） */
 .upload-container {
   border: 2px dashed rgba(100, 100, 255, 0.3);
   border-radius: 8px;
@@ -176,11 +192,7 @@ main {
   box-shadow: 0 0 5px rgba(0, 195, 255, 0.5);
 }
 
-/* 预览区域 */
-.preview-section {
-  grid-column: 2 / 3;
-}
-
+/* 预览区域（auto-fit 第 2 列自动落位，无需 grid-column） */
 .preview-section h3 {
   margin-bottom: 15px;
   color: #fff;
@@ -293,9 +305,9 @@ main {
   cursor: not-allowed;
 }
 
-/* 组别信息卡片 */
+/* 组别信息卡片（跨满整行；1 / -1 与列数无关） */
 .group-info {
-  grid-column: 1 / 3;
+  grid-column: 1 / -1;
   margin-top: 20px;
 }
 
@@ -323,9 +335,9 @@ main {
   font-weight: bold;
 }
 
-/* 音乐文件列表区域 */
+/* 音乐文件列表区域（跨满整行；1 / -1 与列数无关） */
 .music-files-section {
-  grid-column: 1 / 3;
+  grid-column: 1 / -1;
   margin-top: 20px;
 }
 
@@ -696,18 +708,8 @@ footer {
   font-size: 0.9rem;
 }
 
-/* 响应式设计 */
+/* 响应式设计（main 两栏已由 .grid-split 按容器宽度连续自适应，此断点不再需要改列数） */
 @media (max-width: 768px) {
-  main {
-    grid-template-columns: 1fr;
-  }
-
-  .upload-section,
-  .preview-section,
-  .group-info {
-    grid-column: 1;
-  }
-
   .group-btn {
     padding: 8px 12px;
     font-size: 0.9rem;

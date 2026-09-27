@@ -17,26 +17,42 @@
   padding-bottom: 10px;
 }
 
+/* 技能列表 + 编辑表单（P11-B6）：排布由 /web/components/grid.css 的 .grid-split 提供
+   （auto-fit，按容器宽度连续计算：面板内容宽 740px → 两栏；≤768 视口 → 单列，
+   承接原 .data-container 的 768 断点 flex-direction: column）。
+   原 flex:1 + min-width:250px 的两栏语义由 minmax(min(360px,100%),1fr) 轨道承接。 */
+.data-container.grid-split {
+  grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr));
+}
+
 .data-container {
-  display: flex;
-  gap: 30px;
-  flex-wrap: wrap;
+  gap: 30px; /* 原 flex gap 逐像素保留 */
 }
 
 .data-list {
-  flex: 1;
-  min-width: 250px;
+  min-width: 0; /* grid 子项默认 min-width:auto 会撑破轨道，必须归零 */
 }
 
 .data-editor {
-  flex: 1;
-  min-width: 250px;
+  min-width: 0; /* 同上 */
   background-color: rgba(40, 40, 60, 0.5);
   padding: 20px;
   border-radius: 10px;
 }
 
 /* 技能列表样式 */
+/* 单列流（P11-B6）：用 .grid-flow 承接"列表项间距"（原 li margin 5px 上下相加 = 10px），
+   轨道固定一列——列表项是"名称 + 操作按钮"的行布局，多列会把行内元素压扁。
+   滚动容器（max-height/overflow-y）语义不变，列表项本身的排布不动。 */
+.trick-list.grid-flow {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.trick-list.grid-flow li {
+  margin: 0;
+}
+
 .trick-list {
   list-style: none;
   padding: 0;
@@ -288,9 +304,13 @@
 }
 
 /* 节拍控制区 */
+/* 保留 flex（P11-B6 有意不套 grid 原语）：这是"试听/停止"两枚按钮的控件对，
+   位于 .setting-row 的右侧收缩槽位——grid 的 auto-fit 在收缩包裹的父级下
+   算不出多列（会塌成竖排），用 flex 行才是此处正确语义。 */
 .metronome-controls {
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 10px; /* 原 flex gap 逐像素保留 */
   align-items: center;
 }
 
@@ -507,16 +527,17 @@
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .data-container {
-    flex-direction: column;
-  }
+  /* .data-container 的窄屏单列由 .grid-split 的 auto-fit 承接（原 flex-direction: column 已移除） */
 
-  .navigation {
-    flex-direction: column;
-    align-items: center;
+  /* .navigation 窄屏单列（原 flex-direction: column 的等价 grid 写法；
+     本页设置页的导航来自 style.css 的 .grid-flow 覆盖规则） */
+  .navigation.grid-flow {
+    grid-template-columns: 1fr;
+    justify-items: center;
     gap: 10px;
   }
 
+  /* .setting-row 保持 flex：它是"滑块 + 控件"两端对齐的一行，非卡片集合 */
   .setting-row {
     flex-direction: column;
     align-items: stretch;

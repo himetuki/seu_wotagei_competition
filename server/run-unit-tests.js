@@ -24,6 +24,17 @@ const FILES = [
   "server/cordis/services/db.test.js",
   "web/loader.test.js",
   "web/icons.test.js",
+  // P11：内核组件注册表 + L1 共享库（random/persist/undo）
+  "web/ui.test.js",
+  "web/lib/random.test.js",
+  "web/lib/persist.test.js",
+  "web/lib/undo.test.js",
+  "web/components/compose.test.js",
+  // 响应式装配基座（petite-vue vendor；node 经 deps 注入 fake，永不加载 vendor）
+  "web/lib/reactive.test.js",
+  // L1 共享库补充：定时器登记表（组件卸载安全）+ body class 引用计数开关
+  "web/lib/timers.test.js",
+  "web/lib/body-class.test.js",
 ];
 
 let failed = 0;

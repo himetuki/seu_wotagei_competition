@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>团体赛 - 第三大轮</title>
     <link rel="preload" as="image" href="/resource/images/bg.jpg" />
+    <!-- P11：布局原语（L1 共享资产，origin 相对绝对路径）——先于 style.css，页面样式可覆盖 -->
+    <link rel="stylesheet" href="/web/components/grid.css" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -14,8 +16,9 @@
         <div id="bracket-status">第三大轮</div>
         <div id="system-hint">加载中...</div>
       </section>
+      <!-- 布局原语 .grid-cards（/web/components/grid.css）：auto-fill 自适应列数，零媒体查询 -->
       <section id="groups-section">
-        <div class="groups-grid" id="groups-grid"></div>
+        <div class="groups-grid grid-cards" id="groups-grid"></div>
       </section>
       <section id="music-info-section" class="hidden">
         <div class="music-info">
@@ -60,9 +63,13 @@
       </section>
       <footer><p>&copy; 2025 Y.Stage-X YUKAORI</p></footer>
     </div>
-    <div id="battle-start-overlay" class="battle-overlay hidden"></div>
-    <div id="battle-start-text" class="battle-start-text hidden"></div>
-    <div id="click-to-stop" class="click-to-stop hidden">双击任意位置停止</div>
+    <!-- P11-B5 组件插槽（组件宿主；必须放在 .container 之外：battle-mode 对 #main-container
+         整棵子树施加 opacity:0，插槽若在其内会让遮罩/逐字文字/点击提示一并不可见）。
+         battle-start 遮罩 / BATTLE START 逐字文本 / 停止提示三个骨架节点已删除，
+         改由 component-music-player 以 overlay.enabled 自建（类名不变，CSS 继续生效）。 -->
+    <div data-slot="music"></div>
+    <div data-slot="draw"></div>
+
     <div id="anim-overlay" class="anim-overlay hidden"></div>
     <div id="kill-effect" class="kill-effect hidden">
       <div class="kill-text">ELIMINATED</div>

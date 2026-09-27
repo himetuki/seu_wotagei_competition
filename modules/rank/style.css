@@ -260,7 +260,10 @@ button:active {
   }
 }
 
-/* 第二章节前三名区域 */
+/* 第二章节前三名区域（领奖台） */
+/* P11 评估结论：本块**不改 grid 类**。三格是固定宽 120px、按名次递减高度、align-items:flex-end
+   的领奖台（DOM 顺序 2-1-3），.grid-cards/.grid-flow 会拉伸为等宽大卡并改变居中节奏；
+   实测 320px 下 flex-shrink 已自动收缩、无横向溢出（CDP overflowX=0），故保留 flex 原样。 */
 .top3-container {
   display: flex;
   justify-content: center;
@@ -487,14 +490,20 @@ button:active {
   color: #ffd700;
 }
 
-.bracket-rounds {
-  display: flex;
-  flex-direction: row;
-  gap: 20px;
+/* 轮次栏（胜者组/败者组/决赛的等宽列）：任意轮数恒单行等宽（迁移前 flex + flex:1 的语义），
+   窄屏靠横向滚动兜底；见下方覆盖说明。 */
+.bracket-rounds.grid-flow {
+  /* 轮次栏用**列流**而非 auto-fit：.grid-flow 的 minmax(320px) 在 1160px 容器下只算出 3 轨，
+     4 轮及以上会被折到第二行，而迁移前（flex + flex:1）是任意轮数恒单行等宽（P11 终审 [P2]）。
+     列流 + 220px 轨道下限保持单行；窄屏由 overflow-x 横向滚动兜底（不撑破页面）。 */
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(220px, 1fr);
+  overflow-x: auto;
+  --grid-gap: 20px; /* 沿用原 flex gap 节奏（grid.css 缺省 16px） */
 }
 
 .bracket-round {
-  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -575,15 +584,11 @@ button:active {
   background-color: rgba(60, 60, 60, 0.8);
 }
 
-/* 使比赛流程图在移动设备上可水平滚动 */
+/* 窄屏：比赛流程仅收紧内边距；轮次栏由 .grid-flow 自动堆叠（原 min-width:600px
+   横向滚动 hack 见上） */
 @media (max-width: 768px) {
   .bracket-container {
-    overflow-x: auto;
     padding: 15px;
-  }
-
-  .tournament-flow {
-    min-width: 600px;
   }
 }
 
@@ -604,5 +609,25 @@ button:active {
 
   button {
     width: 100%;
+  }
+}
+
+
+/* 无障碍：减少动效偏好下停用装饰性动画（冠军发光/奖杯浮动/加载点/入场缩放/烟花爆点）。
+   功能相关过渡（奖品 opacity transition 等）保持不动。 */
+@media (prefers-reduced-motion: reduce) {
+  .champion-name,
+  .champion-trophy,
+  .loading:after,
+  .player-item,
+  .firework,
+  .particle {
+    animation: none !important;
+  }
+
+  /* 烟花/粒子为纯装饰爆点：减少动效偏好下不再显示静态残点 */
+  .firework,
+  .particle {
+    display: none !important;
   }
 }

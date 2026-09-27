@@ -293,3 +293,14 @@ footer {
     font-size: 3rem;
   }
 }
+
+
+/* 无障碍：减少动效偏好下停用装饰性动画（标题发光/冠军位发光/奖牌弹跳）。
+   功能相关过渡（`.rank-item` 的 opacity/transform 入场 transition）保持不动。 */
+@media (prefers-reduced-motion: reduce) {
+  header h1,
+  .rank-item.first,
+  .rank-medal {
+    animation: none !important;
+  }
+}

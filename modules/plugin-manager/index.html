@@ -9,14 +9,12 @@
   </head>
   <body>
     <div class="pm-page">
-      <!-- 页面级 header（主面板之外）：品牌区 + 操作区 -->
+      <!-- 页面级 header（主面板之外）：品牌区 + 操作区。
+           图标 span 留空：由 front/view.js 的 hydrateHeaderIcons() 以 /web/icons.mjs
+           基座图标填充（AGENTS §4.1 禁内联复制 SVG path） -->
       <header class="pm-header">
         <div class="pm-brand">
-          <span class="pm-brand-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
-            </svg>
-          </span>
+          <span class="pm-brand-icon" aria-hidden="true"></span>
           <div class="pm-brand-text">
             <h1 class="pm-title">插件管理</h1>
             <p class="pm-subtitle">插件装配管理与热替换</p>
@@ -24,19 +22,11 @@
         </div>
         <div class="pm-header-actions">
           <a class="pm-btn pm-btn--ghost" href="/">
-            <span class="pm-ic" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-              </svg>
-            </span>
+            <span class="pm-ic" aria-hidden="true"></span>
             <span>返回主页</span>
           </a>
           <button class="pm-btn pm-btn--primary" type="button" id="pm-refresh">
-            <span class="pm-ic" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M16.023 9.348h4.992M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-              </svg>
-            </span>
+            <span class="pm-ic" aria-hidden="true"></span>
             <span>刷新快照</span>
           </button>
         </div>

@@ -134,9 +134,15 @@
 }
 
 /* 按钮组和按钮半透明化和光效增强 */
+/* 布局（P11-B6）：排布由 /web/components/grid.css 的 .grid-flow 提供；
+   此处覆盖轨道尺寸并保持迁移前"内容宽按钮从行首排列"的位置（原 flex 无 justify-content） */
+.button-group.grid-flow {
+  grid-template-columns: repeat(auto-fit, minmax(min(100px, 100%), max-content));
+  justify-content: start;
+}
+
 .button-group {
-  display: flex;
-  gap: 15px;
+  gap: 15px; /* 原 flex gap 逐像素保留 */
   margin-top: 20px;
   animation: fadeInUp 1s ease-out;
 }
@@ -332,8 +338,10 @@
     padding: 20px;
   }
 
-  .button-group {
-    flex-direction: column;
+  /* 窄屏单列排布（原 flex-direction: column 的等价 grid 写法） */
+  .button-group.grid-flow {
+    grid-template-columns: 1fr;
+    justify-items: start;
   }
 }
 

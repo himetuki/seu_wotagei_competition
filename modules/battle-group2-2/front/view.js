@@ -1,32 +1,132 @@
 /**
- * 一年内组比赛第二章节（battle-group2-2）— 前端组件（P4 插件化迁移）
+ * 一年内组比赛第二章节（battle-group2-2）— 页面 flow（P11-B3「积木拼装」迁移后）
  *
- * 由原多脚本按加载顺序并入同一模块闭包（core → ui → data → events），
- * 函数体逐行保留；全局函数/变量 → 模块闭包作用域。原 b-g2-2-core.js 的
- * DOMContentLoaded 初始化改为组件体内直接执行（kernel render 时调用；
- * 顶层 DOM/AppState/CACHE_KEY 缓存保持模块顶层求值，此时 DOM 已就绪）。
+ * 分层（P11 §2.1）：本文件 = L4 页面专属 flow（选手轮转 + 确认弹窗、技名划线、抽取技名、
+ * 清除缓存、数据加载与存档编排）。跨页同构能力已抽走，本文件不再各写一份：
+ *   · 抽音乐闪现动画 + 播放 + 比赛模式 → 组件 component-draw-machine / component-music-player
+ *     （注册名 "draw-machine" / "music-player"，装配见 front/plugin.js 与 web/front.json 的 compose）
+ *   · 洗牌 / 随机抽取              → /web/lib/random.mjs（pickN / pickOne，Fisher–Yates）
+ *   · 存档双写 / 恢复 / 重置        → /web/lib/persist.mjs（createPersistence + 历史 key 适配层）
  *
- * 迁移差异（行为零回归前提下）：
- *   1. 静态骨架监听（含 audio ended、window beforeunload）一律 { signal }
- *      （AbortController）登记，cleanup 统一解绑；
- *   2. 音乐播放模式的 document 级监听与 audio 解绑进 cleanup；
+ * 有意行为变更（仅以下五类，其余逐行保留语义）：
+ *   1. 洗牌由 `[...].sort(() => Math.random() - 0.5)`（有偏）改为 Fisher–Yates（等概率）——
+ *      用户拍板统一修正（P11 §1.2 ③）。
+ *   2. body 类名 `music-playing-mode` → `battle-mode`（组件规范类名，base.css 同步改名）。
+ *   3. 点击提示文案「双击任意位置停止」→「单击任意位置停止」：手势本就是单击，仅文案对齐。
+ *   4. 抽取音乐由「每次点击重新 fetch musics_list_2.json」改为**加载期一次性**（B 组缺陷 8）；
+ *      宿主 audio 的 id 由 `#musicPlayer` 统一为连字符 `#music-player`（B 组缺陷 6）；
+ *      删除播放前对 `/resource/music/`（缺 s 的死路径）的 HEAD 预检兜底（B 组缺陷 7）——
+ *      播放失败统一由组件的 onError 承担。
+ *   5. 覆写层时序与 battle-group1 统一（overlay textContent "BATTLE START"、textMs 100、
+ *      readyMs 4500、hintMs 4500、hintText「单击任意位置停止」）——原为 "BATTLE MODE" / 3000ms
+ *      且提示在动画期间即显示，四模块现取同一套（用户拍板"择一统一"）。
  *
- * 持久化继续用原生 fetch（/api/battle-group2-2-process 端点）与原 localStorage
- * key，保持行为零回归；ctx 仅为后续可选用途保留（组件第三参）。
+ * 迁移前 → 迁移后 对照：
+ *   drawRandomMusic（每次点击 fetch + 15×80ms 闪现 + 内联色）→ component-draw-machine（items 由加载期一次性提供）
+ *   startMusicMode / stopMusicMode / handleDocumentClick / toggleMusicPlayback / handleMusicEnded
+ *     （遮罩/逐字动画/3000ms 待播/单击退出/audio onended/HEAD 预检+死路径兜底） → component-music-player
+ *   saveState / loadState / loadStateFromServer / clearCache → createPersistence（+ 5 键适配层）
+ *   已删除死代码：clearMusic（HTML 无 #clearMusicButton，从不触发；且其 cloneNode 会替换
+ *     组件持有的 audio 节点）、handleMusicEnded（音频 onended 归组件）、
+ *     AppState 中仅被抽走实现读写的 isMusicPaused / isMusicPlaying
+ *   （currentMusicFile 以**模块级变量 + 存档新字段**的形式回归：修复"恢复后 audio.src 缺扩展名"）
+ *   自定义确认弹窗 showConfirmDialog（页面专属 UI，非比赛遮罩） → 原样保留
+ *
+ * 缺陷修复（本轮）：
+ *   · 比赛模式抖动：接组件新增的 onOverlayShown 钩子，回到"进入模式即抖"的原时机（原来误挂在
+ *     onStarted → 要等 readyMs=4500ms 才抖）。
+ *   · 恢复路径 audio.src：新增存档字段 currentMusicFile（真实文件名，含扩展名）；
+ *     有该字段时把曲目交回组件（刷新后可直接播放），老档仍按 B3 语义只还原展示文本。
+ *   · 一次性定时器统一登记（timers 注册表 + later()，P12 起由 /web/lib/timers.mjs 承载），
+ *     cleanup 清句柄并摘孤儿提示/弹窗节点。
+ *
+ * ★ 恢复链语义（与 battle-group2 相反，刻意保留）：本页**本地优先**——本地 5 键有缓存即用本地，
+ *   本地无缓存才经 createPersistence 读服务端。localStorage key 与端点逐字保留。
+ *
+ * 组件降级：组件未注册/被 enabled:false 禁用时插槽留空，页面其余部分照常工作
+ * （原内联实现已删除，不做"回退到旧实现"的双路径——双路径会让禁用开关形同虚设）。
  */
+
+import { pickN, pickOne } from "/web/lib/random.mjs";
+import { createPersistence } from "/web/lib/persist.mjs";
+import { createTimerRegistry } from "/web/lib/timers.mjs";
+
+/**
+ * 历史 localStorage key（**逐字保留**，老存档兼容）——迁到 createPersistence 后由下面的
+ * storage 适配层负责：1 个逻辑状态对象 ↔ 5 个历史 key（磁盘键名与值的字符串形态不变）。
+ */
+const CACHE_KEY = {
+  PLAYERS: "battle_group2_2_players",
+  CURRENT_INDEX: "battle_group2_2_current_index",
+  CURRENT_TRICK: "battle_group2_2_current_trick",
+  CURRENT_MUSIC: "battle_group2_2_current_music",
+  CROSSED_TRICKS: "battle_group2_2_crossed_tricks",
+  // 缺陷修复新增键（既有 5 键逐字不动）：真实音乐文件名（含扩展名）——
+  // 原实现只存展示文本（`.mp3` 被 format 去掉）→ 恢复时拼出的 audio.src 缺扩展名 404。
+  CURRENT_MUSIC_FILE: "battle_group2_2_current_music_file",
+};
+
+/** 逻辑状态键（仅 createPersistence 内部使用，不落盘；落盘键见 CACHE_KEY） */
+const STATE_KEY = "battleGroup2-2State";
+
+/** 安全 JSON 解析（损坏 → 兜底值，不抛错） */
+function parseJSON(raw, fallback) {
+  try {
+    return raw === null || raw === undefined ? fallback : JSON.parse(raw);
+  } catch (e) {
+    console.warn("[battle-group2-2] 本地缓存解析失败，按空值处理:", e);
+    return fallback;
+  }
+}
+
+/**
+ * Storage 适配层：把 createPersistence 的单键读写映射到 5 个历史 key。
+ * getItem 重建 { players, currentIndex, currentTrick, currentMusic, crossedTricks }；
+ * setItem 把同一形状拆回 5 个 key（字符串形态与迁移前逐字一致）。
+ */
+function createLegacyStorage() {
+  return {
+    getItem() {
+      const rawPlayers = localStorage.getItem(CACHE_KEY.PLAYERS);
+      if (rawPlayers === null) return null; // 无任何历史缓存 → 视为无存档
+      const rawIndex = localStorage.getItem(CACHE_KEY.CURRENT_INDEX);
+      return JSON.stringify({
+        players: parseJSON(rawPlayers, []),
+        currentIndex: rawIndex === null ? 0 : parseInt(rawIndex, 10),
+        currentTrick: localStorage.getItem(CACHE_KEY.CURRENT_TRICK) || "",
+        currentMusic: localStorage.getItem(CACHE_KEY.CURRENT_MUSIC) || "",
+        crossedTricks: parseJSON(localStorage.getItem(CACHE_KEY.CROSSED_TRICKS), []),
+        // 新字段追加在既有字段之后（既有键名/值形态不动；老存档该键缺失 → ""）
+        currentMusicFile: localStorage.getItem(CACHE_KEY.CURRENT_MUSIC_FILE) || "",
+      });
+    },
+    setItem(_key, value) {
+      const state = JSON.parse(value);
+      localStorage.setItem(CACHE_KEY.PLAYERS, JSON.stringify(state.players || []));
+      localStorage.setItem(CACHE_KEY.CURRENT_INDEX, String(state.currentIndex ?? 0));
+      localStorage.setItem(CACHE_KEY.CURRENT_TRICK, state.currentTrick || "");
+      localStorage.setItem(CACHE_KEY.CURRENT_MUSIC, state.currentMusic || "");
+      localStorage.setItem(CACHE_KEY.CROSSED_TRICKS, JSON.stringify(state.crossedTricks || []));
+      localStorage.setItem(CACHE_KEY.CURRENT_MUSIC_FILE, state.currentMusicFile || "");
+    },
+    removeItem() {
+      for (const key of Object.values(CACHE_KEY)) localStorage.removeItem(key);
+    },
+  };
+}
+
 /**
  * 一年内组比赛界面 - 第二章节（核心模块）
  * 包含全局变量和基本初始化
  */
 
-// 全局DOM元素引用
+// 全局DOM元素引用（宿主 audio 由 music-player 组件按 id 取用，页面不再直接持有）
 const DOM = {
   playerList: document.getElementById("playerList"),
   trickList: document.getElementById("trickList"),
   currentPlayer: document.getElementById("currentPlayer"),
   currentTrick: document.getElementById("currentTrick"),
   currentMusic: document.getElementById("currentMusic"),
-  musicPlayer: document.getElementById("musicPlayer"),
   nextPlayerButton: document.getElementById("nextPlayerButton"),
   playMusicButton: document.getElementById("playMusicButton"),
   shuffleButton: document.getElementById("shuffleButton"),
@@ -34,7 +134,6 @@ const DOM = {
   drawMusicButton: document.getElementById("drawMusicButton"),
   clearCacheButton: document.getElementById("clearCacheButton"),
   homeButton: document.getElementById("homeButton"),
-  clearMusicButton: document.getElementById("clearMusicButton"),
 };
 
 // 全局状态
@@ -42,23 +141,54 @@ const AppState = {
   players: [],
   tricks: [],
   currentPlayerIndex: 0,
-  currentMusicFile: "",
-  isMusicPaused: false,
-  isMusicPlaying: false,
   originalPlayers: [],
+  // 音乐列表（加载期一次性读取 musics_list_2.json；抽取/播放组件经 componentProps 取用）
+  musicList: [],
 };
 
-// 缓存键名定义 - 使用不同的键以避免与原页面冲突
-const CACHE_KEY = {
-  PLAYERS: "battle_group2_2_players",
-  CURRENT_INDEX: "battle_group2_2_current_index",
-  CURRENT_TRICK: "battle_group2_2_current_trick",
-  CURRENT_MUSIC: "battle_group2_2_current_music",
-  CROSSED_TRICKS: "battle_group2_2_crossed_tricks",
-};
+/** 页面级 AbortSignal（组件入口写入；动态生成的列表项监听经它登记，重渲染统一解绑） */
+let bindSignal = null;
+/** 划线恢复的延迟补写定时器 */
+let restoreCrossTimer = null;
+/** 一次性收尾定时器（toast 自动移除、弹窗淡入、抖动移除）——
+ * P12 起经 /web/lib/timers.mjs 注册表统一登记（替代原 pageTimers + later() 样板） */
+const timers = createTimerRegistry();
+/** 登记一次性定时器（cleanup 统一清理，避免 teardown 后回调仍在飞；别名保调用点零改动） */
+const later = (fn, ms) => timers.later(fn, ms);
+/** 当前音乐的真实文件名（含扩展名；抽到/恢复时写入，随存档持久化，见 getPersisted） */
+let currentMusicFile = "";
+/** 持久化控制器（组件入口创建：需要 ctx.api） */
+let persist = null;
+/** 本地存储适配层实例（local-first 读取用） */
+let legacyStorage = null;
+/** 组件实例 API 桥 */
+let apis = { music: null, draw: null };
 
-// 主入口函数 - 页面加载完成时执行
-// （原 DOMContentLoaded 初始化已移至文件末尾组件入口）
+/**
+ * 抖动兜底清理：摘除 .shake 类（body + 遮罩文字节点）。
+ * 组件复用同一批遮罩节点，残留的 .shake 会顶掉下一次的 battle-start-animation 入场动画；
+ * 未到期的抖动定时器句柄由 timers 注册表统一清理（见 cleanup）。
+ */
+function clearBattleShake() {
+  if (document.body) document.body.classList.remove("shake");
+  document
+    .querySelectorAll(".battle-start.shake")
+    .forEach((node) => node.classList.remove("shake"));
+}
+
+/**
+ * 比赛模式抖动（组件 onOverlayShown 钩子：进入模式、遮罩显示、逐字动画开始前触发）。
+ * 本页迁移前只有"BATTLE START 文字抖动"（没有 body 抖动），时机 = 逐字动画走完的那一刻：
+ * 原实现为 1100ms（"BATTLE MODE" 11 字 × 100ms）；文案统一为 "BATTLE START"（12 字）后取 1200ms。
+ */
+function shakeBattleOverlay({ text } = {}) {
+  clearBattleShake();
+  if (!text) return;
+  later(() => {
+    text.classList.add("shake");
+    later(() => text.classList.remove("shake"), 500);
+  }, 1200);
+}
 
 /**
  * 一年内组比赛界面 - 第二章节（UI模块）
@@ -90,10 +220,15 @@ function updateTrickList() {
     li.textContent = trick.name;
     // 添加CSS变量来控制动画延迟
     li.style.setProperty("--item-index", index);
-    li.addEventListener("click", () => {
-      li.classList.toggle("crossed");
-      saveState();
-    });
+    // 动态节点监听经页面 signal 登记，重渲染统一解绑
+    li.addEventListener(
+      "click",
+      () => {
+        li.classList.toggle("crossed");
+        saveState();
+      },
+      { signal: bindSignal }
+    );
     DOM.trickList.appendChild(li);
   });
 }
@@ -110,9 +245,9 @@ function showToast(message, type = "info", duration = 3000) {
   toast.innerText = message;
   document.body.appendChild(toast);
 
-  // 自动移除提示（除非是loading类型）
+  // 自动移除提示（除非是loading类型）——句柄登记：cleanup 清定时器并摘掉孤儿 toast 节点
   if (type !== "loading" && duration > 0) {
-    setTimeout(hideToast, duration);
+    later(hideToast, duration);
   }
 
   return toast;
@@ -227,8 +362,8 @@ function showConfirmDialog(message, onConfirm, onCancel) {
   // 添加到页面
   document.body.appendChild(dialogContainer);
 
-  // 淡入效果
-  setTimeout(() => {
+  // 淡入效果（句柄登记：cleanup 清定时器；同时兜底摘掉可能残留的弹窗容器）
+  later(() => {
     dialogContainer.classList.add("show");
     dialog.classList.add("show");
   }, 10);
@@ -241,7 +376,9 @@ function shufflePlayers() {
     return;
   }
 
-  AppState.players = [...AppState.players].sort(() => Math.random() - 0.5);
+  // ★ 有意变更：原 `[...].sort(() => Math.random() - 0.5)` 是有偏洗牌，
+  //   改为 /web/lib/random.mjs 的 Fisher–Yates 等概率洗牌（用户拍板统一修正）。
+  AppState.players = pickN(AppState.players, AppState.players.length);
   AppState.currentPlayerIndex = 0;
   DOM.currentPlayer.textContent = AppState.players[0].name;
   updatePlayerList();
@@ -267,125 +404,15 @@ function drawRandomTrick() {
     return;
   }
 
-  const randomIndex = Math.floor(Math.random() * availableTricks.length);
-  DOM.currentTrick.textContent = availableTricks[randomIndex];
+  // 等概率单抽（/web/lib/random.mjs 的 pickOne 替换 Math.floor(Math.random()*n) 手写式）
+  const randomTrick = pickOne(availableTricks);
+  DOM.currentTrick.textContent = randomTrick;
 
   // 注意：这里不再自动标记为已使用，让用户手动标记
   // 仅显示抽取结果
 
   saveState();
-  showToast(`已抽取技名: ${availableTricks[randomIndex]}`, "success");
-}
-
-// 抽取音乐
-function drawRandomMusic() {
-  // 先确认musics_list-2.json是否存在或可访问
-  console.log("开始抽取音乐...");
-
-  // 使用修改后的URL路径，从musics_list_2.json抽取音乐
-  const musicUrl = "/resource/json/musics_list_2.json";
-  console.log("请求音乐列表:", musicUrl);
-
-  fetch(musicUrl)
-    .then((response) => {
-      console.log("音乐列表响应状态:", response.status);
-      if (!response.ok)
-        throw new Error(`无法加载音乐列表 (${response.status})`);
-      return response.json();
-    })
-    .then((data) => {
-      console.log("成功获取音乐数据, 数量:", data.length);
-
-      if (!data || data.length === 0) {
-        showToast("音乐列表为空", "error");
-        return;
-      }
-
-      // 禁用抽取按钮，防止重复点击
-      const drawBtn = document.getElementById("drawMusicButton") || DOM.drawMusicButton;
-      if (drawBtn) drawBtn.disabled = true;
-
-      // 闪现效果参数
-      const flashCount = 15;
-      const flashInterval = 80;
-      let currentFlash = 0;
-
-      // 闪现动画
-      const flashTimer = setInterval(() => {
-        const randomIdx = Math.floor(Math.random() * data.length);
-        const flashMusic = data[randomIdx];
-
-        if (DOM.currentMusic) {
-          DOM.currentMusic.textContent = flashMusic.replace(/\.mp3$/, "");
-          DOM.currentMusic.style.color = "#fbbf24"; // 闪现时为黄色
-        }
-
-        currentFlash++;
-
-        if (currentFlash >= flashCount) {
-          clearInterval(flashTimer);
-
-          // 最终随机选择
-          const randomIndex = Math.floor(Math.random() * data.length);
-          const selectedMusic = data[randomIndex];
-
-          console.log("已选择音乐:", selectedMusic);
-
-          // 更新显示 - 可能需要截取文件名以改善显示
-          const displayName = selectedMusic.replace(/\.mp3$/, "");
-          if (DOM.currentMusic) {
-            DOM.currentMusic.textContent = displayName;
-            DOM.currentMusic.style.color = "#10b981"; // 最终结果为绿色
-          }
-
-          // 设置音乐文件 - 不做任何编码处理，保留原始文件名
-          AppState.currentMusicFile = selectedMusic;
-
-          // 这里不预加载音乐，避免404错误
-          DOM.playMusicButton.textContent = "播放音乐";
-          AppState.isMusicPaused = false;
-          AppState.isMusicPlaying = false;
-
-          // 保存状态
-          saveState();
-
-          // 启用按钮
-          if (drawBtn) drawBtn.disabled = false;
-
-          showToast(`已抽取音乐: ${displayName}`, "success");
-        }
-      }, flashInterval);
-    })
-    .catch((error) => {
-      console.error("加载音乐列表失败:", error);
-      showToast(`无法加载音乐列表: ${error.message}`, "error");
-    });
-}
-
-// 清除音乐
-function clearMusic() {
-  // 克隆音乐播放器以清除当前状态
-  const oldPlayer = DOM.musicPlayer.cloneNode(false);
-  DOM.musicPlayer.parentNode.replaceChild(oldPlayer, DOM.musicPlayer);
-
-  // 更新DOM引用
-  DOM.musicPlayer = oldPlayer;
-
-  // 重新添加事件监听器
-  DOM.musicPlayer.addEventListener("ended", handleMusicEnded);
-
-  AppState.currentMusicFile = "";
-  DOM.playMusicButton.textContent = "播放音乐";
-  DOM.currentMusic.textContent = "抽取音乐";
-  saveState();
-
-  showToast("音乐已清除", "info");
-}
-
-// 音乐结束事件处理
-function handleMusicEnded() {
-  DOM.playMusicButton.textContent = "播放音乐";
-  AppState.isMusicPaused = false;
+  showToast(`已抽取技名: ${randomTrick}`, "success");
 }
 
 /**
@@ -397,17 +424,41 @@ function handleMusicEnded() {
 function loadData() {
   loadPlayerData();
   loadTrickData();
+  loadMusicList();
+}
+
+// 加载音乐列表（B3 终审 [P0] 修复：迁移时只删掉了"每次点击 fetch"的旧实现，
+// 加载期这一步漏写，导致 AppState.musicList 恒为 undefined → 抽取音乐静默走
+// draw-machine 的 onEmpty 分支（无动画/无结果）。此处补回，语义与 battle-group2
+// 一致：加载期一次性读取，抽取时不再重复请求。）
+function loadMusicList() {
+  fetch("/resource/json/musics_list_2.json")
+    .then((response) => {
+      if (!response.ok) throw new Error("无法加载musics_list_2.json");
+      return response.json();
+    })
+    .then((data) => {
+      AppState.musicList = Array.isArray(data) ? data : [];
+    })
+    .catch((error) => {
+      console.warn("[battle-group2-2] 加载音乐列表失败，将使用空列表:", error);
+      AppState.musicList = [];
+      showToast("无法加载音乐列表，将使用默认数据", "warning");
+    });
 }
 
 // 加载选手数据
 function loadPlayerData() {
   fetch("/resource/json/player2.json")
-    .then((response) => response.json())
+    .then((response) => {
+      if (!response.ok) throw new Error("无法加载player2.json");
+      return response.json();
+    })
     .then((data) => {
       // 保存原始选手列表
-      AppState.originalPlayers = [...data];
+      AppState.originalPlayers = Array.isArray(data) ? [...data] : [];
 
-      // 尝试加载保存的状态
+      // 尝试加载保存的状态（本地优先；本地同步命中时先于下面的兜底填充生效）
       loadState();
 
       // 如果玩家列表为空，则使用原始数据
@@ -420,193 +471,169 @@ function loadPlayerData() {
       }
     })
     .catch((error) => {
-      console.error("加载player2.json失败:", error);
-      showToast("无法加载选手数据，请检查网络连接", "error");
+      // 容错统一：降级为"沿用上次可用列表"并继续，不再中止
+      console.warn("[battle-group2-2] 加载player2.json失败，将使用默认数据:", error);
+      showToast("无法加载选手数据，将使用默认数据", "warning");
+      AppState.players = [...AppState.originalPlayers];
+      updatePlayerList();
     });
 }
 
 // 加载技名数据 - 修改为使用tricks.json
 function loadTrickData() {
   fetch("/resource/json/tricks.json")
-    .then((response) => response.json())
+    .then((response) => {
+      if (!response.ok) throw new Error("技名数据加载失败");
+      return response.json();
+    })
     .then((data) => {
-      AppState.tricks = data;
+      AppState.tricks = Array.isArray(data) ? data : [];
       updateTrickList();
     })
     .catch((error) => {
-      console.error("加载tricks.json失败:", error);
-      showToast("无法加载技名数据，请检查网络连接", "error");
+      console.warn("[battle-group2-2] 加载tricks.json失败，将使用空列表:", error);
+      AppState.tricks = [];
+      showToast("无法加载技名数据，将使用默认数据", "warning");
     });
 }
 
-// 保存状态到本地文件和浏览器缓存
+/** 存档载荷（原 saveState 的 stateData 字面量；字段与顺序逐字保留，`currentMusicFile` 为**追加**字段） */
+function getPersisted() {
+  return {
+    players: AppState.players,
+    currentIndex: AppState.currentPlayerIndex,
+    currentTrick: DOM.currentTrick ? DOM.currentTrick.textContent : "",
+    currentMusic: DOM.currentMusic ? DOM.currentMusic.textContent : "",
+    crossedTricks: DOM.trickList
+      ? Array.from(DOM.trickList.children)
+          .filter((li) => li.classList.contains("crossed"))
+          .map((li) => li.textContent)
+      : [],
+    // 新增：真实文件名（含扩展名）。currentMusic 是展示文本（.mp3 被 format 去掉），
+    // 恢复时若只拿它拼 audio.src 会 404；老存档无此字段 → ""（沿用旧的展示文本行为）。
+    currentMusicFile: currentMusicFile || "",
+  };
+}
+
+// 保存状态到本地文件和浏览器缓存（双写：5 个历史 key + POST；失败不打断页面）
 function saveState() {
-  try {
-    const stateData = {
-      players: AppState.players,
-      currentIndex: AppState.currentPlayerIndex,
-      currentTrick: DOM.currentTrick ? DOM.currentTrick.textContent : "",
-      currentMusic: DOM.currentMusic ? DOM.currentMusic.textContent : "",
-      crossedTricks: DOM.trickList
-        ? Array.from(DOM.trickList.children)
-            .filter((li) => li.classList.contains("crossed"))
-            .map((li) => li.textContent)
-        : [],
-    };
+  if (!persist) return;
+  persist.save(getPersisted());
+}
 
-    // 保存到浏览器缓存
-    localStorage.setItem(CACHE_KEY.PLAYERS, JSON.stringify(AppState.players));
-    localStorage.setItem(CACHE_KEY.CURRENT_INDEX, AppState.currentPlayerIndex);
-    localStorage.setItem(CACHE_KEY.CURRENT_TRICK, DOM.currentTrick ? DOM.currentTrick.textContent : "");
-    localStorage.setItem(CACHE_KEY.CURRENT_MUSIC, DOM.currentMusic ? DOM.currentMusic.textContent : "");
-    localStorage.setItem(
-      CACHE_KEY.CROSSED_TRICKS,
-      JSON.stringify(stateData.crossedTricks)
-    );
-
-    // 保存到服务器
-    saveStateToServer(stateData);
-  } catch (error) {
-    console.error("保存状态失败:", error);
+/** persist 失败上报（迁移前为 console.error） */
+function handlePersistError(error, phase) {
+  if (phase === "save:remote" || phase === "save:local") {
+    console.error("保存到服务器失败:", error);
+  } else {
+    console.warn("[battle-group2-2] 存档读写失败:", phase, error);
   }
 }
 
-// 保存状态到服务器
-function saveStateToServer(stateData) {
-  fetch("/api/battle-group2-2-process", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(stateData),
-  })
-    .then((response) => {
-      if (!response.ok) throw new Error("保存状态失败");
-      console.log("状态已保存到服务器");
-    })
-    .catch((error) => {
-      console.error("保存到服务器失败:", error);
-    });
+/**
+ * 从本地和服务器加载状态（★ 本地优先，与 battle-group2 相反，刻意保留）
+ *   本地 5 键有缓存 → 同步用本地（先于 loadPlayerData 的兜底填充）
+ *   本地无缓存       → 经 createPersistence 读服务端（/api/battle-group2-2-process 逐字保留）
+ */
+function loadState() {
+  const local = readLocalState();
+  if (local) {
+    restoreFromState(local, "local");
+    console.log("比赛状态已从本地恢复");
+    return Promise.resolve();
+  }
+  return persist.load().then(({ data, source }) => {
+    if (source === "server") {
+      console.log("成功从服务器加载状态:", data);
+      restoreFromState(data, "server");
+    }
+  });
 }
 
-// 从本地和服务器加载状态
-function loadState() {
-  // 先尝试从浏览器缓存加载
+/** 本地缓存（经适配层重建的 5 键对象）；无缓存 → null */
+function readLocalState() {
+  const raw = legacyStorage ? legacyStorage.getItem() : null;
+  if (!raw) return null;
   try {
-    const savedPlayers = localStorage.getItem(CACHE_KEY.PLAYERS);
-    const savedIndex = localStorage.getItem(CACHE_KEY.CURRENT_INDEX);
-    const savedTrick = localStorage.getItem(CACHE_KEY.CURRENT_TRICK);
-    const savedMusic = localStorage.getItem(CACHE_KEY.CURRENT_MUSIC);
-    const savedCrossedTricks = localStorage.getItem(CACHE_KEY.CROSSED_TRICKS);
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn("[battle-group2-2] 本地缓存解析失败，改为读取服务端:", e);
+    return null;
+  }
+}
 
-    // 恢复选手列表
-    if (savedPlayers) {
-      AppState.players = JSON.parse(savedPlayers);
+// 从状态对象恢复（服务端 / 本地同形；source 区分两者，保留迁移前的判定差异）
+function restoreFromState(data, source = "server") {
+  if (!data) return false;
+
+  try {
+    // 恢复选手列表：本地路径有键即用（与迁移前 restoreFromLocalStorage 一致）；
+    // 服务端路径仅在非空时覆盖（与迁移前 loadStateFromServer 一致，空列表不冲掉兜底值）
+    const hasPlayers =
+      Array.isArray(data.players) &&
+      (source === "local" || data.players.length > 0);
+    if (hasPlayers) {
+      AppState.players = data.players;
       updatePlayerList();
     }
 
     // 恢复当前选手索引
-    if (savedIndex) {
-      AppState.currentPlayerIndex = parseInt(savedIndex, 10);
-      if (
-        AppState.players.length > 0 &&
-        AppState.currentPlayerIndex < AppState.players.length
-      ) {
-        DOM.currentPlayer.textContent =
-          AppState.players[AppState.currentPlayerIndex].name;
-      }
+    if (
+      typeof data.currentIndex === "number" &&
+      !isNaN(data.currentIndex) &&
+      data.currentIndex >= 0 &&
+      AppState.players.length > 0 &&
+      data.currentIndex < AppState.players.length
+    ) {
+      AppState.currentPlayerIndex = data.currentIndex;
+      DOM.currentPlayer.textContent =
+        AppState.players[AppState.currentPlayerIndex].name;
     }
 
     // 恢复当前技名
-    if (savedTrick && DOM.currentTrick) {
-      DOM.currentTrick.textContent = savedTrick;
+    if (data.currentTrick && DOM.currentTrick) {
+      DOM.currentTrick.textContent = data.currentTrick;
     }
 
-    // 恢复当前音乐
-    if (savedMusic && DOM.currentMusic) {
-      DOM.currentMusic.textContent = savedMusic;
+    // 恢复当前音乐（只还原展示文本；播放状态归 music-player 组件）
+    // B3 终审 [P2] 修复：存档里的 currentMusic 是 #currentMusic 的展示文本，抽音乐前
+    // 也可能是初始占位「抽取音乐」。迁移版曾把它 setItem 回组件当成"已抽到的曲目"，
+    // 导致刷新后未抽取就能点播放并误入比赛模式（HEAD 不会）。此处与 HEAD 对齐：
+    // 仅还原展示，不写回组件内部 current（点播放仍按未抽取处理，提示「请先抽取音乐」）。
+    if (data.currentMusic && DOM.currentMusic) {
+      DOM.currentMusic.textContent = data.currentMusic;
+    }
+    // ★ 缺陷修复：存档带"真实文件名"（含扩展名，新档才有）时把曲目交回组件 ——
+    //   刷新后点播放即可出声（preloadOnDraw=false，src 在 start() 时按 current 拼装）。
+    //   老档无该字段 → 保持上面的既有语义（只还原展示、点播放按未抽取处理），
+    //   B3 终审 [P2] 防的"占位文案误进比赛模式"不受影响（占位期没有真实文件名）。
+    currentMusicFile =
+      typeof data.currentMusicFile === "string" ? data.currentMusicFile : "";
+    if (currentMusicFile && apis.music) {
+      apis.music.setItem(currentMusicFile);
     }
 
     // 恢复已划线的技名
-    if (savedCrossedTricks) {
-      try {
-        const crossedTricks = JSON.parse(savedCrossedTricks);
-        updateTrickList();
-        // 将保存的已划线技能标记为划线
-        setTimeout(() => {
-          Array.from(DOM.trickList.children).forEach((li) => {
-            if (crossedTricks.includes(li.textContent)) {
-              li.classList.add("crossed");
-            }
-          });
-        }, 100);
-      } catch (e) {
-        console.error("解析已划线技能失败:", e);
-      }
+    if (data.crossedTricks && Array.isArray(data.crossedTricks) && data.crossedTricks.length > 0) {
+      updateTrickList();
+      // 将保存的已划线技能标记为划线（句柄登记，cleanup 清理）
+      if (restoreCrossTimer) clearTimeout(restoreCrossTimer);
+      restoreCrossTimer = setTimeout(() => {
+        restoreCrossTimer = null;
+        if (!DOM.trickList) return;
+        Array.from(DOM.trickList.children).forEach((li) => {
+          if (data.crossedTricks.includes(li.textContent)) {
+            li.classList.add("crossed");
+          }
+        });
+      }, 100);
     }
 
-    // 如果本地缓存为空，则尝试从服务器加载
-    if (!savedPlayers) {
-      loadStateFromServer();
-    }
+    return true;
   } catch (error) {
-    console.error("从本地加载状态失败:", error);
-    // 尝试从服务器加载
-    loadStateFromServer();
+    console.error("恢复进度数据失败:", error);
+    return false;
   }
-}
-
-// 从服务器加载状态
-function loadStateFromServer() {
-  fetch("/api/battle-group2-2-process")
-    .then((response) => {
-      if (!response.ok) throw new Error("无法从服务器加载状态");
-      return response.json();
-    })
-    .then((data) => {
-      // 恢复选手列表
-      if (data && data.players && data.players.length > 0) {
-        AppState.players = data.players;
-        updatePlayerList();
-      }
-
-      // 恢复当前选手索引
-      if (data.currentIndex !== undefined) {
-        AppState.currentPlayerIndex = data.currentIndex;
-        if (
-          AppState.players.length > 0 &&
-          AppState.currentPlayerIndex < AppState.players.length
-        ) {
-          DOM.currentPlayer.textContent =
-            AppState.players[AppState.currentPlayerIndex].name;
-        }
-      }
-
-      // 恢复当前技名和音乐
-      if (data.currentTrick && DOM.currentTrick) {
-        DOM.currentTrick.textContent = data.currentTrick;
-      }
-
-      if (data.currentMusic && DOM.currentMusic) {
-        DOM.currentMusic.textContent = data.currentMusic;
-      }
-
-      // 恢复已划线的技名
-      if (data.crossedTricks && Array.isArray(data.crossedTricks)) {
-        updateTrickList();
-        // 将保存的已划线技能标记为划线
-        setTimeout(() => {
-          Array.from(DOM.trickList.children).forEach((li) => {
-            if (data.crossedTricks.includes(li.textContent)) {
-              li.classList.add("crossed");
-            }
-          });
-        }, 100);
-      }
-    })
-    .catch((error) => {
-      console.error("从服务器加载状态失败:", error);
-    });
 }
 
 // 清除缓存并初始化数据
@@ -620,22 +647,16 @@ function clearCache() {
     // 显示进度提示
     showToast("正在初始化比赛数据...", "loading");
 
-    // 清除浏览器缓存
-    localStorage.removeItem(CACHE_KEY.PLAYERS);
-    localStorage.removeItem(CACHE_KEY.CURRENT_INDEX);
-    localStorage.removeItem(CACHE_KEY.CURRENT_TRICK);
-    localStorage.removeItem(CACHE_KEY.CURRENT_MUSIC);
-    localStorage.removeItem(CACHE_KEY.CROSSED_TRICKS);
-
-    // 获取原始选手数据
-    let originalPlayerList = [];
-    fetch("/resource/json/player2.json")
+    // 清除浏览器缓存（5 个历史 key，由 storage 适配层统一清除）
+    persist
+      .reset() // 本模块无独立 clear 端点：仅清本地，服务端由下一步覆写为初始态
+      .then(() => fetch("/resource/json/player2.json"))
       .then((response) => {
         if (!response.ok) throw new Error("无法加载选手数据");
         return response.json();
       })
       .then((data) => {
-        originalPlayerList = data;
+        const originalPlayerList = Array.isArray(data) ? data : [];
 
         // 准备默认的初始化数据 - 只保留选手列表，其他置空
         const defaultData = {
@@ -647,16 +668,9 @@ function clearCache() {
         };
 
         // 清除并初始化服务器缓存
-        return fetch("/api/battle-group2-2-process", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(defaultData),
-        });
+        return persist.save(defaultData).then(() => originalPlayerList);
       })
-      .then((response) => {
-        if (!response.ok) throw new Error("初始化服务器数据失败");
+      .then((originalPlayerList) => {
         console.log("服务器数据已重置为初始状态");
 
         // 重置页面上的显示内容
@@ -667,17 +681,15 @@ function clearCache() {
           DOM.currentPlayer.textContent = AppState.players[0].name;
         }
 
-        // 重置其他显示
+        // 重置其他显示（音乐展示/播放状态归 music-player 组件）
         if (DOM.currentTrick) {
           DOM.currentTrick.textContent = "";
         }
         if (DOM.currentMusic) {
           DOM.currentMusic.textContent = "";
         }
-        if (DOM.musicPlayer) {
-          DOM.musicPlayer.src = "";
-        }
-        AppState.currentMusicFile = "";
+        currentMusicFile = "";
+        if (apis.music) apis.music.clearItem();
 
         // 移除加载提示
         hideToast();
@@ -709,293 +721,126 @@ function clearCache() {
 // 设置所有事件监听器
 function setupEventListeners(signal) {
   // 随机排序选手
-  if (document.getElementById("shuffleButton")) {
-    document
-      .getElementById("shuffleButton")
-      .addEventListener("click", shufflePlayers, { signal });
-  } else if (DOM.shuffleButton) {
+  if (DOM.shuffleButton) {
     DOM.shuffleButton.addEventListener("click", shufflePlayers, { signal });
   }
-  /*
-  // 抽取技名
-  if (document.getElementById("drawTrickButton")) {
-    document
-      .getElementById("drawTrickButton")
-      .addEventListener("click", drawRandomTrick);
-  } else if (DOM.drawTrickButton) {
-    DOM.drawTrickButton.addEventListener("click", drawRandomTrick);
-  }*/
 
-  // 抽取音乐
-  if (document.getElementById("drawMusicButton")) {
-    document
-      .getElementById("drawMusicButton")
-      .addEventListener("click", drawRandomMusic, { signal });
-  } else if (DOM.drawMusicButton) {
-    DOM.drawMusicButton.addEventListener("click", drawRandomMusic, { signal });
-  }
-
-  // 播放音乐
-  if (document.getElementById("playMusicButton")) {
-    document
-      .getElementById("playMusicButton")
-      .addEventListener("click", toggleMusicPlayback, { signal });
-  } else if (DOM.playMusicButton) {
-    DOM.playMusicButton.addEventListener("click", toggleMusicPlayback, { signal });
-  }
+  // 抽取技名：本页 HTML 未启用（#drawTrickButton 已注释），保留原死代码分支注释状态
+  // 抽取音乐 / 播放音乐按钮由组件绑定（draw-machine 的 trigger / music-player 的 startTrigger），
+  // 页面侧不再重复绑定，避免单击双跑
 
   // 下一个选手
-  if (document.getElementById("nextPlayerButton")) {
-    document
-      .getElementById("nextPlayerButton")
-      .addEventListener("click", goToNextPlayer, { signal });
-  } else if (DOM.nextPlayerButton) {
+  if (DOM.nextPlayerButton) {
     DOM.nextPlayerButton.addEventListener("click", goToNextPlayer, { signal });
   }
 
-  // 音乐播放结束事件
-  DOM.musicPlayer.addEventListener("ended", handleMusicEnded, { signal });
-
   // 清除缓存
-  DOM.clearCacheButton.addEventListener("click", clearCache, { signal });
+  if (DOM.clearCacheButton) {
+    DOM.clearCacheButton.addEventListener("click", clearCache, { signal });
+  }
 
   // 返回主页
-  DOM.homeButton.addEventListener("click", () => {
-    saveState();
-    window.location.href = "index.html";
-  }, { signal });
+  if (DOM.homeButton) {
+    DOM.homeButton.addEventListener("click", () => {
+      saveState();
+      window.location.href = "index.html";
+    }, { signal });
+  }
 
   // 添加离开页面前保存
   window.addEventListener("beforeunload", saveState, { signal });
 
-  // 查找清除音乐按钮并添加事件（如果存在）
-  const clearMusicButton = document.getElementById("clearMusicButton");
-  if (clearMusicButton) {
-    clearMusicButton.addEventListener("click", clearMusic, { signal });
-  }
-
-  // 隐藏音乐播放进度
-  DOM.musicPlayer.style.display = "none";
+  // 宿主 audio 的显示由组件的 battle-mode 样式负责（原实现为 setupEventListeners 末尾
+  // `DOM.musicPlayer.style.display = "none"`，现由 base.css 的 `audio { display:none }` 承担）
 }
 
-// 添加音乐播放模式功能
-function startMusicMode() {
-  // 添加音乐播放模式类
-  document.body.classList.add("music-playing-mode");
+/* =================================================================
+ *  组件装配（P11-B3）：页面侧只声明"运行时 props"，
+ *  静态 props（时序/颜色/文案/曲库）在 web/front.json 的 battle-group2-2 config.components
+ * ================================================================= */
 
-  // 创建遮罩
-  const overlay = document.createElement("div");
-  overlay.classList.add("battle-overlay");
-  document.body.appendChild(overlay);
-
-  // 创建 Battle Start 动画
-  const battleStart = document.createElement("div");
-  battleStart.classList.add("battle-start");
-
-  // 添加文字动画效果
-  setTimeout(() => {
-    battleStart.innerText = "B";
-    document.body.appendChild(battleStart);
-  }, 200);
-
-  setTimeout(() => {
-    battleStart.innerText = "BA";
-  }, 300);
-
-  setTimeout(() => {
-    battleStart.innerText = "BAT";
-  }, 400);
-
-  setTimeout(() => {
-    battleStart.innerText = "BATT";
-  }, 500);
-
-  setTimeout(() => {
-    battleStart.innerText = "BATTL";
-  }, 600);
-
-  setTimeout(() => {
-    battleStart.innerText = "BATTLE";
-  }, 700);
-
-  setTimeout(() => {
-    battleStart.innerText = "BATTLE M";
-  }, 800);
-
-  setTimeout(() => {
-    battleStart.innerText = "BATTLE MO";
-  }, 900);
-
-  setTimeout(() => {
-    battleStart.innerText = "BATTLE MOD";
-  }, 1000);
-
-  setTimeout(() => {
-    battleStart.innerText = "BATTLE MODE";
-    battleStart.classList.add("shake");
-  }, 1100);
-
-  // 添加点击提示
-  const clickToStop = document.createElement("div");
-  clickToStop.classList.add("click-to-stop");
-  clickToStop.innerText = "双击任意位置停止";
-  clickToStop.id = "click-to-stop-hint";
-  document.body.appendChild(clickToStop);
-
-  // 动画结束后播放音乐
-  setTimeout(() => {
-    if (document.body.contains(battleStart)) {
-      document.body.removeChild(battleStart);
-
-      // 播放音乐
-      DOM.musicPlayer.play();
-      DOM.musicPlayer.style.display = "block";
-
-      // 更新状态
-      AppState.isMusicPlaying = true;
-
-      // 添加事件监听
-      document.addEventListener("click", handleDocumentClick);
-    }
-  }, 3000);
-}
-
-// 停止音乐播放模式
-function stopMusicMode() {
-  // 停止音乐
-  DOM.musicPlayer.pause();
-  DOM.musicPlayer.currentTime = 0;
-
-  // 移除样式
-  document.body.classList.remove("music-playing-mode");
-
-  // 移除事件监听
-  document.removeEventListener("click", handleDocumentClick);
-
-  // 移除遮罩和提示
-  const overlay = document.querySelector(".battle-overlay");
-  if (overlay && overlay.parentNode) {
-    overlay.parentNode.removeChild(overlay);
-  }
-
-  const hint = document.getElementById("click-to-stop-hint");
-  if (hint && hint.parentNode) {
-    hint.parentNode.removeChild(hint);
-  }
-
-  // 隐藏播放器
-  DOM.musicPlayer.style.display = "none";
-
-  // 更新状态
-  AppState.isMusicPlaying = false;
-  DOM.playMusicButton.textContent = "播放音乐";
-}
-
-// 处理页面点击事件 (用于音乐播放模式)
-function handleDocumentClick(event) {
-  if (AppState.isMusicPlaying) {
-    // 确保不是点击播放器或提示
-    if (
-      !DOM.musicPlayer.contains(event.target) &&
-      event.target.id !== "click-to-stop-hint" &&
-      !event.target.closest("#playMusicButton")
-    ) {
-      stopMusicMode();
-    }
-  }
-}
-
-// 重写toggleMusicPlayback处理函数，支持音乐模式
-function toggleMusicPlayback() {
-  console.log("切换音乐播放状态, 当前文件:", AppState.currentMusicFile);
-
-  if (!AppState.currentMusicFile) {
-    showToast("请先抽取音乐", "warning");
-    return;
-  }
-
-  if (DOM.musicPlayer.src && !DOM.musicPlayer.paused) {
-    // 音乐正在播放，暂停它
-    console.log("停止正在播放的音乐");
-    stopMusicMode();
-  } else if (DOM.musicPlayer.src && AppState.isMusicPaused) {
-    // 音乐已暂停，继续播放
-    console.log("继续播放已暂停的音乐");
-    DOM.musicPlayer.play();
-    AppState.isMusicPaused = false;
-    DOM.playMusicButton.textContent = "暂停播放";
-    DOM.musicPlayer.style.display = "block";
-  } else {
-    // 加载并播放新音乐 - 确保音乐路径正确
-    console.log("正在加载新音乐:", AppState.currentMusicFile);
-
-    try {
-      // 重置播放器状态
-      DOM.musicPlayer.pause();
-      DOM.musicPlayer.currentTime = 0;
-
-      // 处理特殊文件名 - 构建正确的音乐路径
-      // 使用原始文件名，不进行URL编码
-      const musicPath = `/resource/musics/1yearminus/${AppState.currentMusicFile}`;
-      console.log("音乐完整路径:", musicPath);
-
-      // 设置src之前先移除onended和onerror事件处理器
-      DOM.musicPlayer.onended = null;
-      DOM.musicPlayer.onerror = null;
-
-      // 设置新的src
-      DOM.musicPlayer.src = musicPath;
-
-      // 先检查音乐文件是否存在
-      fetch(musicPath, { method: "HEAD" })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`音乐文件不存在 (${response.status})`);
-          }
-
-          // 文件存在，可以安全播放
-          console.log("音乐文件存在，准备播放");
-
-          // 预加载一小段
-          DOM.musicPlayer.load();
-
-          // 设置错误处理
-          DOM.musicPlayer.onerror = function () {
-            console.error("音乐播放失败:", DOM.musicPlayer.error);
-            stopMusicMode();
-            showToast(`音乐无法播放: ${AppState.currentMusicFile}`, "error");
-          };
-
-          // 启动音乐播放模式
-          startMusicMode();
-        })
-        .catch((error) => {
-          console.error("音乐文件检查失败:", error);
-          showToast(`音乐文件不可用: ${error.message}`, "error");
-
-          // 尝试使用替代路径
-          const alternativePath = `/resource/music/${AppState.currentMusicFile}`;
-          console.log("尝试替代路径:", alternativePath);
-
-          DOM.musicPlayer.src = alternativePath;
-          DOM.musicPlayer.load();
-          startMusicMode();
-        });
-    } catch (err) {
-      console.error("播放音乐时发生错误:", err);
-      showToast("播放音乐时出错", "error");
-    }
-  }
+/**
+ * 运行时 props 工厂（front/plugin.js 挂载组件时取用）。
+ * 分工（两个组件的按钮归属刻意不重叠）：
+ *   draw-machine  : 接管 #drawMusicButton 的闪现动画（保留 #fbbf24/#10b981 内联色）
+ *   music-player  : 接管 #playMusicButton（播放/比赛模式/退出）
+ *   串联          : draw 定格 → bridge.music.setItem(item)（同步展示；本页不预载 src）
+ */
+export function componentProps(bridge) {
+  return {
+    "music-player": {
+      items: () => AppState.musicList,
+      display: "#currentMusic",
+      startTrigger: "#playMusicButton",
+      // 展示名去 .mp3 后缀（迁移前 flashMusic/恢复路径 replace(/\.mp3$/, "") 的同款行为；
+      // setItem 恢复真实文件名时 paint 经此格式化，否则屏显带扩展名）
+      format: (item) => String(item).replace(/\.mp3$/, ""),
+      onReady: (api) => {
+        bridge.music = api;
+      },
+      // 未抽到音乐即点播放（迁移前 toggleMusicPlayback 的提示文案逐字保留）
+      onEmpty: () => showToast("请先抽取音乐", "warning"),
+      // 比赛模式抖动：组件在"进入模式、遮罩显示、逐字动画开始前"回调 ——
+      // 本页迁移前只有 BATTLE START 文字抖动（时机 = 逐字动画走完），而非真正开播的 4500ms
+      onOverlayShown: shakeBattleOverlay,
+      // 迁移前 stopMusicMode 还原按钮文案（原实现在开播时不改文案，此处保持一致）
+      onExited: () => {
+        if (DOM.playMusicButton) DOM.playMusicButton.textContent = "播放音乐";
+      },
+      // 迁移前 HEAD 预检失败的提示语义由组件的 onError 承担（死路径 /resource/music/ 已删除）
+      onError: () =>
+        showToast(`音乐无法播放: ${DOM.currentMusic ? DOM.currentMusic.textContent : ""}`, "error"),
+    },
+    "draw-machine": {
+      items: () => AppState.musicList,
+      display: "#currentMusic",
+      trigger: "#drawMusicButton",
+      // 迁移前 `flashMusic.replace(/\.mp3$/, "")`（展示名去 .mp3 后缀）
+      format: (item) => String(item).replace(/\.mp3$/, ""),
+      onReady: (api) => {
+        bridge.draw = api;
+      },
+      onEmpty: () => showToast("音乐列表为空", "error"),
+      onResult: (item) => {
+        const displayName = String(item).replace(/\.mp3$/, "");
+        // 展示与播放状态归组件；本页 preloadOnDraw=false（与迁移前"不预加载"一致）。
+        // item 是真实文件名，单独记进 currentMusicFile 随存档落盘（展示名可能已丢后缀）。
+        currentMusicFile = String(item);
+        if (bridge.music) bridge.music.setItem(item);
+        DOM.playMusicButton.textContent = "播放音乐";
+        saveState();
+        showToast(`已抽取音乐: ${displayName}`, "success");
+      },
+    },
+  };
 }
 
 /* =================================================================
  *  组件入口（原 b-g2-2-core.js DOMContentLoaded 初始化，kernel render 时执行）
  * ================================================================= */
-export function battleGroup22Component(el, meta, ctx) {
-  // cleanup 契约：静态骨架节点的全部监听经 signal 登记，重渲染时 abort 统一解绑，
+export function battleGroup22Component(el, meta, ctx, bridge) {
+  // cleanup 契约：静态骨架节点与动态列表项的监听经 signal 登记，重渲染时 abort 统一解绑，
   // 防止不刷新页面的重复 render 造成双绑双触发
   const bindAbort = new AbortController();
   const { signal } = bindAbort;
+  bindSignal = signal;
+
+  // 组件实例 API（front/plugin.js 的 onReady 回填；组件缺失时保持 null）
+  apis = bridge || { music: null, draw: null };
+
+  // 存档控制器（真实落盘仍是 5 个历史 key；POST 体与迁移前逐字一致——
+  // now() 返回 undefined 使 createPersistence 的 { ...data, lastUpdate } 经 JSON.stringify
+  // 省略 lastUpdate 键，落库键集与迁移前完全相同）
+  legacyStorage = createLegacyStorage();
+  persist = createPersistence({
+    key: STATE_KEY,
+    storage: legacyStorage,
+    endpoint: "/api/battle-group2-2-process",
+    api: ctx && ctx.api ? ctx.api : null,
+    isValid: (data) => !!data && typeof data === "object" && !Array.isArray(data),
+    now: () => undefined,
+    onError: handlePersistError,
+  });
 
   console.log("初始化一年内组比赛界面 - 第二章节");
 
@@ -1009,22 +854,28 @@ export function battleGroup22Component(el, meta, ctx) {
 }
 
 /* =================================================================
- *  cleanup（重渲染/卸载时由 ctx.ui 调用）
+ *  cleanup（重渲染/卸载时由 ctx.ui 调用；组件实例的 cleanup 由 front/plugin.js 收集后调用）
  * ================================================================= */
 function cleanupBattleGroup22Page(bindAbort) {
-  // signal 登记的静态骨架监听（按钮/audio ended/window beforeunload）统一解绑
+  // signal 登记的静态骨架监听（按钮/动态列表项/window beforeunload）统一解绑
   if (bindAbort) bindAbort.abort();
+  bindSignal = null;
 
-  // 音乐播放模式的 document 级监听与 audio 解绑（P3 定稿约定）
-  document.removeEventListener("click", handleDocumentClick);
-  AppState.isMusicPlaying = false;
-  document.body.classList.remove("music-playing-mode");
-
-  const player = document.getElementById("musicPlayer");
-  if (player) {
-    player.onended = null;
-    player.onerror = null;
-    player.pause();
-    try { player.currentTime = 0; } catch (e) { /* 未加载媒体时可能抛错，忽略 */ }
+  // 划线恢复的延迟补写定时器
+  if (restoreCrossTimer) {
+    clearTimeout(restoreCrossTimer);
+    restoreCrossTimer = null;
   }
+
+  // 一次性收尾定时器（toast 自动移除、弹窗淡入、抖动移除）：清空在飞任务，
+  // 否则 teardown 后回调仍在飞、提示/弹窗节点会永久留在 body
+  timers.dispose();
+  clearBattleShake();
+  hideToast();
+  for (const node of document.querySelectorAll(".custom-dialog-container")) {
+    node.remove();
+  }
+
+  // 音乐播放/比赛模式的清理（body 类、document 级监听、#music-player 的 onended/暂停）
+  // 由 music-player 组件的 cleanup 负责（front/plugin.js 收集后逐个调用），页面侧不再重复。
 }

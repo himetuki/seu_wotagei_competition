@@ -9,7 +9,7 @@
 | [getting-started.md](./getting-started.md) | 项目简介、便携包运行、开发者环境 | 所有人 |
 | [usage.md](./usage.md) | 数据导入、比赛流程、备份恢复 | 现场使用者 |
 | [plugin-manager.md](./plugin-manager.md) | 插件管理页：启停 / 热重载 / config | 管理员 |
-| [tutorial.md](./tutorial.md) | 插件开发教程（上手导览，12 节） | 开发者 |
+| [tutorial.md](./tutorial.md) | 插件开发教程（上手导览，13 节，含组件与共享库） | 开发者 |
 | [plugin-development.md](./plugin-development.md) | 插件开发技术参考（API / 参数 / 结构 / 生命周期） | 开发者 |
 | [packaging.md](./packaging.md) | 打包、便携布局、插件热替换、自动发布 | 出包同学 |
 | [../AGENTS.md](../AGENTS.md) | 开发者权威指南（与实现逐字核对） | 开发者 |

@@ -365,11 +365,11 @@ body {
   50%      { box-shadow: 0 0 30px rgba(255,215,0,0.7); }
 }
 
-/* ── 音乐控制栏 ── */
+/* ── 音乐控制栏 ──
+   布局由 /web/components/grid.css 的 .grid-split 提供（宽屏左右、窄屏自动堆叠）；
+   本节只保留栏体视觉与"按钮靠右"的对齐。 */
 .music-bar {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 8px 16px;
   background: rgba(20,20,20,0.9);
   border-radius: 8px;
@@ -412,6 +412,9 @@ body {
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+  /* .grid-split 右轨道内靠右（与迁移前 space-between 的观感一致） */
+  justify-self: end;
+  align-self: center;
 }
 .draw-music-btn {
   padding: 6px 16px;
@@ -557,4 +560,26 @@ body.battle-mode::after {
   .control-bar { flex-wrap: wrap; gap: 6px; justify-content: center; }
   .control-bar h1 { font-size: 1.1rem; }
   .node-box { font-size: 0.62rem; }
+  /* 极窄屏：工具条按钮组自身也换行。迁移前 .header-right 是单行 flex（约 600px），
+     <600px 视口下整块溢出（迁移前既有问题，本次一并修掉以保证 320px 无横向滚动）。 */
+  .header-right { flex-wrap: wrap; justify-content: center; }
 }
+
+/* 无障碍：减少动效偏好下停用装饰性动画（组件层已各自回退：
+   抽取滚动直接定格；页面侧同步停用提示脉冲与徽章脉冲）。 */
+@media (prefers-reduced-motion: reduce) {
+  body.battle-mode::after,
+  .mode-badge,
+  .node-box.drop-target,
+  .champion-glow,
+  .error-bar,
+  .node-box,
+  .source-btn,
+  .ctrl-btn,
+  .draw-music-btn,
+  .start-battle-btn {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+

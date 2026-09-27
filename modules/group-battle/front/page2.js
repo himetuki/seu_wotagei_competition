@@ -43,6 +43,9 @@ const GBState = {
 const DOM = {};
 const PlayerPools = { oldSet: new Set(), newSet: new Set() };
 
+// 组件实例 API 桥（front/plugin.js 传入、组件 onReady 同步回填；组件缺失时保持 null）
+let apis = { music: null, draw: null };
+
 // 原 gb_common.js 中依赖页面状态的共用函数（调用点写法不变）
 const { isNewPlayer, pushUndo, playResultAnimations } = makePageHelpers({
   GBState,
@@ -75,9 +78,7 @@ function cacheDOM() {
   DOM.resetMatchBtn = document.getElementById("reset-match-btn");
   DOM.prevRoundBtn = document.getElementById("prev-round-btn");
   DOM.matchHistory = document.getElementById("match-history");
-  DOM.battleStartOverlay = document.getElementById("battle-start-overlay");
-  DOM.battleStartText = document.getElementById("battle-start-text");
-  DOM.clickToStop = document.getElementById("click-to-stop");
+  // battle-start 遮罩 / 逐字文本 / 停止提示三个骨架节点已删除（music-player 组件自建）
   DOM.animOverlay = document.getElementById("anim-overlay");
   DOM.killEffect = document.getElementById("kill-effect");
   DOM.winEffect = document.getElementById("win-effect");
@@ -86,8 +87,10 @@ function cacheDOM() {
 function bindEvents(signal) {
   // cleanup 契约：静态骨架节点 + document 监听全部经 signal 登记，
   // 重渲染时 abort 统一解绑，防止不刷新页面的重复 render 双绑双触发
-  DOM.startBattleBtn.addEventListener("click", handleStartBattle, { signal });
-  DOM.drawMusicBtn.addEventListener("click", handleDrawMusic, { signal });
+  // #draw-music-btn → draw-machine 组件 trigger
+  // ★ #start-battle-btn 改由页面显式接管（见 handleStartBattle）：组件的 startTrigger 一律
+  //   toggle()→start()（带 BATTLE START 遮罩），无法区分「首次进入」与「音乐结束后的重播」，
+  //   会让重播也走 4.5s 遮罩（迁移前 replayBattleMusic 是立即播放）。
   DOM.clearWinnerBtn.addEventListener("click", handleUndo, { signal });
   DOM.nextMatchBtn.addEventListener("click", handleNextMatch, { signal });
   DOM.nextRoundBtn.addEventListener("click", handleNextRound, { signal });
@@ -104,15 +107,38 @@ function bindEvents(signal) {
   DOM.groupsGrid.addEventListener("click", handleGroupSectionClick, { signal });
   DOM.arenaPlayer1.addEventListener("click", () => selectArenaWinner(0), { signal });
   DOM.arenaPlayer2.addEventListener("click", () => selectArenaWinner(1), { signal });
-  document.addEventListener("click", handleBattleModeClick, { signal });
-  document.addEventListener("dblclick", handleDoubleClick, { signal });
+  // BATTLE START 遮罩期间点击跳过 / 播放中双击退出：由 music-player 组件接管
+  //（组件在播放生命周期内用独立 AbortController 挂 document 级监听）
+  // 开始比赛 / 重播按钮：页面显式接管（区分首次遮罩与重播直放）
+  DOM.startBattleBtn.addEventListener("click", handleStartBattle, { signal });
+}
+
+/**
+ * 开始比赛 / 重播（迁移前 handleStartBattle 的两个分支，逐行对应）：
+ *   · phase === "battling"（音乐已结束 / 已被双击停止）→ 原 replayBattleMusic：
+ *     重置进度立即播放，**不进遮罩**；
+ *   · phase === "music_drawn"（刚抽到音乐）→ 原遮罩分支：BATTLE START 逐字 + 4500ms 待播。
+ * 组件 start({ skipOverlay: true }) 即「跳过遮罩立即播放」的既有开关（B4 缺陷 4 引入），
+ * 故此处不再依赖组件的 startTrigger（其 toggle() 无区分语义）。
+ */
+function handleStartBattle() {
+  if (!apis.music) return; // 组件降级（未注册/被禁用）：与组件缺失时同样无行为
+  if (GBState.phase === "battling" || GBState.phase === "music_playing") {
+    apis.music.start({ skipOverlay: true });
+    return;
+  }
+  if (GBState.phase === "music_drawn") {
+    apis.music.start();
+  }
 }
 
 /**
  * 原 DOMContentLoaded 初始化。
+ * @param {{music: object|null, draw: object|null}} componentBridge 组件实例 API 桥（front/plugin.js 传入）
  * @returns {() => void} cleanup：解绑全部登记监听器与 audio
  */
-function initPage2() {
+function initPage2(componentBridge) {
+  apis = componentBridge || { music: null, draw: null };
   cacheDOM();
   const bindAbort = new AbortController();
   bindEvents(bindAbort.signal);
@@ -129,15 +155,12 @@ function initPage2() {
 
   return function cleanup() {
     bindAbort.abort();
-    if (battleStartTimer) {
-      clearTimeout(battleStartTimer);
-      battleStartTimer = null;
-    }
     const audio = document.getElementById("music-player");
     if (audio) {
       audio.pause();
       audio.onended = null;
     }
+    // body.battle-mode 的权威清理在 music-player 组件 cleanup（引用计数）；此处兜底
     document.body.classList.remove("battle-mode");
   };
 }
@@ -501,6 +524,8 @@ function reopenFinishedMatchAfterRevive() {
     player.currentTime = 0;
     player.src = "";
   }
+  // 同步组件内部 current（否则清空 drawnMusic 后仍残留上一次抽取结果）
+  if (apis.music) apis.music.clearItem();
   GBState.phase = "selecting_players";
   selectedGroupIdxs = [];
 }
@@ -546,197 +571,108 @@ function handleRevive(groupIdx, playerName) {
   showToast(normalizedName + " 已复活，可重新进入对局", "success");
 }
 
-// ==================== battle：抽取音乐 + 开始比赛 + 选胜者 + 赛后检查 + 进入下一场/下一大轮 ====================
+// ==================== battle：组件接入（抽取动画 / 播放+比赛模式）+ 选胜者 + 赛后检查 + 进入下一场/下一大轮 ====================
 
-// ==================== 抽取音乐 ====================
-function handleDrawMusic() {
-  if (GBState.phase === "battling" || GBState.phase === "music_playing") {
-    const player = document.getElementById("music-player");
-    player.pause();
-    player.currentTime = 0;
-    player.src = "";
-    document.body.classList.remove("battle-mode");
-  }
-  if (
-    GBState.phase !== "ready_to_battle" &&
-    GBState.phase !== "music_drawn" &&
-    GBState.phase !== "battling" &&
-    GBState.phase !== "music_playing"
-  )
-    return;
-  const lib = getCurrentMusicLibrary();
-  if (lib.length === 0) {
-    showToast("音乐列表为空", "error");
-    return;
-  }
-
-  DOM.drawMusicBtn.disabled = true;
-
-  const flashCount = 15;
-  const flashInterval = 80;
-  let currentFlash = 0;
-
-  const flashTimer = setInterval(() => {
-    const randomIdx = Math.floor(Math.random() * lib.length);
-    const flashMusic = lib[randomIdx];
-    updateMusicInfo(flashMusic, getMusicLibName());
-    currentFlash++;
-
-    if (currentFlash >= flashCount) {
-      clearInterval(flashTimer);
-
-      const finalIdx = Math.floor(Math.random() * lib.length);
-      const finalMusic = lib[finalIdx];
-
-      const player = document.getElementById("music-player");
-      player.src = "/resource/musics/" + getMusicFolder() + "/" + finalMusic;
-      GBState.currentMatch.drawnMusic = finalMusic;
-      GBState.phase = "music_drawn";
-
-      updateMusicInfo(finalMusic, getMusicLibName());
-
-      saveState();
-      renderAll();
-      DOM.drawMusicBtn.disabled = false;
-      showToast(
-        "已抽取音乐：" + finalMusic + "  曲库：" + getMusicLibName(),
-        "success",
-      );
-    }
-  }, flashInterval);
-}
-
-// ==================== 开始比赛 ====================
-let battleStartTimer = null;
-
-function handleStartBattle() {
-  if (GBState.phase === "battling" || GBState.phase === "music_playing") {
-    replayBattleMusic();
-    return;
-  }
-  if (GBState.phase !== "music_drawn") return;
-  document.body.classList.add("battle-mode");
-  DOM.battleStartOverlay.classList.remove("hidden");
-  DOM.battleStartText.classList.remove("hidden");
-  const text = "BATTLE START";
-  let current = "",
-    i = 0;
-  const interval = setInterval(() => {
-    if (i < text.length) {
-      current += text[i];
-      DOM.battleStartText.textContent = current;
-      i++;
-    } else {
-      clearInterval(interval);
-    }
-  }, 130);
-  setTimeout(() => {
-    DOM.clickToStop.classList.remove("hidden");
-  }, 1500);
-  battleStartTimer = setTimeout(() => {
-    endBattleStart();
-  }, 4500);
-}
-
-function endBattleStart() {
-  if (!document.body.classList.contains("battle-mode")) return;
-  DOM.battleStartOverlay.classList.add("hidden");
-  DOM.battleStartText.classList.add("hidden");
-  DOM.clickToStop.classList.add("hidden");
-  DOM.battleStartText.textContent = "";
-
-  const player = document.getElementById("music-player");
-  if (player.src) {
-    player.play().catch((err) => {
-      console.error("音乐播放失败:", err);
-      showToast("音乐播放失败，已跳过音频播放", "warning");
-      stopMusicPlaying();
-    });
-    GBState.phase = "battling";
-    saveState();
-    renderAll();
-    showToast("音乐播放中，可直接点胜者或双击停止音乐", "info");
-
-    player.onended = () => {
-      player.pause();
-      player.currentTime = 0;
-      document.body.classList.remove("battle-mode");
-      showToast("音乐播放完毕，可继续判定胜者或点击开始比赛重新播放", "info");
-    };
-  } else {
-    document.body.classList.remove("battle-mode");
-    GBState.phase = "battling";
-    saveState();
-    renderAll();
-    showToast("对战开始！请点击胜者", "info");
-  }
-}
-
-function replayBattleMusic() {
-  const player = document.getElementById("music-player");
-  if (!player.src) {
-    showToast("请先抽取音乐", "warning");
-    return;
-  }
-  document.body.classList.add("battle-mode");
-  player.currentTime = 0;
-  player.play().catch((err) => {
-    console.error("音乐播放失败:", err);
-    showToast("音乐播放失败", "warning");
-    document.body.classList.remove("battle-mode");
-  });
-  GBState.phase = "battling";
-  saveState();
-  renderAll();
-  showToast("重新播放中，可直接点胜者或双击停止", "info");
-
-  player.onended = () => {
-    player.pause();
-    player.currentTime = 0;
-    document.body.classList.remove("battle-mode");
-    showToast("音乐播放完毕，可继续判定胜者或点击开始比赛重新播放", "info");
+/**
+ * 运行时 props 工厂（front/plugin.js 挂载组件时取用）。
+ * 只放依赖页面状态与回调的部分；静态覆盖（时序/文案/遮罩开关）由 front.json config.components 提供，
+ * 运行时 props 优先级更高。
+ *
+ * 分工（两个组件的按钮归属刻意不重叠——共用 #draw-music-btn 会双跑动画）：
+ *   draw-machine  : 接管 #draw-music-btn 的闪现动画（15 tick × 80ms，迁移前 flashCount/flashInterval）
+ *   music-player  : 不接管 trigger/startTrigger，只接管 #start-battle-btn 之外的播放生命周期
+ *                   （遮罩/逐字/4500ms 待播/双击退出）；#start-battle-btn 由页面 handleStartBattle
+ *                   接管 —— 首次进遮罩、重播 start({ skipOverlay: true }) 立即播放
+ *   串联          : draw 定格 → bridge.music.setItem(item)（同步播放器 current + 预载 audio.src）
+ *
+ * 迁移前 handleDrawMusic / handleStartBattle / endBattleStart / replayBattleMusic /
+ * stopMusicPlaying / handleBattleModeClick / handleDoubleClick 的动画、遮罩、打字、定时器、
+ * document 监听、battle-mode 类全部由组件接管；phase 状态机与业务收尾逻辑在此逐行对应保留。
+ */
+export function componentProps2(bridge) {
+  return {
+    "music-player": {
+      items: () => getCurrentMusicLibrary(),
+      folder: () => getMusicFolder(),
+      display: "#current-music-lib",
+      // startTrigger 不传：开始/重播按钮由页面 handleStartBattle 显式接管
+      overlay: {
+        enabled: true,
+        textContent: "BATTLE START",
+        textMs: 130,
+        readyMs: 4500,
+        hintMs: 1500,
+        hintText: "双击任意位置停止",
+        hintId: null,
+        skipOnClick: true,
+      },
+      exitOnDblclick: true,
+      exitOnClick: false,
+      exitOnEnded: true,
+      onReady: (api) => {
+        bridge.music = api;
+      },
+      // 原 endBattleStart 播放分支的 phase/存档/提示
+      onStarted: () => {
+        GBState.phase = "battling";
+        saveState();
+        renderAll();
+        showToast("音乐播放中，可直接点胜者或双击停止音乐", "info");
+      },
+      // 退出收尾：ended 只提示（phase 已是 battling）；user/toggle/manual/error = 原 stopMusicPlaying
+      onExited: ({ reason }) => {
+        if (reason === "ended") {
+          showToast(
+            "音乐播放完毕，可继续判定胜者或点击开始比赛重新播放",
+            "info",
+          );
+          return;
+        }
+        GBState.phase = "battling";
+        saveState();
+        renderAll();
+        showToast("对战开始！请点击胜者", "info");
+      },
+      onError: (err) => {
+        console.error("音乐播放失败:", err);
+        showToast("音乐播放失败，已跳过音频播放", "warning");
+      },
+      onEmpty: () => showToast("请先抽取音乐", "warning"),
+    },
+    "draw-machine": {
+      items: () => getCurrentMusicLibrary(),
+      display: "#current-music-lib",
+      trigger: "#draw-music-btn",
+      ticks: 15,
+      tickMs: 80,
+      onReady: (api) => {
+        bridge.draw = api;
+      },
+      // 原闪现循环里每 tick 的 updateMusicInfo(flashMusic, getMusicLibName())
+      onTick: (item) => updateMusicInfo(item, getMusicLibName()),
+      // 原定格分支：写 drawnMusic / 进 music_drawn / 预载 audio.src / 存档 / 渲染 / 提示
+      onResult: (item) => {
+        if (bridge.music) bridge.music.setItem(item);
+        GBState.currentMatch.drawnMusic = item;
+        GBState.phase = "music_drawn";
+        updateMusicInfo(item, getMusicLibName());
+        saveState();
+        renderAll();
+        showToast(
+          "已抽取音乐：" + item + "  曲库：" + getMusicLibName(),
+          "success",
+        );
+      },
+      onEmpty: () => showToast("音乐列表为空", "error"),
+    },
   };
-}
-
-function stopMusicPlaying() {
-  const player = document.getElementById("music-player");
-  player.pause();
-  player.currentTime = 0;
-  document.body.classList.remove("battle-mode");
-  GBState.phase = "battling";
-  saveState();
-  renderAll();
-  showToast("对战开始！请点击胜者", "info");
-}
-
-function handleBattleModeClick(e) {
-  if (!document.body.classList.contains("battle-mode")) return;
-  if (battleStartTimer) {
-    clearTimeout(battleStartTimer);
-    battleStartTimer = null;
-  }
-  if (GBState.phase === "music_drawn") {
-    endBattleStart();
-  }
-}
-
-function handleDoubleClick(e) {
-  if (GBState.phase !== "battling") return;
-  if (!document.body.classList.contains("battle-mode")) return;
-  stopMusicPlaying();
 }
 
 // ==================== 选胜者 ====================
 function selectArenaWinner(arenaIdx) {
-  if (GBState.phase !== "battling" && GBState.phase !== "music_playing") return;
-  if (GBState.phase === "music_playing") {
-    const player = document.getElementById("music-player");
-    player.pause();
-    player.currentTime = 0;
-    player.onended = null;
-    document.body.classList.remove("battle-mode");
-    GBState.phase = "battling";
-  }
+  // "music_playing" 相位全仓无赋值点（P11 前 P4 迁移起即死代码）；停播/退比赛
+  // 由 music-player 组件的 battle-mode 双击退出负责，此处不再手工操控共享 audio。
+  if (GBState.phase !== "battling") return;
   const match = GBState.currentMatch;
   if (!match.defender || !match.challenger) return;
   const p1IsDefender = DOM.arenaRole1.textContent === "守擂者";
@@ -862,6 +798,7 @@ function handleResetMatch() {
   player.pause();
   player.currentTime = 0;
   player.src = "";
+  if (apis.music) apis.music.clearItem(); // 同步组件内部 current
   saveState();
   renderAll();
   DOM.startBattleBtn.disabled = false;

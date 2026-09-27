@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>体态传技记录 - Y.Stage</title>
     <link rel="preload" as="image" href="/resource/images/bg_index.jpg" />
+    <!-- P11：布局原语（L1 共享资产，origin 相对绝对路径）——先于页面样式，页面样式可覆盖 -->
+    <link rel="stylesheet" href="/web/components/grid.css" />
+    <link rel="stylesheet" href="/m/component-confirm-dialog/style.css" />
+    <link rel="stylesheet" href="/m/component-toast/style.css" />
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="records.css" />
   </head>
@@ -43,7 +47,8 @@
             </div>
           </div>
 
-          <div class="records-stats">
+          <!-- 统计卡片：.grid-cards（auto-fill）宽屏三等分 / 窄屏连续减列，零媒体查询 -->
+          <div class="records-stats grid-cards">
             <div class="stat-card">
               <h3>总记录数</h3>
               <p id="total-records">0</p>
@@ -80,6 +85,7 @@
           </div>
         </section>
 
+        <!-- 导航：保留 flex 行（父级 main 居中收缩，见 records.css 说明） -->
         <div class="navigation">
           <button id="back-btn" class="nav-btn">返回游戏</button>
           <button id="home-btn" class="nav-btn">返回主页</button>
@@ -87,7 +93,7 @@
       </main>
     </div>
 
-    <!-- 确认对话框模板 -->
+    <!-- 确认对话框模板。弃用：P12 起 confirm 由 component-confirm-dialog 提供（保留仅作历史参考） -->
     <template id="confirm-dialog-template">
       <div class="confirm-dialog-overlay">
         <div class="confirm-dialog">

@@ -1,0 +1,53 @@
+/**
+ * component-toast 兜底外观（P12 设计 §2.2 C）
+ *
+ * 视觉沿用 movement-teaching/records 版 toast（右上容器 + show 过渡 + 四色）。
+ * 组件不自带 <link>：由页面显式引入（AGENTS §4.2 组件 style.css 约定）。
+ * 类名必须用 cmp-toast__* 命名空间——旧 .toast / .toast-container 类名在
+ * 接入页（battle 系 / records 等）的页面 CSS 中已被占用，复用会撞车。
+ */
+
+/* 右上角容器：组件自建挂 body，与宿主插槽解耦 */
+.cmp-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* 单条 toast：右侧滑入 + 淡入（离场反向过渡） */
+.cmp-toast__item {
+  background-color: #333;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  transform: translateX(100%);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.cmp-toast__item--show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+/* 四色语义（records 版配色） */
+.cmp-toast__item--success {
+  background-color: #28a745;
+}
+
+.cmp-toast__item--error {
+  background-color: #dc3545;
+}
+
+.cmp-toast__item--warning {
+  background-color: #ffc107;
+  color: #333;
+}
+
+.cmp-toast__item--info {
+  background-color: #17a2b8;
+}
