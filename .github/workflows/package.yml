@@ -20,6 +20,10 @@ jobs:
 
       - run: npm ci
 
+      # P12 响应式基座：petite-vue vendor 产物（web/lib/vendor/，gitignored，构建期生成）
+      - name: 生成 petite-vue vendor 产物
+        run: npm run vendor:petite-vue
+
       - name: 构建 cordis 内核（USE_CORDIS=1 运行依赖）
         run: npm run build:kernel
 
