@@ -38,12 +38,45 @@ jobs:
       - name: 组装便携包
         run: node scripts/make-portable.js --zip
 
+      # ---- Release 三件套（对齐历史资产形态） ----
+
+      # 运行版：便携包原样（node/ 运行时 + app/ + plugins/ + resource/）
+      - name: 生成 y-stageX-dist.zip（运行版）
+        run: Copy-Item YStage3-Portable.zip y-stageX-dist.zip
+
+      # 源码版：git archive 按 tracked 文件打包（自动排除 node_modules/构建产物/
+      # 音乐库/SQLite 等一切 gitignored 内容，无需手工白名单）
+      - name: 生成 y-stageX-source.zip（源码版）
+        run: git archive --format=zip -o y-stageX-source.zip HEAD
+
+      # 单文件 exe：7-Zip 自解压模块（runner 预装）打包便携目录——
+      # 双击 → 选目录解压 → 自动运行 启动YStage.bat；解压后目录即完整便携包，
+      # 插件热替换/数据持久化与 zip 版完全一致（不同于已退役的 pkg 快照式 exe）
+      - name: 生成 y-stageX.exe（7z 自解压安装器）
+        shell: pwsh
+        run: |
+          $cfg = @'
+          ;!@Install@!UTF-8!
+          Title="Y.Stage X"
+          BeginPrompt="是否解压 Y.Stage X？解压完成后将自动启动服务（常驻窗口，关闭窗口即停止）"
+          Directory="Y.Stage X"
+          RunProgram="cmd /c start 启动YStage.bat"
+          ;!@InstallEnd@!
+          '@
+          Set-Content -Path sfx-config.txt -Value $cfg -Encoding UTF8
+          & "C:\Program Files\7-Zip\7z.exe" a -t7z -mx=9 "-sfx7z.sfx" y-stageX.exe YStage3-Portable
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path y-stageX.exe)) { Write-Error "y-stageX.exe 未生成"; exit 1 }
+
       - name: 上传构建产物（供手动下载，不点 tag 也可取）
         uses: actions/upload-artifact@v4
         with:
-          name: y-stageX-portable
+          name: y-stageX-build
           path: |
             YStage3-Portable.zip
+            y-stageX-dist.zip
+            y-stageX-source.zip
+            y-stageX.exe
 
       - name: 发布 Release
         if: startsWith(github.ref, 'refs/tags/')
@@ -51,6 +84,9 @@ jobs:
         with:
           files: |
             YStage3-Portable.zip
+            y-stageX-dist.zip
+            y-stageX-source.zip
+            y-stageX.exe
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
