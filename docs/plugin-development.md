@@ -305,7 +305,8 @@ ctx.state = {
 ```html
 <body>
   <div id="plugin-root"></div>
-  <script type="module" src="/web/kernel.js"></script>
+  <!-- 注意：本手册内嵌副本中，内核标签的结束标签须写作 <\/script>（防提前终止数据块） -->
+  <script type="module" src="/web/kernel.js"><\/script>
 </body>
 ```
 

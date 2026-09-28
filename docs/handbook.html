@@ -507,7 +507,7 @@ if (factory) mounted.cleanups.push(factory(host, props, ctx));
 ```html
 <body>
   <div id="plugin-root"></div>
-  <script type="module" src="/web/kernel.js"></script>
+  <script type="module" src="/web/kernel.js"><\/script>
 </body>
 ```
 
@@ -597,12 +597,12 @@ function saveState() {
 
 出包与分发见[打包与发布](#packaging)；更多文档见[文档索引](./README.md)。
 </script>
-
+</body>
 <script type="text/markdown" id="md-plugin-development">
 # 插件开发技术参考（Plugin Development Reference）
 
 > 本文是插件开发的**完整技术参考**：API 签名、参数、数据结构、生命周期与错误语义。
-> 入门教程见 [`docs/tutorial.md`](#tutorial)；架构总览见 `AGENTS.md`。
+> 入门教程见 [`docs/tutorial.md`](./tutorial.md)；架构总览见 `AGENTS.md`。
 > 所有签名均与当前实现核对过；cordis 内核的实测 API 结论（K1-K17）收录在 `server/cordis/selfcheck.cjs` 头注释。
 
 ---
@@ -906,7 +906,8 @@ ctx.state = {
 ```html
 <body>
   <div id="plugin-root"></div>
-  <script type="module" src="/web/kernel.js"></script>
+  <!-- 注意：本手册内嵌副本中，内核标签的结束标签须写作 <\/script>（防提前终止数据块） -->
+  <script type="module" src="/web/kernel.js"><\/script>
 </body>
 ```
 
@@ -1126,7 +1127,6 @@ const mounted = mountFromConfig({
 - 内核实测结论（重复挂载叠加 fiber、dispose 异步、effect 逆序回收、list 顺序语义等）以 `server/cordis/selfcheck.cjs` 头注释 K1-K17 为准
 - 本文与 `AGENTS.md` 第 6 章冲突时，以 `AGENTS.md` 为准；发现文档失实请直接修正并保持与实现同步
 </script>
-
 <script type="text/markdown" id="md-packaging">
 # 打包与发布
 
