@@ -84,6 +84,14 @@
       "target": "modules/plugin-manager",
       "enabled": true,
       "provides": []
+    },
+    {
+      "target": "modules/game-composer",
+      "enabled": true
+    },
+    {
+      "target": "modules/custom-stage",
+      "enabled": true
     }
   ]
 }

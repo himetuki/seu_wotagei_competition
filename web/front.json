@@ -332,7 +332,9 @@
         "battle-group2-2",
         "drag",
         "group-battle",
-        "music-draw"
+        "music-draw",
+        "game-composer",
+        "custom-stage"
       ]
     },
     {
@@ -347,7 +349,9 @@
         "drag",
         "group-battle",
         "music-draw",
-        "movement-teaching"
+        "movement-teaching",
+        "game-composer",
+        "custom-stage"
       ]
     },
     {
@@ -356,7 +360,9 @@
       "kind": "component",
       "pages": [
         "movement-teaching",
-        "music-draw"
+        "music-draw",
+        "game-composer",
+        "custom-stage"
       ]
     },
     {
@@ -366,7 +372,53 @@
       "pages": [
         "movement-teaching",
         "setting",
-        "music-import"
+        "music-import",
+        "game-composer",
+        "custom-stage"
+      ]
+    },
+    {
+      "target": "modules/game-composer",
+      "enabled": true
+    },
+    {
+      "target": "modules/custom-stage",
+      "enabled": true
+    },
+    {
+      "target": "modules/component-player-list",
+      "enabled": true,
+      "kind": "component",
+      "pages": [
+        "game-composer",
+        "custom-stage"
+      ]
+    },
+    {
+      "target": "modules/component-score-board",
+      "enabled": true,
+      "kind": "component",
+      "pages": [
+        "game-composer",
+        "custom-stage"
+      ]
+    },
+    {
+      "target": "modules/component-countdown",
+      "enabled": true,
+      "kind": "component",
+      "pages": [
+        "game-composer",
+        "custom-stage"
+      ]
+    },
+    {
+      "target": "modules/component-music-source",
+      "enabled": true,
+      "kind": "component",
+      "pages": [
+        "game-composer",
+        "custom-stage"
       ]
     }
   ]

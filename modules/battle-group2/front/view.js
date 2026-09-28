@@ -661,6 +661,7 @@ export function componentProps(bridge) {
     "music-player": {
       items: () => AppState.musicList,
       display: "#currentMusic",
+      trigger: null, // 显式钉空：抽取归 draw-machine，组件不自建默认按钮
       startTrigger: "#playMusicButton",
       // 展示名去 .mp3 后缀（迁移前 flashMusic/恢复路径 replace(/\.mp3$/, "") 的同款行为；
       // setItem 恢复真实文件名时 paint 经此格式化，否则屏显带扩展名）

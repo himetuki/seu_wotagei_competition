@@ -418,7 +418,7 @@ const indexHtml = `<!doctype html>
     <!-- 页面 UI 由前端插件装配：内核按 /m/${id}/ 路径解析模块 id → 读 /web/front.json →
          dynamic import /m/${id}/front/plugin.js → ctx.ui.render("${id}") 渲染进 #plugin-root。
          也可像既有模块一样在此放置静态骨架 DOM，由组件复用/增强（见 modules/drag）。 -->
-    <div id="plugin-root" hidden></div>
+    <div id="plugin-root"></div>
 
     <!-- 前端内核（稳定 URL，实际指向构建产物 web/dist/kernel.js；404 时先 npm run build:web） -->
     <script type="module" src="/web/kernel.js"></script>

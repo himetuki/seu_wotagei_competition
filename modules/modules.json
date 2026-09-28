@@ -185,6 +185,26 @@
         "index"
       ],
       "order": 5
+    },
+    {
+      "id": "game-composer",
+      "name": "可视化编排",
+      "description": "拖积木组赛制：组件编排生成新游戏模式",
+      "icon": "layout-grid",
+      "nav": [
+        "select"
+      ],
+      "order": 17
+    },
+    {
+      "id": "custom-stage",
+      "name": "组合舞台",
+      "description": "运行可视化编排保存的赛制",
+      "icon": "apps",
+      "nav": [
+        "select"
+      ],
+      "order": 18
     }
   ]
 }

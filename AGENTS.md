@@ -9,6 +9,7 @@ WOTA艺（荧光棒舞蹈）对战平台。基于 **Node.js（内置 http + 自�
 - **后端**：Node 内置 http + y-router（`server/http/`），路由表项运行时增删（插件启停 = 路由物理热插拔）；插件内核 cordis@4.0.0-rc.9（精确锁定），装配清单 `server/plugins.json`。
 - **前端**：每页一个内核标签 `<script type="module" src="/web/kernel.js">`，装配清单 `web/front.json`，页面 UI 由各模块的 `front/plugin.js` 组件装配进 `#plugin-root`。
 - **导航/管理**：导航页按钮由 `GET /api/modules` 动态渲染；`/m/plugin-manager/` 提供插件启停/config 编辑/热重载。
+- **可视化编排（P14/P15）**：`/m/game-composer/` 拖积木式编排 L2 组件并连组件间数据/事件线，生成新游戏模式（布局存 SQLite），`/m/custom-stage/?layout=<id>` 即取即运行——无代码扩展赛制，见 4.4。
 
 ---
 
@@ -17,7 +18,7 @@ WOTA艺（荧光棒舞蹈）对战平台。基于 **Node.js（内置 http + 自�
 ```
 Y.Stage3/
 ├── modules/                    # ★ 功能模块 = 一对插件 + 页面资产
-│   ├── modules.json            # 页面元数据清单（19 条，单一显示名单来源）
+│   ├── modules.json            # 页面元数据清单（21 条，单一显示名单来源）
 │   ├── _template/              # 旧脚手架模板（仅历史参考；新模块用 scripts/new-module.js 生成）
 │   ├── <模块id>/               # 页面模块：如 home / select / drag / plugin-manager ...
 │   │   ├── plugin.js           # 后端插件（CJS）：db.define + server.route + modules.registerPage
@@ -32,7 +33,7 @@ Y.Stage3/
 │   ├── kernel.mjs              # 前端内核入口（esbuild → dist/kernel.js，浏览器 ESM bundle）
 │   ├── ui.mjs / api.mjs / state.mjs / loader.mjs   # 内置服务 + 装配清单纯逻辑（含 *.test.js）
 │   ├── icons.mjs               # ★ 共享图标基座（Tabler 内联 SVG 子集；icon/iconEl/ICON_NAMES，含 icons.test.js）
-│   ├── lib/                    # ★ L1 共享纯函数库（random / persist / undo，含 *.test.js）
+│   ├── lib/                    # ★ L1 共享纯函数库（random / persist / undo / reactive / timers / body-class，含 *.test.js）
 │   ├── components/             # ★ L1 共享装配器与布局原语（compose.mjs + grid.css，含 compose.test.js）
 │   ├── front.json              # ★ 前端装配清单（{ provider, plugins: [{ target, enabled, kind?, pages?, config? }] }）
 │   └── dist/kernel.js          # 构建产物（gitignored，npm run build:web 生成）
@@ -56,7 +57,7 @@ Y.Stage3/
 │   ├── module-registry.cjs     # /api/modules 元数据源开关（插件模式指向 ctx.modules）
 │   ├── paths.cjs               # ★ 路径解析中枢（dev/portable 双模式；env 覆盖 plugins/resource 层）
 │   ├── music-scanner.js        # 音乐文件扫描
-│   ├── run-unit-tests.js       # 单测统一入口（16 个 *.test.js 子进程运行）
+│   ├── run-unit-tests.js       # 单测统一入口（19 个 *.test.js 子进程运行）
 │   └── routes/                 # 共享路由（api / game / config / static / music / module-routes ...）
 ├── scripts/
 │   ├── new-module.js           # ★ 模块脚手架（生成一对插件骨架 + 追加三份清单；--component 生成组件类插件）
@@ -189,7 +190,7 @@ const State = {
 import { icon, iconEl, ICON_NAMES } from "/web/icons.mjs";
 // icon(name, { size = 20, class, stroke = 1.75, label })  → SVG 字符串；未知名字返回 ""
 // iconEl(name, opts)                                      → 真实 SVGElement；无 DOM 环境或未知名字返回 null
-// ICON_NAMES                                              → 已内置图标名（冻结数组，当前 61 枚，字典序）
+// ICON_NAMES                                              → 已内置图标名（冻结数组，当前 65 枚，字典序）
 ```
 
 ```js
@@ -227,6 +228,8 @@ ctx.modules.registerPage({ id: "my-feature", icon: "puzzle", ... });
 | `/web/lib/random.mjs` | `shuffle(arr, rng?)` / `pickN(arr, n, rng?)` / `pickOne(arr, rng?)` | 等概率随机（Fisher–Yates），返回新数组、不改入参，`rng` 可注入做确定性测试；**全仓禁用 `sort(() => Math.random() - 0.5)` 有偏洗牌** |
 | `/web/lib/persist.mjs` | `createPersistence(deps)` / `createMemoryStorage()` | §3.2 双写持久化的依赖注入实现（fetch/localStorage 由调用方注入，可 node 全流程单测） |
 | `/web/lib/undo.mjs` | `createUndoStack(opts?)` / `MAX_HISTORY`（= 50） | §3.4 撤销快照栈（push/undo/peek/canUndo/size/clear/toArray/load），超上限丢最旧 |
+| `/web/lib/timers.mjs` | `createTimerRegistry(deps?)` | 一次性定时器登记表：`later(fn, ms)` 登记即跟踪、回调执行后自动出表；`dispose()` 后 `later` 返回 null（卸载后迟到登记安全拒绝）；setTimeout/clearTimeout 可注入做假时钟测试。组件纪律第 1 条「定时器统一登记」的承载工具 |
+| `/web/lib/body-class.mjs` | `createBodyClassRef({ className })` | body class 引用计数：`acquire()` 计数 0→1 加类、`release()` 归零摘类（多实例共享时最后一个退出者才移除）；document 可注入 fake。组件纪律第 2 条的承载工具 |
 | `/web/components/grid.css` | `.grid-cards` / `.grid-flow` / `.grid-split` / `.card` | 布局原语：**零媒体查询**，按容器宽度连续自适应（auto-fill 保卡片尺寸 / auto-fit 保铺满） |
 | `/web/components/compose.mjs` | `mountFromConfig(spec)` | 页面组件装配器（消除"读 config → 查组件 → 挂 data-slot → 收集 cleanup"样板） |
 
@@ -290,7 +293,12 @@ const mounted = mountFromConfig({
 
 **脚手架（组件模式）**：`node scripts/new-module.js <组件id> "<名称>" --component [--pages a,b]`——组件 id 自动补 `component-` 前缀，只生成 `front/{plugin,view}.js` 与 `web/front.json` 的 kind/pages 条目（`--server` 与 `--component` 互斥）。
 
-**已接入组件体系的 8 个页面**（统一 `import { mountFromConfig } from "/web/components/compose.mjs"`）：battle-group1 / battle-group1-2 / battle-group2 / battle-group2-2 / drag / music-draw / group-battle / movement-teaching。现有 L2 组件：`modules/component-music-player`（组件名 `music-player`，9 处音乐播放 + 比赛模式归一）、`modules/component-draw-machine`（组件名 `draw-machine`，抽签动画归一）。
+**已接入组件体系的 10 个页面**（统一 `import { mountFromConfig } from "/web/components/compose.mjs"`），分两种装配模式：
+
+- **front.json 静态 config（8 页）**：battle-group1 / battle-group1-2 / battle-group2 / battle-group2-2 / drag / music-draw / group-battle / movement-teaching——`compose`/`slots`/`components` 写死在清单条目 `config` 里，改配置需改 `web/front.json`。
+- **运行时动态布局装配（P14，2 页）**：game-composer（编辑器预览）/ custom-stage（组合舞台运行台）——config 由用户保存的布局 JSON 经 `layoutToConfig` 换算而来（见 4.4），调 `mountFromConfig({ el, meta, ctx, label })` 时不传 `defaultSlots` / `runtimeProps`，插槽 DOM 由页面按 items 顺序现建（`[data-slot=<item.id>]`）。
+
+现有 8 个 L2 组件：`modules/component-music-player`（组件名 `music-player`，9 处音乐播放 + 比赛模式归一）、`modules/component-draw-machine`（`draw-machine`，抽签动画归一）、`modules/component-toast`（`toast`，轻提示服务）、`modules/component-confirm-dialog`（`confirm-dialog`，确认对话框服务）、`modules/component-player-list`（`player-list`，选手名单勾选，P14）、`modules/component-score-board`（`score-board`，多队计分，P14）、`modules/component-countdown`（`countdown`，mm:ss 倒计时，P14）、`modules/component-music-source`（`music-source`，曲库数据源，P16：拉取 music-library 曲库并经 `getList` 输出口供数据连线）。P14 起新增的四个均以「零 props 可渲染」为准入（title / source / teams / minutes / group 等 props 全部可选并收敛到合法值），pages 只含 `["game-composer","custom-stage"]`；toast / confirm-dialog 属**服务类组件**（不排布进布局，页面直接 `factory(document.body, { onReady })` 常驻实例化收 API，缺失时降级 console / window.confirm）。
 
 ### 4.3 响应式资产（P11-R1）：细粒度状态 → DOM 同步
 
@@ -309,13 +317,107 @@ const mounted = mountFromConfig({
 4. **CSP 约束**：petite-vue 模板表达式经 `new Function` 编译——若将来为本站启用 CSP `script-src`，需整体换用无 eval 方案（如 preact + htm）。
 5. L1 纪律同 §5-1：改 `reactive.mjs` 须同步 `reactive.test.js` 并复跑两关口。
 
-**已接入**：plugin-manager（整页视图，644 → ~420 行，删保焦机器）、setting（三个列表编辑器 v-for 化）。新增接入页走 `createReactiveScope` + 挂载模板三件套，参照上述两页。
+**已接入**：plugin-manager（整页视图，644 → ~420 行，删保焦机器）、setting（三个列表编辑器 v-for 化）、game-composer（P14 编排编辑器三栏视图）。新增接入页走 `createReactiveScope` + 挂载模板三件套，参照上述页面。
+
+### 4.4 可视化编排体系（P14，P15 增组件连线）：布局驱动的动态组件拼装
+
+一句话：用户在 `/m/game-composer/` 把 L2 组件拖成有序布局、连出组件间数据/事件线（存 SQLite），`/m/custom-stage/?layout=<id>` 按该布局现建插槽 + `mountFromConfig` 挂真组件并注入连线运行——**新增一个赛制 = 保存一份布局 JSON，不写代码**。
+
+**布局 JSON schema**（存于 `game-composer-layouts` 文档存储，落盘 SQLite）：
+
+```js
+{
+  id: "ly-a1b2c3d4",              // 服务端生成："ly-" + 8 位 hex
+  name: "双人对战练习台",           // 1..40 字符（trim 后）
+  updatedAt: "2026-09-28T00:00:00.000Z",  // 服务端 ISO（POST/PUT 时刷新）
+  items: [                         // 0..40 项，顺序 = 挂载与展示顺序
+    { id: "it-1-4f2a",             // 实例 uid（编辑器生成，插槽选择器锚点）
+      component: "score-board",    // 组件名，/^[a-z][a-z0-9-]*$/
+      title: "上半场",              // 可选：卡片头标题（非空时并入该实例 props）
+      props: { teams: [{ name: "红方" }] } },  // 可选：普通对象（非数组）
+  ],
+  connections: [                   // P15 可选，缺省 = []（v1 布局完全兼容）；0..20 条，见下「组件连线」
+    { id: "cn-1-a3f2b1",           // 可缺省，后端补 "cn-" + 6 位 hex
+      from: "it-3-c2d4e5",         // 来源实例 id + 输出口（out 不以 on 开头 = 数据线）
+      out: "getSelected",
+      to: "it-4-d5e6f7", in: "items" },  // 目标实例 id + 输入口
+  ],
+}
+```
+
+**API 四端点**（`modules/game-composer/plugin.js`，校验失败 400 `{"error":"..."}`）：
+
+| 端点 | 行为 |
+|------|------|
+| `GET /api/game-composer/layouts` | → `{ list: Layout[] }`（无单条端点，取单条也走全量按 id 查） |
+| `POST /api/game-composer/layouts` | 新建（服务端生成 id + updatedAt）→ 201 `{ layout }` |
+| `PUT /api/game-composer/layouts/:id` | 整体替换 name/items/connections → 200 `{ layout }`；未知 id → 404 |
+| `DELETE /api/game-composer/layouts/:id` | → 200 `{ ok: true }`；未知 id → 404 |
+
+**`layoutToConfig` 换算语义**（Layout → `mountFromConfig` 的 `meta`；编辑器与 custom-stage **各自内置同语义实现**——跨插件 import 禁止，勿提共享文件）：
+
+- `compose` 按组件名**去重保首现序**（compose.mjs 对同名组件会整组挂载其全部 slots，不去重会重复挂载）；
+- `slots` / `components` 按组件名分组、**组内保持 items 出现顺序**（数组形态 = 多实例下标一一对应）：`slots[name] = ["[data-slot=<item.id>]", …]`，`components[name] = [{ ...(title), ...props }, …]`；
+- 缺 `component` 的项静默跳过；缺 `id` 的项跳过并 warn（否则生成 `[data-slot=undefined]` 死插槽）——预览建 DOM 与换算共用同一 `stageItems` 过滤，宿主与选择器一一对应。
+
+**custom-stage 运行链路**（`?layout=` 深链 / 列表 / 空态三视图，切布局 = 链接跳转整页重载，不做 SPA 内切换）：
+
+- 无参 → 布局卡片列表（`/api/game-composer/layouts` 全量 + `.grid-cards`），空列表给「去可视化编排」引导链；
+- `?layout=<id>` → 全量列表按 id 查找 → 运行台：头部（布局名 + 更换布局 + 「编辑此布局」回链 `/m/game-composer/?layout=<id>`）+ 按 items 顺序建 `.stage-slot` 宿主再 `mountFromConfig`（经 `runtimeProps` 注入连线，见下）；找不到（已删除）→ 提示 + 返回列表；
+- 页面零持久化（各组件自管内存态）；fetch 失败 → 错误行 + 重试，不白屏。
+
+**编辑器特性**（game-composer，petite-vue 三栏：palette / 画布 / 属性）：
+
+- palette 名单 = `ctx.ui.listComponents()` 实时快照 + `PALETTE_META` 中文名表（`modules/game-composer/front/layout.mjs`；未收录的组件名兜底显示原名，标「高级」的是需运行时数据、一般不宜直接排布的组件）；
+- 画布卡片支持上移 / 下移 / 删除；属性面板编辑 `title`（文本）+ `props`（JSON 对象，失焦或点「应用」时解析，失败就地报错并保持旧值）；
+- 预览**即挂即卸**：切进预览态现建插槽 DOM → `mountFromConfig({ meta: layoutToConfig(...), runtimeProps: buildRuntimeProps(...) })` 真挂组件 + 注入连线（状态仅内存）；退出前必须先 `mounted.cleanup()`——`mountAll()` 非幂等，重进预览一律重新挂载；
+- dirty 切换守卫：未保存时新建/切换布局先确认，`beforeunload` 提示；「在组合舞台打开」深链 `/m/custom-stage/?layout=<id>`（需先保存）；自身也接受 `?layout=<id>` 预载（供 custom-stage 回链编辑）。
+
+**组件连线（P15）：connections schema 与校验**（随布局整包 POST/PUT，违例 400 `{"error":"..."}`）：
+
+- 每条连线只保留 `id / from / out / to / in` **五键**（多余键丢弃）；`connections` ≤ **20** 条，缺省视为 `[]`（v1 布局完全兼容）；
+- `from` / `to`：非空字符串 ≤ 64 字符（item id 形态）；`out` / `in`：`/^[a-zA-Z][a-zA-Z0-9]*$/` 且 ≤ 40 字符；`id` 可缺省（后端补 `"cn-" + 6 位 hex`），给出时宽松保留；
+- 后端**不校验** from/out/to/in 与 items 组件能力的匹配——宽松存储，编辑器负责引导（词汇表）、运行时负责降级（warn 跳过）。
+
+**连线类型判定与运行时注入**（无 type 字段，`out` 是否以 `"on"` 开头是**运行时唯一依据**）：
+
+- **事件连线**（out 以 `on` 开头，如 `onResult` / `onDrawn`）：注入 **from** 实例的 `props[out]` 回调，触发时调 **to** 实例的 `api[in](...args)`（如 抽签定格 → `play(item)` 立即播放）；
+- **数据连线**（其余，如 `getSelected` / `getScores` / `getResult`）：注入 **to** 实例的 `props[in]` **惰性函数**，调用时取 **from** 实例的 `api[out]()` 返回值，`undefined` 兜底 `[]`（draw-machine / music-player 的 `items` prop 本就接受 `Array | () => Array` 惰性求值）；
+- 注入经 `mountFromConfig` 的 `runtimeProps`：`buildRuntimeProps(layout, apis, warn)` 构造，返回 `组件名 → props 数组`（**下标 = 组内实例序**，与 `layoutToConfig` 的 slots 一一对齐）；`apis` 以 **item.id** 为键、由注入的 `onReady` 在挂载过程**同步回填**（`mountFromConfig` 构造内即完成 mountAll，返回时已齐），连线函数在用户交互时才惰性查表——分组挂载顺序不影响取值。运行时 props 浅合并优先 → 连线覆盖布局 JSON 同名静态 prop（预期行为）；
+- 同一 (实例, prop) 被多条连线注入 → 后者覆盖前者并 warn 一条（编辑器拦截建重复，此处兜底直写 API 的存量数据）；
+- **悬挂连线不级联删**：编辑器删除实例不连带删其连线（避免静默改数据），连线列表透明显示「实例已删除」；运行时对坏引用（from/to 不在 items、out/in 非字符串、项非对象）warn 后跳过，不影响其余连线；事件触发时目标 api 无该方法 → warn 忽略，动作执行抛错 console.error 不中断；
+- game-composer（预览）与 custom-stage **各自内置**同语义 `buildRuntimeProps`（禁跨插件 import 共享，同 `layoutToConfig` 的镜像纪律）。
+
+**编辑器连线 UI**（属性面板内「连线」区，选中项属性下方、未选中亦可见）：连线列表 `来源实例 · out 标签 → 目标实例 · in 标签` + 删除按钮，「事件」/「数据」徽标按 out 前缀判定；新增表单 from → out → to → in **四下拉联动**（out/in 选项 = 所选实例组件的 `PALETTE_META.outs/ins` 词汇表，实例切换时词汇不兼容项清空），四项齐才可提交；重复拦截：事件同 (from, out) / 数据同 (to, in) 的目标 prop 已被占用 → 提示不建；连线编辑计入 dirty，随布局整包保存；预览经 `buildRuntimeProps` 真注入，预览条连线数只统计两端可解析的连线并标注「N 条悬挂已跳过」。词汇表只是**编辑器 UI 引导、非运行时依赖**——custom-stage 不 import `PALETTE_META`，运行时只认连线 JSON 的原始字符串、宽松降级；未收录词汇表的组件选不到口子（无法经表单建线），但既有连线照常显示/运行。
+
+**组件 api 连线口**（词汇表即下列能力的引导名）：
+
+| 组件 | outs（输出） | ins（输入） |
+|------|--------------|-------------|
+| music-source | `getList`（数据，当前组曲库 `[{name,folder}]`，name 含扩展名供播放） | — |
+| player-list | `getSelected`（数据，已选名单 string[]） | — |
+| score-board | `getScores`（数据，`[{name,score}]`） | — |
+| countdown | — | — |
+| draw-machine | `onResult`（事件，抽签定格）、`getResult`（数据，当前结果） | `items`（数据，候选池） |
+| music-player | `onDrawn`（事件，抽取定格） | `items`（数据，候选池）、`play`（动作，播放曲目） |
+
+music-source（P16）是**数据源组件**：经 music-library 的 `GET /api/music_files?group=<组别>` 拉取（组别 `1yearplus` / `1yearplus_ex` / `1yearminus` / `games_musics` 可切换，回收站 `musics_free` 不入选择器），把「曲库列表（数据）」连到 draw-machine / music-player 的「候选池」即可免手写 `props.items`。
+
+music-player 的 `play(item)` 为 P15 新增 api（`item ? setItem(item) : 不变; return start()`——可选设置曲目并立即进入播放），纯新增方法、既有消费页零影响；toast / confirm-dialog 属服务类组件，词汇表为空数组（不参与连线）。
+
+**默认触发按钮语义（undefined vs null，勿改错）**：draw-machine 在 props **完全不提** `trigger`（undefined，如编排零 props 排布）时自建「抽取」按钮 + 默认展示 `span`（display 缺省指向宿主自身，textContent 覆写会抹掉按钮，故一并自建专用子节点）；music-player 在**完全不提** `trigger` / `startTrigger` 时自建「抽取音乐」「播放」默认控制条。**显式传 `null` = 刻意钉空不建**（调用方接管按钮分工），传选择器/元素 = 绑定既有按钮。battle-group1 / 1-2 / 2 / 2-2 与 group-battle 三页已在 P15 补 `trigger: null` 钉空（group-battle 连 `startTrigger` 一并钉空；drag / music-draw 原本即传 null 防同按钮双跑动画）——**新页面若不想要默认按钮必须显式传 `null`，不能省略不写**。
+
+**扩展指引——新增一个可编排组件**（在 4.2 L2 组件基础上）：
+
+1. L2 组件三步照旧：`node scripts/new-module.js <组件id> "<名称>" --component --pages game-composer,custom-stage` → 实现 factory（**全部 props 可选并收敛到合法值，零 props 必须能渲染**）→ `web/front.json` 条目（脚手架已生成）；
+2. `modules/game-composer/front/layout.mjs` 的 `PALETTE_META` 补一行中文名/描述，并**同步补 `outs` / `ins` 连线词汇表**（P15，`[{name,label}]` 数组；无连线能力/服务类组件为空数组；不补中文名则 palette 显示原始组件名，不补 outs/ins 则连线表单选不到该组件的口子）；
+3. 验证：编辑器 palette 可见可添加 → 预览真挂载 → 保存后 custom-stage 深链可运行；有连线口的组件在编辑器建一条线 → 预览验证联动 → custom-stage 复验；手动禁用该组件插件后复验「插槽留空、页面照常」（降级不崩）。
 
 ---
 
 ## 5. 注意事项
 
-1. **不要修改内核与共享设施**（`web/kernel.mjs`、`web/ui.mjs`、`web/lib/`（random / persist / undo）、`web/components/`（grid.css、compose.mjs）、`server/http/`、`server/cordis/`、`server/database.js` 等）。新增功能一律自包含于 `modules/<id>/`；**唯一例外**是缺图标时向 `web/icons.mjs` 追加准确 path（见 4.1，改后跑 `web/icons.test.js`）。
+1. **不要修改内核与共享设施**（`web/kernel.mjs`、`web/ui.mjs`、`web/lib/`（random / persist / undo / reactive / timers / body-class）、`web/components/`（grid.css、compose.mjs）、`server/http/`、`server/cordis/`、`server/database.js` 等）。新增功能一律自包含于 `modules/<id>/`；**唯一例外**是缺图标时向 `web/icons.mjs` 追加准确 path（见 4.1，改后跑 `web/icons.test.js`）。
    **L1 资产：可 import ≠ 可随手改**——`web/lib/*.mjs`、`web/components/compose.mjs`、`web/components/grid.css` 与 `web/icons.mjs` 向所有模块开放 import（准入见 4.2），但它们是 8 个以上模块的共同依赖面：改动 `web/lib/*.mjs` / `compose.mjs` 必须同步其同名 `*.test.js`，且一律复跑 `node server/run-unit-tests.js` 与 `node scripts/endpoint-diff.js --compare`（不重录直绿）后才算完成。
 2. **前端 API 一律使用 origin 相对路径**（`/api/...`、`/resource/...`、`/web/...`），兼容任意部署环境（本地、预览代理、生产同域）；不要写死 `http://localhost:3000`（服务端代码内部仍可用 `process.env.PORT`）。
 3. **★ 三份清单同步追加铁律**：新模块必须同时在 `modules/modules.json`、`server/plugins.json`、`web/front.json` 追加条目（脚手架自动完成）。漏 `plugins.json` → 后端不挂载（路由/页面 404）；漏 `front.json` → 前端不装配（页面渲染占位）。`enabled:false` = 不挂载但 SQLite 数据保留；未列出 = 不挂载。
@@ -448,10 +550,12 @@ export default {
 ```html
 <body>
   <!-- 页面内容（可选静态骨架） -->
-  <div id="plugin-root" hidden></div>
+  <div id="plugin-root"></div>
   <script type="module" src="/web/kernel.js"></script>
 </body>
 ```
+
+注意 `#plugin-root` **默认可见（不带 `hidden`）**：内核只向它渲染、从不摘 `hidden` 属性——骨架若写 `hidden` 且组件不自行摘除，页面会一直白屏（脚手架模板已改为不带 `hidden`）。
 
 `enabled:false` 的前端条目不 import、代码不下载（效果等同不注入 script）。
 
@@ -523,7 +627,7 @@ export default {
 |------|------|
 | `node server.js --test` | 数据库操作回归测试（6 项，结果输出在控制台） |
 | `node server.js --test-cordis` | cordis 装配自检 A1-A6（装配零错误/数据库基线/元数据投影/探针插件/inject 白名单/manager 管理链路），测完自动退出 |
-| `node server/run-unit-tests.js` | 单元测试统一入口（16 个 `*.test.js`：server 侧 9 个 = utils 1 + paths 1 + http 层 4 + cordis services 3；web 侧 7 个 = loader / icons / ui + lib 的 random / persist / undo + components/compose） |
+| `node server/run-unit-tests.js` | 单元测试统一入口（19 个 `*.test.js`：server 侧 9 个 = utils 1 + paths 1 + http 层 4 + cordis services 3；web 侧 10 个 = loader / icons / ui + lib 的 random / persist / undo / reactive / timers / body-class + components/compose） |
 | `node scripts/endpoint-diff.js --record` | 在当前服务上录制端点行为基线（35 用例 → `scripts/endpoint-baseline.json`；仅行为有意变更时重录，其余场合 --compare 必须不重录直绿） |
 | `node scripts/endpoint-diff.js --compare` | 起服后重放用例逐字节对比基线，全绿退出码 0（HTTP 层改动的合并关口） |
 

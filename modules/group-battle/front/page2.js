@@ -596,7 +596,10 @@ export function componentProps2(bridge) {
       items: () => getCurrentMusicLibrary(),
       folder: () => getMusicFolder(),
       display: "#current-music-lib",
-      // startTrigger 不传：开始/重播按钮由页面 handleStartBattle 显式接管
+      // 显式钉空：抽取归 draw-machine、开始/重播由页面 handleStartBattle 接管
+      //（组件不自建默认按钮）
+      trigger: null,
+      startTrigger: null,
       overlay: {
         enabled: true,
         textContent: "BATTLE START",

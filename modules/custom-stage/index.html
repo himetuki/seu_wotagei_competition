@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>组合舞台</title>
+    <link rel="stylesheet" href="/web/components/grid.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- 页面 UI 由前端插件装配：内核按 /m/custom-stage/ 路径解析模块 id → 读 /web/front.json →
+         dynamic import /m/custom-stage/front/plugin.js → ctx.ui.render("custom-stage") 渲染进 #plugin-root。
+         也可像既有模块一样在此放置静态骨架 DOM，由组件复用/增强（见 modules/drag）。 -->
+    <div id="plugin-root"></div>
+
+    <!-- 前端内核（稳定 URL，实际指向构建产物 web/dist/kernel.js；404 时先 npm run build:web） -->
+    <script type="module" src="/web/kernel.js"></script>
+  </body>
+</html>

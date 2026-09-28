@@ -1,6 +1,6 @@
 {
   "meta": {
-    "recordedAt": "2026-09-18T17:23:03.579Z",
+    "recordedAt": "2026-09-28T04:19:28.241Z",
     "httpLayer": "y-router+cordis",
     "node": "v24.19.0",
     "port": 3210
@@ -80,8 +80,8 @@
         "content-type": "application/json; charset=utf-8",
         "access-control-allow-origin": "*"
       },
-      "bodySha256": "bae20a6b8c75216e21000f7ef024a11d8d03fe4579fde87f88f7e68bc36cfbfe",
-      "bodyLen": 2973,
+      "bodySha256": "21c1166ca65d063a7c9b2629b8f5480816884c72c404d0c999e0d2c1f7b06d9a",
+      "bodyLen": 3335,
       "preview": "[{\"id\":\"home\",\"name\":\"主页\",\"description\":\"2026 Y.Stage 4 比赛现场入口\",\"icon\":\"home\",\"nav\":[],\"order\":0,\"route\":\"/m/home/\"},{\"i"
     },
     {

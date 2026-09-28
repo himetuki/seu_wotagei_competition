@@ -1,0 +1,161 @@
+/* 组合舞台 —— modules/custom-stage/style.css（P14-C 运行台暗色风格）
+   布局原语（.grid-cards / .grid-flow / .card）来自 /web/components/grid.css（index.html 引入），
+   本文件只做主题化覆盖与模块自有外观；页面内资源同目录相对路径，共享资源绝对路径。 */
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  background: #101418;
+  color: #e8eaed;
+}
+
+/* ---- 页面骨架 ---- */
+
+.custom-stage-page {
+  box-sizing: border-box;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 24px clamp(12px, 3vw, 28px) 40px;
+}
+
+/* 头部：标题 + 工具行（窄屏自动换行） */
+.custom-stage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #262b31;
+}
+
+.custom-stage-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.custom-stage-title svg {
+  color: #8ab4f8; /* 标题图标点缀色 */
+  flex: none;
+}
+
+.stage-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.custom-stage-body {
+  margin-top: 20px;
+}
+
+/* ---- 链接按钮 / 重试按钮（工具行、引导、错误态共用） ---- */
+
+.stage-link,
+.stage-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid #3c4043;
+  border-radius: 8px;
+  background: #1e2126;
+  color: #e8eaed;
+  font-size: 14px;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.stage-link:hover,
+.stage-btn:hover {
+  background: #2a2e33;
+  border-color: #5f6368;
+}
+
+/* ---- 提示行 / 错误行 / 空态引导 ---- */
+
+.stage-msg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #9aa0a6;
+  font-size: 14px;
+}
+
+.stage-msg svg {
+  flex: none;
+}
+
+.stage-msg--error {
+  color: #f28b82;
+}
+
+.stage-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 28px 4px;
+}
+
+/* ---- 列表视图：布局卡片网格（.grid-cards/.card 原语 + 主题覆盖） ---- */
+
+.custom-stage-page .card {
+  --card-bg: rgba(255, 255, 255, 0.05);
+  border: 1px solid #2a2f36;
+}
+
+.stage-card {
+  gap: 6px;
+}
+
+.stage-card__name {
+  font-size: 17px;
+  font-weight: 600;
+  overflow-wrap: anywhere; /* 长布局名不撑破卡片 */
+}
+
+.stage-card__time {
+  color: #9aa0a6;
+  font-size: 13px;
+}
+
+.stage-card__open {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: auto; /* 钉在卡片底部（.card 为纵向 flex） */
+  padding-top: 10px;
+  color: #8ab4f8;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.stage-card__open:hover {
+  text-decoration: underline;
+}
+
+/* ---- 运行视图：组件宿主卡片（.grid-flow 自适应铺排，间距收紧一格） ---- */
+
+.stage-run {
+  --grid-gap: 14px;
+}
+
+.stage-slot {
+  border: 1px solid #2a2f36;
+  border-radius: 12px;
+  min-height: 120px; /* 空槽（组件被禁用时）仍保留卡片轮廓，降级可见但不突兀 */
+}
+
+/* 组件在宿主内自行铺排（.card 为纵向 flex） */
+.stage-slot > * {
+  width: 100%;
+}

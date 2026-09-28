@@ -33,6 +33,10 @@
  * 契约：factory(hostEl, props, ctx) => cleanup；组件默认只在 hostEl 内部渲染（audio 为唯一例外——
  *       按 id 复用宿主页元素是本组件的既有跨页契约，见上）。display/trigger 选择器先在 hostEl 内
  *       解析，未命中再落到 document，便于页面把插槽与既有骨架节点对接。
+ *
+ * 无 trigger / startTrigger 时自建默认控制条（编排兜底）：props 完全不提（undefined，如
+ * game-composer / custom-stage 零 props 排布）才在宿主内自建「抽取音乐」「播放」按钮；显式传
+ * null 或选择器 = 调用方刻意接管（既有页面的钉空/按钮分工写法），一律不自建。
  */
 
 import { pickOne } from "/web/lib/random.mjs";
@@ -151,8 +155,10 @@ function itemName(item) {
  *   exitOnEnded    boolean = true        播放结束自动退出
  *   rollingClass   string = "rolling"    滚动中挂到 display 的类
  *   resultClass    string = "selected"   定格后挂到 display 的类
- *   trigger        Element | selector    抽取按钮（点击 → draw()，滚动期间 disabled）
- *   startTrigger   Element | selector    播放按钮（点击 → 播放中则 stop，否则 start()）
+ *   trigger        Element | selector    抽取按钮（点击 → draw()，滚动期间 disabled）；完全不传时
+ *                                        自建默认「抽取音乐」按钮（编排兜底），显式 null = 刻意不绑
+ *   startTrigger   Element | selector    播放按钮（点击 → 播放中则 stop，否则 start()）；完全不传时
+ *                                        自建默认「播放」按钮（编排兜底），显式 null = 刻意不绑
  *   onDrawn        ({ item, name, url }) 定格回调（业务写状态/存档入口）
  *   onOverlayShown ({ host, overlay, text, hint })
  *                                        进入比赛模式、遮罩已显示、逐字动画开始**之前**触发
@@ -163,7 +169,7 @@ function itemName(item) {
  *   onError        (err)                 播放失败（autoplay 拦截/资源缺失）
  *   onEmpty        ()                    未抽到音乐 / 曲库为空
  *   onTick         (item, i, total)      每个闪现 tick
- *   onReady        (api)                 交出 { draw, start, stop, toggle, setItem, clearItem,
+ *   onReady        (api)                 交出 { draw, start, play, stop, toggle, setItem, clearItem,
  *                                        getItem, isPlaying, isBusy, getPhase, getAudio }
  *                                        其中 start(opts) / toggle(opts) 支持 { skipOverlay: true }：
  *                                        跳过遮罩/逐字/待播立即播放（重播场景，B4 缺陷 4）。
@@ -200,8 +206,25 @@ export function createMusicPlayer(hostEl, props = {}, ctx) {
     explicitDisplay && explicitDisplay !== hostEl
       ? explicitDisplay
       : createNode("span", "cmp-music__display", hostEl);
-  const trigger = resolveNode(hostEl, p.trigger);
-  const startTrigger = resolveNode(hostEl, p.startTrigger);
+
+  // 无 trigger / startTrigger 时自建默认控制条（编排兜底）：仅 props 完全不提（undefined）才建，
+  // 显式传 null / 选择器 = 调用方刻意接管，不自建。默认按钮走下方与显式按钮同一套 click 绑定
+  // （工厂顶层 ctrl 的 signal，cleanup 统一解绑），不碰播放生命周期的 playCtrl。
+  let trigger = resolveNode(hostEl, p.trigger);
+  let startTrigger = resolveNode(hostEl, p.startTrigger);
+  if (p.trigger === undefined || p.startTrigger === undefined) {
+    const bar = createNode("div", "music-player__default-controls", hostEl);
+    if (p.trigger === undefined && !trigger) {
+      trigger = createNode("button", "music-player__default-trigger", bar);
+      trigger.type = "button";
+      trigger.textContent = "抽取音乐";
+    }
+    if (p.startTrigger === undefined && !startTrigger) {
+      startTrigger = createNode("button", "music-player__default-start", bar);
+      startTrigger.type = "button";
+      startTrigger.textContent = "播放";
+    }
+  }
 
   /* ---------- DOM：audio / 遮罩 / 提示 ---------- */
 
@@ -590,6 +613,12 @@ export function createMusicPlayer(hostEl, props = {}, ctx) {
     return true;
   }
 
+  /** P15 连线动作：设置曲目（可选）并立即进入播放（可视化编排的事件连线目标） */
+  function play(item) {
+    if (item) setItem(item);
+    return start();
+  }
+
   /**
    * 清空当前曲目（drag 切曲库/重置、group-battle reset/revive 收尾调用）。
    *
@@ -618,6 +647,7 @@ export function createMusicPlayer(hostEl, props = {}, ctx) {
   const api = {
     draw,
     start,
+    play,
     stop,
     toggle,
     setItem,

@@ -1303,6 +1303,7 @@ export function componentProps(bridge) {
     "music-player": {
       items: () => BattleState.musicList,
       display: "#music-name",
+      trigger: null, // 显式钉空：抽取归 draw-machine，组件不自建默认按钮
       startTrigger: "#play-music-btn",
       onReady: (api) => {
         bridge.music = api;

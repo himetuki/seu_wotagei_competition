@@ -46,6 +46,10 @@ export default {
             label: "团体与表演",
             ids: ["group-battle", "drag", "music-draw"],
           },
+          {
+            label: "自制赛制",
+            ids: ["game-composer", "custom-stage"],
+          },
         ];
 
         // 模块 id → 卡片配色 class（沿用原版各赛制主色调）

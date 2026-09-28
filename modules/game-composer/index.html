@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>可视化编排</title>
+    <link rel="stylesheet" href="style.css" />
+    <!-- 服务类组件兜底外观（本页常驻实例化 toast / confirm-dialog，AGENTS §4.2 引入约定） -->
+    <link rel="stylesheet" href="/m/component-toast/style.css" />
+    <link rel="stylesheet" href="/m/component-confirm-dialog/style.css" />
+  </head>
+  <body>
+    <!-- 页面 UI 由前端插件装配：内核按 /m/game-composer/ 路径解析模块 id → 读 /web/front.json →
+         dynamic import /m/game-composer/front/plugin.js → ctx.ui.render("game-composer") 渲染进 #plugin-root。 -->
+    <div id="plugin-root"></div>
+
+    <!-- 前端内核（稳定 URL，实际指向构建产物 web/dist/kernel.js；404 时先 npm run build:web） -->
+    <script type="module" src="/web/kernel.js"></script>
+  </body>
+</html>

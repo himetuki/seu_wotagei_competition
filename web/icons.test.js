@@ -29,11 +29,11 @@ const REQUIRED_METADATA = [
 ];
 const REQUIRED_ACTION = [
   "pencil", "trash", "check", "x", "refresh", "search", "plus", "minus", "file-text",
-  "download", "upload", "arrow-left", "arrow-right", "chevron-down", "chevron-right",
-  "box", "filter", "list", "users", "user", "crown", "bolt", "alert-triangle",
+  "download", "upload", "arrow-left", "arrow-right", "arrow-up", "arrow-down", "chevron-down",
+  "chevron-right", "box", "filter", "list", "users", "user", "crown", "bolt", "alert-triangle",
   "info-circle", "circle-check", "circle-x", "player-play", "player-pause", "player-stop",
   "volume", "dice", "shuffle", "wand", "sparkles", "flame", "star", "calendar", "clock",
-  "database", "apps", "layout-grid", "settings-automation",
+  "database", "apps", "layout-grid", "settings-automation", "eye", "device-floppy",
 ];
 
 /** 递归收集目录下所有 .js 文件（跳过 node_modules/dist） */

@@ -23,6 +23,9 @@
  *
  * 定时器：全部经 setInterval/setTimeout 句柄登记，cleanup / cancel 时必然清除（原 bg1/bg2/
  *         movement-teaching 等处的闪现 interval 是局部 const，组件卸载时无法回收——此处修复）。
+ *
+ * 无 trigger 时自建默认抽取按钮（编排兜底）：props 完全不提 trigger（undefined，如 game-composer /
+ * custom-stage 零 props 排布）才自建；显式传 null 或选择器 = 调用方刻意接管，一律不自建。
  */
 
 import { pickOne } from "/web/lib/random.mjs";
@@ -94,7 +97,8 @@ function itemText(item, format) {
  *   display      Element | selector   展示节点（默认 hostEl 自身）
  *   format       (item) => string     展示文本格式化（如去掉 .mp3 后缀）
  *   colors       { rolling, result }  可选内联色（兼容既有 #fbbf24 / #10b981），默认不改色
- *   trigger      Element | selector   触发按钮（点击 → draw()，滚动期间 disabled）
+ *   trigger      Element | selector   触发按钮（点击 → draw()，滚动期间 disabled）；完全不传时
+ *                                     自建默认「抽取」按钮（编排兜底），显式 null = 刻意不绑
  *   onStart      ({ items, total })   滚动真正开始的**同步**钩子：在 draw() 内、首个 tick 之前调用
  *                                     （total = 本次闪现次数，语义同 onTick 的 total）。调用方可在此
  *                                     禁用「开始」按钮，消除只能借 onTick 而留出的 ~tickMs 抢点窗口。
@@ -113,8 +117,28 @@ export function createDrawMachine(hostEl, props = {}, ctx) {
   const ctrl = new AbortController();
   const { signal } = ctrl;
 
-  const display = resolveNode(hostEl, p.display || ":host") || hostEl;
-  const trigger = resolveNode(hostEl, p.trigger);
+  // 无 trigger 时自建默认抽取按钮（编排兜底）：仅 props 完全不提 trigger（undefined）才建，
+  // 显式传 null / 选择器 = 调用方刻意接管，不自建（既有 9 个消费页全部显式传 trigger，零影响）。
+  // 此时 display 缺省本指向宿主自身，而 paint 以 textContent 覆写宿主会抹掉按钮，故一并自建
+  // 专用展示子节点（既有消费页全部传显式 display，不进此分支）。
+  const ownNodes = []; // 组件自建节点（默认展示节点 / 默认按钮），cleanup 时移除
+  let ownDisplay = null;
+  let trigger = resolveNode(hostEl, p.trigger);
+  if (p.trigger === undefined && !trigger) {
+    ownDisplay = document.createElement("span");
+    ownDisplay.className = "draw-machine__default-display";
+    trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "draw-machine__default-trigger";
+    trigger.textContent = "抽取";
+    hostEl.append(ownDisplay, trigger);
+    ownNodes.push(ownDisplay, trigger);
+  }
+  const explicitDisplay = resolveNode(hostEl, p.display);
+  const display =
+    explicitDisplay && explicitDisplay !== hostEl
+      ? explicitDisplay
+      : ownDisplay || hostEl;
 
   let timer = null;
   let result = null;
@@ -231,9 +255,12 @@ export function createDrawMachine(hostEl, props = {}, ctx) {
 
   call(p.onReady, api);
 
-  /** cleanup：清定时器 + 摘监听 + 回滚 display 状态（幂等） */
+  /** cleanup：清定时器 + 摘监听 + 回滚 display 状态 + 移除自建节点（幂等） */
   return function cleanup() {
     restore();
     ctrl.abort();
+    for (const n of ownNodes) {
+      if (n && n.parentNode) n.parentNode.removeChild(n);
+    }
   };
 }
