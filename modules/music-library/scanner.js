@@ -40,6 +40,22 @@ const MUSIC_DIRS = [
   },
 ];
 
+// 组别查询键 → MUSIC_DIRS 条目的精确映射。历史实现为 MUSIC_DIRS.find(
+// (c) => c.dir.includes(group)) 的子串匹配（"musics"/"resource" 等父路径字符串会
+// 误命中首个条目）；精确键匹配消除误配，并保证目录路径永远取自本常量表——
+// group 仅作查找键、不参与任何路径拼接。
+const CONFIG_BY_GROUP = new Map(
+  MUSIC_DIRS.map((c) => [c.dir.split(path.sep).pop(), c])
+);
+
+/**
+ * 按组别键精确解析 MUSIC_DIRS 条目（键 = dir 末段：1yearplus / 1yearplus_ex /
+ * 1yearminus / games_musics / musics_free）；非字符串或未命中返回 undefined。
+ */
+function findConfigByGroup(group) {
+  return typeof group === "string" ? CONFIG_BY_GROUP.get(group) : undefined;
+}
+
 // "resource/..." 相对路径 → RESOURCE_DIR 下的绝对路径（剥去 "resource" 前缀段）
 // 入参来自 MUSIC_DIRS 常量与经它匹配的 group；仍经 safeJoin 断言结果不越出 RESOURCE_DIR，
 // 防未来调用方传入外部字符串时逃逸到数据层之外。
@@ -169,7 +185,7 @@ function scanAllMusicDirs() {
 
 // 扫描指定音乐目录并更新其JSON
 function scanMusicDir(dirName) {
-  const config = MUSIC_DIRS.find((c) => c.dir.includes(dirName));
+  const config = findConfigByGroup(dirName);
 
   if (!config) {
     serverLog(`未找到匹配的目录配置: ${dirName}`, "warn");
@@ -192,7 +208,7 @@ function scanMusicDir(dirName) {
 
 // 获取音乐目录计数
 function getMusicCount(group) {
-  const config = MUSIC_DIRS.find((c) => c.dir.includes(group));
+  const config = findConfigByGroup(group);
 
   if (!config) {
     return { count: 0, success: false, error: "未找到匹配的目录配置" };
@@ -222,5 +238,6 @@ module.exports = {
   getMusicCount,
   initializeMusicScanner,
   resolveMusicDir,
+  findConfigByGroup,
   MUSIC_DIRS,
 };

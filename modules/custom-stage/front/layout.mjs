@@ -109,6 +109,12 @@ export function buildRuntimeProps(layout, apis, warn = console.warn) {
     const to = stagedById(c.to);
     if (!from || !to) { warn(`[custom-stage] 连线 ${c.id || "?"} 引用了不存在的实例，已跳过`); continue; }
     if (typeof c.out !== "string" || typeof c.in !== "string") { warn(`[custom-stage] 连线 ${c.id || "?"} 的 out/in 不是字符串，已跳过`); continue; }
+    if (c.out === "onReady" || c.in === "onReady") {
+      // 保留口名：onReady 是注入的 api 注册钩子，被连线占用会让该实例的
+      // 全部数据连线取值回落 []（后端已拒绝新建，此处兜底直写 API 的存量数据）
+      warn(`[custom-stage] 连线 ${c.id || "?"} 使用了保留口名 "onReady"，已跳过`);
+      continue;
+    }
     if (c.out.startsWith("on")) {
       // 事件连线：注入 from 的 props[c.out]（回调 → 调 to 的 api[c.in]）
       if (markInjected(from, c.out)) {

@@ -10,11 +10,14 @@
  *   - name    非空字符串，trim 后 1..40 字符（存储 trim 后的值）
  *   - items   数组 0..40 项；每项普通对象
  *   - item.component 非空字符串且 /^[a-z][a-z0-9-]*$/
- *   - item.id / item.title / item.props 可缺省；props 若给出必须是普通对象（非数组）
+ *   - item.id / item.title / item.props 可缺省；id 给出时须 /^[a-zA-Z][a-zA-Z0-9_-]*$/
+ *     且 ≤64 字符、布局内唯一（"[data-slot=<id>]" 不加引号拼接，畸形/重复 id 会
+ *     抛选择器 SyntaxError 或多实例挤同一宿主）；props 若给出必须是普通对象（非数组）
  *   - 存储时每项只保留 id/component/title/props 四键（多余键丢弃）
  *   - connections（P15）缺省视为 []（v1 布局完全兼容）；数组 ≤20 项，每项普通对象，
  *     只保留 id/from/out/to/in 五键（多余丢弃）；from/to 非空字符串 ≤64 字符（宽松存储，
- *     不校验实例存在性）；out/in 须 /^[a-zA-Z][a-zA-Z0-9]*$/ 且 ≤40 字符；id 可缺省
+ *     不校验实例存在性）；out/in 须 /^[a-zA-Z][a-zA-Z0-9]*$/、≤40 字符且不得为保留名
+ *     onReady（连线注入的 api 注册钩子，占用会使该实例数据连线静默失效）；id 可缺省
  *     （后端补 "cn-" + 6 位 hex），给出时不做形态校验（宽松）
  * 请求体解析：POST/PUT 的 body 已由 shim JSON 中间件就位（参照 modules/setting/plugin.js）。
  */
@@ -62,6 +65,11 @@ function validateConnections(raw) {
       if (v.length > 40) {
         return { error: `connections[${i}].${key} 长度不能超过 40 字符` };
       }
+      // 保留名：buildRuntimeProps 用注入的 onReady 回填实例 api 表，
+      // 连线占用该口名会让本实例的全部数据连线静默失效
+      if (v === "onReady") {
+        return { error: `connections[${i}].${key} 不能使用保留名 onReady` };
+      }
     }
     cleaned.push({
       // id 给出时宽松保留（非空字符串即可），缺省/空串由后端补齐
@@ -93,6 +101,7 @@ function validateBody(raw) {
   if (items.length > 40) return { error: "items 不能超过 40 项" };
 
   const cleaned = [];
+  const seenIds = new Set(); // 同一布局内 item.id 唯一性校验（重复 id 会挤同一宿主选择器）
   for (let i = 0; i < items.length; i++) {
     const it = items[i];
     if (!it || typeof it !== "object" || Array.isArray(it)) {
@@ -109,6 +118,23 @@ function validateBody(raw) {
       (!it.props || typeof it.props !== "object" || Array.isArray(it.props))
     ) {
       return { error: `items[${i}].props 必须为普通对象` };
+    }
+    // item.id 缺省合法（渲染时跳过该实例）；给出时须为 CSS 标识符形态
+    //（选择器 "[data-slot=<id>]" 不加引号拼接，畸形 id 会抛 SyntaxError 或互相串台）
+    if (it.id !== undefined) {
+      if (
+        typeof it.id !== "string" ||
+        !/^[a-zA-Z][a-zA-Z0-9_-]*$/.test(it.id)
+      ) {
+        return { error: `items[${i}].id 必须为字母开头的字母数字/连字符/下划线标识符` };
+      }
+      if (it.id.length > 64) {
+        return { error: `items[${i}].id 长度不能超过 64 字符` };
+      }
+      if (seenIds.has(it.id)) {
+        return { error: `items[${i}].id 重复：${it.id}（布局内实例 id 必须唯一）` };
+      }
+      seenIds.add(it.id);
     }
     cleaned.push({
       ...(typeof it.id === "string" && it.id ? { id: it.id } : {}),

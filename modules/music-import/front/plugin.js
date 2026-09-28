@@ -7,8 +7,8 @@
  * 原 DOMContentLoaded 包裹随之去除）。函数体逐行保留，适配点：
  *   - 顶层 DOM/AppState → 模块级变量（原脚本全局变量，单页面单实例语义不变）
  *   - 静态骨架/document.body 监听一律 { signal } 登记（AbortController），cleanup 统一 abort
- *   - 上传仍用原生 XHR + FormData 直连共享层 /api/upload_music 等端点（multer 语义在
- *     共享路由 server/routes/music-routes.js，属共享层不归本插件，前端调用逐字不变）
+ *   - 上传仍用原生 XHR + FormData 直连 /api/upload_music 等端点（multer 语义在
+ *     纯后端功能件 modules/music-library，属跨插件隐式依赖不归本插件，前端调用逐字不变）
  *   - P5a：回收站按钮改容器级事件委托（原 inline onclick 拼接文件名，单引号文件名会炸），
  *     window.moveFileToRecycle 全局桥随之移除（唯一消费方即该 inline onclick）
  * 旧 music_*.js 保留磁盘、不再加载；行为与迁移前逐字一致。
@@ -771,30 +771,6 @@ async function startUpload() {
       `开始上传文件到 ${AppState.groups[targetGroup].name}...`,
       "info"
     );
-
-    // 上传前检查
-    try {
-      // 测试表单数据提交 - 创建一个简单的测试表单
-      const testFormData = new FormData();
-      testFormData.append("group", targetGroup);
-      testFormData.append("test", "value");
-
-      console.log("测试表单数据提交...");
-      const testResponse = await fetch("/api/test_form_data", {
-        method: "POST",
-        body: testFormData,
-      });
-
-      const testResult = await testResponse.json();
-      console.log("表单数据测试结果:", testResult);
-
-      if (!testResult.hasGroup) {
-        console.warn("测试表单中的group参数未被正确解析，这可能影响上传");
-      }
-    } catch (testError) {
-      console.warn("表单数据测试失败:", testError);
-      // 继续尝试上传
-    }
 
     // 检查组别是否有效
     if (!targetGroup || !AppState.groups[targetGroup]) {

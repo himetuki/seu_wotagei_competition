@@ -529,7 +529,10 @@ export function createMusicPlayer(hostEl, props = {}, ctx) {
    *        走遮罩；不传 opts = 旧行为逐字不变。
    */
   function start(opts) {
-    if (phase === "starting" || phase === "playing") return false;
+    // 只在 idle 起播（与 draw() 对称）：rolling 期间放行会让迟到的 finishDraw
+    // 把已进入的 playing 相位回写成 idle——音频在播、body 带 battle-mode，
+    // 但双击退出与 stop() 的相位判定全部失效，用户被锁在比赛模式外
+    if (phase !== "idle") return false;
     if (!current) {
       call(p.onEmpty);
       return false;

@@ -1,6 +1,6 @@
 {
   "meta": {
-    "recordedAt": "2026-09-28T04:19:28.241Z",
+    "recordedAt": "2026-09-28T16:55:34.901Z",
     "httpLayer": "y-router+cordis",
     "node": "v24.19.0",
     "port": 3210
@@ -439,14 +439,14 @@
       "name": "POST /api/test_form_data（multipart H4）",
       "method": "POST",
       "url": "/api/test_form_data",
-      "status": 200,
+      "status": 404,
       "headers": {
-        "content-type": "application/json; charset=utf-8",
+        "content-type": "text/html; charset=utf-8",
         "access-control-allow-origin": "*"
       },
-      "bodySha256": "04daff1d81ace5b07795355e82b0263847308466d150a859b2e3d9ed78e2beae",
-      "bodyLen": 309,
-      "preview": "{\"success\":true,\"message\":\"表单数据测试\",\"requestHeaders\":{\"content-type\":\"multipart/form-data; boundary=----YStageEndpointDif"
+      "bodySha256": "83496955e9f2f7f95d2c954453e1dea26a14b2f4b7da3cb4cc4a484873905fb9",
+      "bodyLen": 560,
+      "preview": "\n    <html>\n      <head>\n        <title>404 - 页面未找到</title>\n        <style>\n          body { font-family: Arial, sans-se"
     },
     {
       "name": "POST /api/upload_music 非音频（400 拒绝路径）",
@@ -465,14 +465,14 @@
       "name": "POST /api/test_audio_upload 无 group（中间件 next(err)→500）",
       "method": "POST",
       "url": "/api/test_audio_upload",
-      "status": 500,
+      "status": 404,
       "headers": {
         "content-type": "text/html; charset=utf-8",
         "access-control-allow-origin": "*"
       },
-      "bodySha256": "837c0300bf9e9d0715d13e875bd445dc007e12cd765518d985db5a534e0dd522",
-      "bodyLen": 47,
-      "preview": "服务器出错: 无法确定上传目标组别"
+      "bodySha256": "9837e468cac69fb7ebca327afad6b987702bc0270d5e01243ff251fbf04b0f14",
+      "bodyLen": 563,
+      "preview": "\n    <html>\n      <head>\n        <title>404 - 页面未找到</title>\n        <style>\n          body { font-family: Arial, sans-se"
     }
   ]
 }

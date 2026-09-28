@@ -331,7 +331,7 @@ const mounted = mountFromConfig({
   name: "双人对战练习台",           // 1..40 字符（trim 后）
   updatedAt: "2026-09-28T00:00:00.000Z",  // 服务端 ISO（POST/PUT 时刷新）
   items: [                         // 0..40 项，顺序 = 挂载与展示顺序
-    { id: "it-1-4f2a",             // 实例 uid（编辑器生成，插槽选择器锚点）
+    { id: "it-1-4f2a",             // 实例 uid（可缺省=渲染跳过；给出时须 /^[a-zA-Z][a-zA-Z0-9_-]*$/、≤64 字符、布局内唯一——选择器 [data-slot=<id>] 不加引号拼接）
       component: "score-board",    // 组件名，/^[a-z][a-z0-9-]*$/
       title: "上半场",              // 可选：卡片头标题（非空时并入该实例 props）
       props: { teams: [{ name: "红方" }] } },  // 可选：普通对象（非数组）
@@ -376,7 +376,7 @@ const mounted = mountFromConfig({
 **组件连线（P15）：connections schema 与校验**（随布局整包 POST/PUT，违例 400 `{"error":"..."}`）：
 
 - 每条连线只保留 `id / from / out / to / in` **五键**（多余键丢弃）；`connections` ≤ **20** 条，缺省视为 `[]`（v1 布局完全兼容）；
-- `from` / `to`：非空字符串 ≤ 64 字符（item id 形态）；`out` / `in`：`/^[a-zA-Z][a-zA-Z0-9]*$/` 且 ≤ 40 字符；`id` 可缺省（后端补 `"cn-" + 6 位 hex`），给出时宽松保留；
+- `from` / `to`：非空字符串 ≤ 64 字符（item id 形态）；`out` / `in`：`/^[a-zA-Z][a-zA-Z0-9]*$/` 且 ≤ 40 字符，**不得为保留名 `onReady`**（连线注入的 api 注册钩子，占用会使该实例数据连线静默失效——后端 400 拒绝新建，两处运行时对存量数据 warn 跳过）；`id` 可缺省（后端补 `"cn-" + 6 位 hex`），给出时宽松保留；
 - 后端**不校验** from/out/to/in 与 items 组件能力的匹配——宽松存储，编辑器负责引导（词汇表）、运行时负责降级（warn 跳过）。
 
 **连线类型判定与运行时注入**（无 type 字段，`out` 是否以 `"on"` 开头是**运行时唯一依据**）：

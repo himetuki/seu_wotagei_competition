@@ -15,61 +15,6 @@ const musicScanner = require("./scanner");
  * @param {object} app y-router app（(req,res,next) 风格与 Express 一致）
  */
 function registerMusicRoutes(app) {
-// 设置上传的存储选项
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    try {
-      // 注意：在multer的此回调中，无法访问req.body中的数据
-      // 尝试从查询参数获取组别
-      const group = req.query.group;
-
-      if (!group) {
-        serverLog("无法从req.query获取group参数", "error");
-        return cb(new Error("无法确定上传目标组别"));
-      }
-
-      serverLog(`从URL查询参数获取到组别: ${group}`, "info");
-
-      // 根据组别选择对应的目录
-      const config = musicScanner.MUSIC_DIRS.find((c) => c.dir.includes(group));
-
-      if (!config) {
-        return cb(new Error(`未找到组别: ${group}`));
-      }
-
-      const uploadDir = musicScanner.resolveMusicDir(config.dir);
-
-      // 确保目录存在
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-        serverLog(`已创建上传目录: ${uploadDir}`, "info");
-      }
-
-      cb(null, uploadDir);
-    } catch (error) {
-      cb(error);
-    }
-  },
-  filename: function (req, file, cb) {
-    // 保留原始文件名
-    cb(null, file.originalname);
-  },
-});
-
-// 禁用multer的文件类型检测，改为自己在请求处理中检测
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
-  fileFilter: function (req, file, cb) {
-    // 完全放行所有文件，我们将在接收后再验证
-    serverLog(
-      `接收文件上传请求: ${file.originalname}, mimetype: ${file.mimetype}`,
-      "info"
-    );
-    return cb(null, true);
-  },
-});
-
 // 获取音乐文件数量
 app.get("/api/music_count", (req, res) => {
   try {
@@ -104,7 +49,7 @@ app.post("/api/check_music_files", (req, res) => {
       });
     }
 
-    const config = musicScanner.MUSIC_DIRS.find((c) => c.dir.includes(group));
+    const config = musicScanner.findConfigByGroup(group);
 
     if (!config) {
       return res.status(400).json({
@@ -117,8 +62,22 @@ app.post("/api/check_music_files", (req, res) => {
     const existingFiles = [];
 
     for (const file of files) {
-      const filePath = path.join(dir, file.name);
-      if (fs.existsSync(filePath)) {
+      // file.name 来自请求体：先验类型，再只接受纯文件名并经 safeJoin 锚定
+      // （与 move_to_recycle 同款防护），防其探测音乐目录之外的任意路径存在性
+      if (!file || typeof file !== "object" || typeof file.name !== "string") {
+        return res.status(400).json({
+          success: false,
+          error: "参数错误：files 数组的每项须为含 name 字符串的对象",
+        });
+      }
+      const safeName = safeBasename(file.name);
+      if (!safeName) {
+        return res.status(400).json({
+          success: false,
+          error: "非法文件名",
+        });
+      }
+      if (fs.existsSync(safeJoin(dir, safeName))) {
         existingFiles.push(file.name);
       }
     }
@@ -171,9 +130,7 @@ app.post("/api/upload_music", (req, res) => {
             }
 
             // 根据组别选择对应的目录
-            const config = musicScanner.MUSIC_DIRS.find((c) =>
-              c.dir.includes(uploadGroup)
-            );
+            const config = musicScanner.findConfigByGroup(uploadGroup);
 
             if (!config) {
               return cb(new Error(`未找到组别: ${uploadGroup}`));
@@ -266,8 +223,10 @@ app.post("/api/upload_music", (req, res) => {
         "info"
       );
 
-      // 如果两者都不符合，则拒绝
-      if (!isValidExt && !isValidMime) {
+      // 扩展名白名单为硬性门槛（MIME 客户端可伪造，仅作日志参考）：
+      // 曾为「两者任一通过即收」，伪造 audio/* MIME 可把任意内容以 .html 等扩展名
+      // 写入 resource/musics/，经静态层按扩展名以 text/html 服务 → 存储型 XSS
+      if (!isValidExt) {
         // 删除已上传的文件
         try {
           fs.unlinkSync(filepath);
@@ -314,60 +273,9 @@ app.post("/api/upload_music", (req, res) => {
   }
 });
 
-// 测试上传参数 (用于调试表单提交问题)
-app.post("/api/test_upload_params", (req, res) => {
-  try {
-    // 记录所有请求信息以便调试
-    serverLog(
-      `测试上传参数 - Content-Type: ${req.headers["content-type"]}`,
-      "info"
-    );
-    serverLog(`测试上传参数 - Body: ${JSON.stringify(req.body)}`, "info");
-
-    res.json({
-      success: true,
-      message: "参数测试成功",
-      receivedParams: {
-        contentType: req.headers["content-type"],
-        bodyParams: req.body,
-        hasGroup: req.body && req.body.group ? true : false,
-        groupValue: req.body ? req.body.group : undefined,
-      },
-    });
-  } catch (error) {
-    serverLog(`测试上传参数失败: ${error.message}`, "error");
-    res.status(500).json({
-      success: false,
-      error: `测试失败: ${error.message}`,
-    });
-  }
-});
-
-// 测试表单数据解析
-app.post("/api/test_form_data", upload.none(), (req, res) => {
-  try {
-    serverLog("测试表单数据 - 收到请求", "info");
-    serverLog(`请求头: ${JSON.stringify(req.headers)}`, "info");
-    serverLog(`请求体: ${JSON.stringify(req.body)}`, "info");
-
-    // 检查multer是否正确解析了表单数据
-    const hasGroup = req.body && req.body.group;
-
-    res.json({
-      success: true,
-      message: "表单数据测试",
-      requestHeaders: req.headers,
-      requestBody: req.body,
-      hasGroup: hasGroup,
-    });
-  } catch (error) {
-    serverLog(`测试表单数据失败: ${error.message}`, "error");
-    res.status(500).json({
-      success: false,
-      error: `测试失败: ${error.message}`,
-    });
-  }
-});
+// 测试上传参数与表单解析的调试端点（test_upload_params / test_form_data /
+// test_audio_upload）已移除：会回显任意请求头/请求体并向磁盘写临时文件，
+// 属迁移前遗留的调试面；正常上传链路由 upload_music / check_music_files 承担。
 
 // 检查上传组件状态
 app.get("/api/upload_status", (req, res) => {
@@ -448,7 +356,7 @@ app.get("/api/music_files", (req, res) => {
       });
     }
 
-    const config = musicScanner.MUSIC_DIRS.find((c) => c.dir.includes(group));
+    const config = musicScanner.findConfigByGroup(group);
 
     if (!config) {
       return res.status(400).json({
@@ -510,7 +418,7 @@ app.post("/api/move_to_recycle", (req, res) => {
       });
     }
 
-    const config = musicScanner.MUSIC_DIRS.find((c) => c.dir.includes(group));
+    const config = musicScanner.findConfigByGroup(group);
 
     if (!config) {
       return res.status(400).json({
@@ -559,51 +467,6 @@ app.post("/api/move_to_recycle", (req, res) => {
     res.status(500).json({
       success: false,
       error: `服务器错误: ${error.message}`,
-    });
-  }
-});
-
-// 添加测试音频文件上传端点
-app.post("/api/test_audio_upload", upload.single("file"), (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "没有接收到文件",
-      });
-    }
-
-    // 记录文件信息
-    const fileInfo = {
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      path: req.file.path,
-      extension: path.extname(req.file.originalname).toLowerCase(),
-    };
-
-    serverLog(`测试上传接收到文件: ${JSON.stringify(fileInfo)}`, "info");
-
-    // 返回文件信息
-    res.json({
-      success: true,
-      message: "文件接收成功（仅用于测试）",
-      fileInfo,
-      body: req.body,
-    });
-
-    // 删除测试上传的文件
-    try {
-      fs.unlinkSync(req.file.path);
-      serverLog(`已删除测试上传文件: ${req.file.path}`, "info");
-    } catch (unlinkErr) {
-      serverLog(`删除测试上传文件失败: ${unlinkErr.message}`, "warn");
-    }
-  } catch (error) {
-    serverLog(`测试上传端点错误: ${error.message}`, "error");
-    res.status(500).json({
-      success: false,
-      error: error.message,
     });
   }
 });
