@@ -1,0 +1,2536 @@
+/* ============================================================
+ * NEON STAGE 主题样式（component-theme-neon · 肃酷版）
+ *
+ * 全部规则挂在 html.theme-neon 之下——主题未激活时本文件零影响；
+ * 覆盖策略 = 晚于页面 style.css 注入（JS 追加 <link> 于 head 末尾）+
+ *   html.theme-neon 前缀提高特异性，逐页覆写既有类，不改任何页面文件。
+ *
+ * 肃酷基调（SOLEMN · COOL）：
+ *   - 收敛彩虹：冰青主色 + 品红击发色 + 钢灰发丝线；金只留给胜者
+ *   - 极光不色相漂移、光束更窄更慢、地板更暗（稳定压过炫技）
+ *   - 直角化：覆盖处圆角一律收小；等宽大写微标签、宽字距
+ *   - 荧光只在交互与状态上呼吸，静止元素低辉
+ *
+ * 页面主色映射（<html data-page=…> 由本插件 apply 标注）：
+ *   battle-group1 荧绿 / battle-group1-2 青 / battle-group2 蓝 / battle-group2-2 冰青
+ *   group-battle 紫 / drag 金 / music-draw 橙 / 其余取默认冰青
+ *
+ * 比赛演出守卫（用户需求）：body.battle-mode（BATTLE START 闪屏结束后）
+ *   → 隐藏本主题全部氛围层，只留页面背景图。
+ * ============================================================ */
+
+/* ---------- 令牌 ---------- */
+html.theme-neon {
+  --nt-cyan: #00e5ff;
+  --nt-cyan-s: rgba(0, 229, 255, .5);
+  --nt-cyan-f: rgba(0, 229, 255, .12);
+  --nt-magenta: #ff2e88;
+  --nt-magenta-s: rgba(255, 46, 136, .5);
+  --nt-magenta-f: rgba(255, 46, 136, .12);
+  --nt-violet: #8f6bff;
+  --nt-violet-s: rgba(143, 107, 255, .45);
+  --nt-violet-f: rgba(143, 107, 255, .12);
+  --nt-lime: #3dffa0;
+  --nt-lime-s: rgba(61, 255, 160, .45);
+  --nt-lime-f: rgba(61, 255, 160, .12);
+  --nt-gold: #ffd166;
+  --nt-gold-s: rgba(255, 209, 102, .5);
+  --nt-gold-f: rgba(255, 209, 102, .12);
+  --nt-orange: #ff8a3d;
+  --nt-orange-s: rgba(255, 138, 61, .5);
+  --nt-orange-f: rgba(255, 138, 61, .12);
+  --nt-red: #ff3b5c;
+  --nt-red-s: rgba(255, 59, 92, .5);
+  --nt-red-f: rgba(255, 59, 92, .12);
+  --nt-blue: #3aa0ff;
+  --nt-blue-s: rgba(58, 160, 255, .5);
+  --nt-blue-f: rgba(58, 160, 255, .12);
+  --nt-steel: rgba(150, 170, 220, .22);   /* 钢灰发丝线 */
+  --nt-steel-strong: rgba(170, 190, 240, .4);
+  --nt-ink: #e7ecfb;
+  --nt-ink-dim: #99a3c2;
+  --nt-g1: #10ffa8;
+  --nt-g1-s: rgba(16, 255, 168, .5);
+  --nt-g2: #3aa0ff;
+  --nt-g2-s: rgba(58, 160, 255, .5);
+  --nt-disp: "Segoe UI Black", "Arial Black", "Microsoft YaHei", sans-serif;
+  --nt-mono: "Cascadia Code", "Consolas", "Courier New", monospace;
+}
+
+/* battle-group 系列：按组别分光（用户已确认方案） */
+html.theme-neon[data-page="battle-group1"]   { --na: var(--nt-g1);   --na-s: var(--nt-g1-s); }
+html.theme-neon[data-page="battle-group1-2"] { --na: #23e6c8; --na-s: rgba(35, 230, 200, .5); }
+html.theme-neon[data-page="battle-group2"]   { --na: var(--nt-blue); --na-s: var(--nt-blue-s); }
+html.theme-neon[data-page="battle-group2-2"] { --na: var(--nt-cyan); --na-s: var(--nt-cyan-s); }
+html.theme-neon[data-page="group-battle"]    { --na: var(--nt-violet); --na-s: var(--nt-violet-s); }
+html.theme-neon[data-page="drag"]            { --na: var(--nt-gold); --na-s: var(--nt-gold-s); }
+html.theme-neon[data-page="music-draw"]      { --na: var(--nt-orange); --na-s: var(--nt-orange-s); }
+html.theme-neon                              { --na: var(--nt-cyan); --na-s: var(--nt-cyan-s); }
+
+/* ============================================================
+ * 〇、氛围层（本插件注入的 DOM；默认隐藏，激活后显形）
+ * ============================================================ */
+.neon-scan, .neon-floor, .neon-beams, .neon-ticker { display: none; }
+
+html.theme-neon .neon-scan {
+  display: block;
+  position: fixed; inset: 0; z-index: 120; pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, .14) 0 1px, transparent 1px 3px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+html.theme-neon .neon-floor {
+  display: block;
+  position: fixed; left: -60%; right: -60%; bottom: -6%; height: 42vh;
+  z-index: -1; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(0, 229, 255, .16) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, rgba(255, 46, 136, .12) 1.5px, transparent 1.5px);
+  background-size: 56px 56px; background-position: 0 0;
+  transform: perspective(460px) rotateX(63deg); transform-origin: 50% 0;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 36%, transparent 97%);
+  mask-image: linear-gradient(180deg, transparent, #000 36%, transparent 97%);
+  animation: nt-floor 4.2s linear infinite;
+}
+@keyframes nt-floor { to { background-position: 0 56px, 56px 56px; } }
+
+html.theme-neon .neon-beams { display: block; position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+html.theme-neon .neon-beams i {
+  position: absolute; top: -24vh; width: 20vw; height: 150vh;
+  filter: blur(14px); opacity: .34; transform-origin: 50% 0;
+  background: linear-gradient(180deg, rgba(0, 229, 255, .12), rgba(0, 229, 255, .03) 46%, transparent 72%);
+}
+html.theme-neon .neon-beams i:first-child { left: 6%; animation: nt-beam 16s ease-in-out infinite alternate; }
+html.theme-neon .neon-beams i:last-child {
+  right: 6%;
+  background: linear-gradient(180deg, rgba(255, 46, 136, .11), rgba(255, 46, 136, .03) 46%, transparent 72%);
+  animation: nt-beam 19s ease-in-out infinite alternate-reverse;
+}
+@keyframes nt-beam { from { transform: rotate(12deg); } to { transform: rotate(19deg); } }
+
+/* 跑马灯（仅首页注入）：转播条 */
+html.theme-neon .neon-ticker {
+  display: block;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 130;
+  overflow: hidden; padding: 7px 0;
+  border-bottom: 1px solid var(--nt-steel);
+  background: rgba(4, 3, 14, .8);
+  backdrop-filter: blur(4px);
+}
+html.theme-neon .neon-ticker-in {
+  display: inline-flex; white-space: nowrap;
+  font: 600 11px/1 var(--nt-mono); letter-spacing: .34em;
+  color: rgba(160, 200, 255, .72);
+  animation: nt-tick 34s linear infinite;
+}
+html.theme-neon .neon-ticker-in .tk { padding-right: 64px; }
+html.theme-neon .neon-ticker-in b { color: var(--nt-magenta); font-weight: 600; text-shadow: 0 0 10px var(--nt-magenta-s); }
+@keyframes nt-tick { to { transform: translateX(-50%); } }
+html.theme-neon[data-page="home"] .container { padding-top: 58px; } /* 让位转播条 */
+
+/* ============================================================
+ * 一、全局基底（所有页面：文字 / 按钮 / 选区）
+ * ============================================================ */
+html.theme-neon body { color: var(--nt-ink); }
+html.theme-neon ::selection { background: rgba(0, 229, 255, .28); }
+
+/* 通用按钮：钢灰玻璃底 + 冰青击发（各页 id 级配色在分节里再覆写） */
+html.theme-neon button {
+  border: 1px solid var(--nt-steel-strong);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .015));
+  color: var(--nt-ink);
+  border-radius: 8px;
+  text-shadow: none;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+}
+html.theme-neon button:hover:not(:disabled) {
+  border-color: var(--nt-cyan);
+  background: linear-gradient(180deg, var(--nt-cyan-f), rgba(255, 255, 255, .02));
+  box-shadow: 0 0 16px var(--nt-cyan-f), inset 0 0 12px var(--nt-cyan-f);
+  transform: translateY(-1px);
+}
+html.theme-neon button:active:not(:disabled) { transform: translateY(0); box-shadow: 0 0 8px var(--nt-cyan-f); }
+html.theme-neon button:disabled { opacity: .35; cursor: not-allowed; }
+
+/* ============================================================
+ * 二、首页（home）
+ * ============================================================ */
+html.theme-neon[data-page="home"] header h1 {
+  font-family: var(--nt-disp);
+  font-weight: 900;
+  letter-spacing: .08em;
+  background: linear-gradient(94deg, #8ef3ff 0%, var(--nt-cyan) 22%, var(--nt-violet) 52%, var(--nt-magenta) 80%, #ffd9a8 100%);
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 16px rgba(0, 229, 255, .3)) drop-shadow(0 5px 24px rgba(255, 46, 136, .26));
+  animation: nt-flicker 7s linear infinite;
+}
+html.theme-neon[data-page="home"] header p {
+  letter-spacing: .2em;
+  color: var(--nt-ink-dim);
+}
+
+html.theme-neon[data-page="home"] .start-btn {
+  background: linear-gradient(92deg, rgba(0, 229, 255, .16), rgba(143, 107, 255, .18), rgba(255, 46, 136, .16));
+  border: 1px solid rgba(0, 229, 255, .75);
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 229, 255, .22), 0 0 56px rgba(255, 46, 136, .16), inset 0 0 20px rgba(143, 107, 255, .1);
+  /* 本规则特异性高于 .nt-reveal（enhance.js 揭示动画会写 --d 延迟）——必须在此
+     合并揭示与脉冲两个动画：只写 nt-cta 会覆盖揭示动画，按钮永久停在
+     nt-reveal 的 opacity:0 基态（2026-09-30 事故复盘）。 */
+  animation: nt-rise .7s cubic-bezier(.16, .8, .24, 1) var(--d, 0s) both, nt-cta 3s ease-in-out 1.2s infinite;
+}
+html.theme-neon[data-page="home"] .start-btn:hover {
+  background: linear-gradient(92deg, rgba(0, 229, 255, .28), rgba(143, 107, 255, .3), rgba(255, 46, 136, .28));
+  box-shadow: 0 0 30px rgba(0, 229, 255, .38), 0 0 80px rgba(255, 46, 136, .28), inset 0 0 24px rgba(143, 107, 255, .16);
+}
+html.theme-neon[data-page="home"] .start-btn .btn-icon { color: var(--nt-cyan); filter: drop-shadow(0 0 8px var(--nt-cyan-s)); }
+
+html.theme-neon[data-page="home"] .nav-btn {
+  border: 1px solid var(--nt-steel);
+  background: rgba(8, 7, 22, .55);
+  border-radius: 10px;
+  backdrop-filter: blur(4px);
+}
+html.theme-neon[data-page="home"] .nav-btn:hover {
+  border-color: var(--nt-cyan);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .45), 0 0 18px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="home"] .nav-btn .btn-icon {
+  border-color: var(--nt-steel);
+  color: var(--nt-cyan);
+  filter: drop-shadow(0 0 6px var(--nt-cyan-s));
+}
+html.theme-neon[data-page="home"] .nav-btn:hover .btn-label { color: #fff; }
+
+html.theme-neon[data-page="home"] footer {
+  border-top: 1px solid var(--nt-steel);
+  background: linear-gradient(180deg, rgba(4, 3, 14, .25), rgba(4, 3, 14, .88) 55%);
+}
+
+/* ============================================================
+ * 三、赛制选择页（select）
+ * ============================================================ */
+html.theme-neon[data-page="select"] .container {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+  background-color: rgba(7, 6, 20, .8);
+}
+html.theme-neon[data-page="select"] header h1 {
+  background: linear-gradient(94deg, #8ef3ff, var(--nt-cyan) 24%, var(--nt-violet) 56%, var(--nt-magenta));
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 14px rgba(0, 229, 255, .3));
+}
+html.theme-neon[data-page="select"] .group-label {
+  font-family: var(--nt-mono);
+  letter-spacing: .42em;
+  color: var(--nt-ink-dim);
+}
+html.theme-neon[data-page="select"] .group-label .zh { color: var(--nt-ink); }
+
+/* 赛制卡：沿用页面配色 class 映射霓虹组别光 */
+html.theme-neon[data-page="select"] .mode-card {
+  --na: var(--nt-cyan); --na-s: var(--nt-cyan-s); --na-f: var(--nt-cyan-f);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(12, 10, 32, .88), rgba(6, 5, 18, .94)) padding-box,
+    linear-gradient(150deg, var(--na), rgba(255, 255, 255, .08) 46%, var(--na)) border-box;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+html.theme-neon[data-page="select"] .mode-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .5), 0 0 24px var(--na-f), 0 0 8px var(--na-s);
+}
+html.theme-neon[data-page="select"] .card--g1    { --na: #10ffa8; --na-s: rgba(16, 255, 168, .5); --na-f: rgba(16, 255, 168, .12); }
+html.theme-neon[data-page="select"] .card--g1-alt{ --na: #23e6c8; --na-s: rgba(35, 230, 200, .5); --na-f: rgba(35, 230, 200, .12); }
+html.theme-neon[data-page="select"] .card--g2    { --na: #3aa0ff; --na-s: rgba(58, 160, 255, .5); --na-f: rgba(58, 160, 255, .12); }
+html.theme-neon[data-page="select"] .card--g2-alt{ --na: #00e5ff; --na-s: rgba(0, 229, 255, .5);  --na-f: rgba(0, 229, 255, .12); }
+html.theme-neon[data-page="select"] .card--team  { --na: #8f6bff; --na-s: rgba(143, 107, 255, .5); --na-f: rgba(143, 107, 255, .12); }
+html.theme-neon[data-page="select"] .card--drag  { --na: #ffd166; --na-s: rgba(255, 209, 102, .5); --na-f: rgba(255, 209, 102, .12); }
+html.theme-neon[data-page="select"] .card--music { --na: #ff8a3d; --na-s: rgba(255, 138, 61, .5);  --na-f: rgba(255, 138, 61, .12); }
+
+html.theme-neon[data-page="select"] .card-icon {
+  background: rgba(8, 6, 22, .6);
+  border: 1px solid var(--na);
+  color: var(--na);
+  box-shadow: 0 0 14px var(--na-f), inset 0 0 12px var(--na-f);
+  filter: drop-shadow(0 0 6px var(--na-s));
+}
+html.theme-neon[data-page="select"] .card-name { color: #fff; }
+html.theme-neon[data-page="select"] .card-desc { color: var(--nt-ink-dim); }
+
+html.theme-neon[data-page="select"] .setting-footer-btn {
+  border: 1px dashed var(--nt-steel-strong);
+  border-radius: 10px;
+  letter-spacing: .3em;
+}
+html.theme-neon[data-page="select"] .setting-footer-btn:hover {
+  border-color: var(--nt-cyan);
+  box-shadow: 0 0 18px var(--nt-cyan-f);
+}
+
+/* ============================================================
+ * 四、游戏中心（games）
+ * ============================================================ */
+html.theme-neon[data-page="games"] .container {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+}
+html.theme-neon[data-page="games"] header h1 {
+  background: linear-gradient(94deg, #8ef3ff, var(--nt-cyan) 26%, var(--nt-violet) 58%, var(--nt-magenta));
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 14px rgba(0, 229, 255, .3));
+}
+html.theme-neon[data-page="games"] .subtitle {
+  font-family: var(--nt-mono);
+  letter-spacing: .4em;
+  color: var(--nt-cyan);
+  text-shadow: 0 0 12px var(--nt-cyan-s);
+}
+html.theme-neon[data-page="games"] .game-card {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+  background: rgba(9, 7, 24, .72);
+}
+html.theme-neon[data-page="games"] .game-card:hover {
+  border-color: var(--nt-cyan);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .45), 0 0 22px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="games"] .game-icon { color: var(--nt-cyan); filter: drop-shadow(0 0 10px var(--nt-cyan-s)); }
+html.theme-neon[data-page="games"] .game-card h2 { color: var(--nt-cyan); text-shadow: 0 0 12px var(--nt-cyan-s); letter-spacing: .1em; }
+html.theme-neon[data-page="games"] .game-card p { color: var(--nt-ink-dim); }
+
+/* ============================================================
+ * 五、单人对战系列（battle-group1 / 1-2 / 2 / 2-2，主色 --na 按组别）
+ * ============================================================ */
+html.theme-neon[data-page^="battle-group"] .container {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+  background-color: rgba(7, 6, 20, .84);
+}
+html.theme-neon[data-page^="battle-group"] header h1 {
+  font-family: var(--nt-disp);
+  color: var(--na);
+  letter-spacing: .14em;
+  text-shadow: 0 0 10px var(--na-s), 0 0 34px var(--na-s);
+}
+
+/* 章节轮次 HUD：警示条纹 + 双色光缘 */
+html.theme-neon[data-page^="battle-group"] #battle-info {
+  border: 1px solid var(--nt-steel);
+  border-radius: 8px;
+  background:
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, .025) 0 10px, transparent 10px 20px),
+    linear-gradient(90deg, rgba(0, 229, 255, .06), rgba(143, 107, 255, .05), rgba(255, 46, 136, .06));
+}
+html.theme-neon[data-page^="battle-group"] #battle-info h2 { letter-spacing: .18em; }
+html.theme-neon[data-page^="battle-group"] #chapter-number,
+html.theme-neon[data-page^="battle-group"] #round-number {
+  color: var(--na);
+  font-family: var(--nt-mono);
+  text-shadow: 0 0 12px var(--na-s);
+}
+
+/* 选手卡 → VS 竞技场侧席（P1 组别光 / P2 品红） */
+html.theme-neon[data-page^="battle-group"] .player {
+  border: 1px solid var(--na);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(10, 8, 26, .88), rgba(6, 5, 18, .94));
+  box-shadow: inset 0 0 28px rgba(0, 0, 0, .3);
+}
+html.theme-neon[data-page^="battle-group"] #player2 { border-color: var(--nt-magenta); }
+html.theme-neon[data-page^="battle-group"] .player h3 {
+  font-family: var(--nt-disp);
+  font-size: 30px;
+  letter-spacing: .1em;
+  color: var(--na);
+  text-shadow: 0 0 8px var(--na-s), 0 0 26px var(--na-s);
+  border-bottom: 1px solid var(--nt-steel);
+}
+html.theme-neon[data-page^="battle-group"] #player2 h3 {
+  color: var(--nt-magenta);
+  text-shadow: 0 0 8px var(--nt-magenta-s), 0 0 26px var(--nt-magenta-s);
+}
+html.theme-neon[data-page^="battle-group"] .player:hover {
+  box-shadow: inset 0 0 34px var(--na-f), 0 0 22px var(--na-f);
+}
+html.theme-neon[data-page^="battle-group"] #player2:hover {
+  box-shadow: inset 0 0 34px var(--nt-magenta-f), 0 0 22px var(--nt-magenta-f);
+}
+
+/* 动作按钮：语义色霓虹化（沿用页面既有 id 语义） */
+html.theme-neon[data-page^="battle-group"] #draw-players-btn { border-color: var(--nt-blue);   box-shadow: 0 0 12px var(--nt-blue-f); }
+html.theme-neon[data-page^="battle-group"] #draw-music-btn   { border-color: var(--nt-orange); box-shadow: 0 0 12px var(--nt-orange-f); }
+html.theme-neon[data-page^="battle-group"] #draw-tricks-btn  { border-color: var(--nt-lime);   box-shadow: 0 0 12px var(--nt-lime-f); }
+html.theme-neon[data-page^="battle-group"] #play-music-btn   { border-color: var(--nt-magenta);box-shadow: 0 0 12px var(--nt-magenta-f); }
+html.theme-neon[data-page^="battle-group"] #clear-winner-btn { border-color: var(--nt-red);    box-shadow: 0 0 12px var(--nt-red-f); }
+html.theme-neon[data-page^="battle-group"] #next-round-btn   { border-color: var(--nt-violet); box-shadow: 0 0 12px var(--nt-violet-f); }
+
+/* 抽取结果面板 */
+html.theme-neon[data-page^="battle-group"] .random-tricks,
+html.theme-neon[data-page^="battle-group"] .music {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+  background: rgba(9, 7, 24, .8);
+}
+html.theme-neon[data-page^="battle-group"] .random-tricks h3,
+html.theme-neon[data-page^="battle-group"] .music h3 {
+  font-family: var(--nt-mono);
+  font-size: 11px;
+  letter-spacing: .32em;
+  color: var(--nt-ink-dim);
+}
+html.theme-neon[data-page^="battle-group"] #music-name {
+  color: var(--nt-orange);
+  text-shadow: 0 0 10px var(--nt-orange-s), 0 0 32px var(--nt-orange-s);
+}
+html.theme-neon[data-page^="battle-group"] #random-tricks-display { letter-spacing: .06em; }
+
+/* 技名高亮（页面自带动画改挂本主题关键帧：P1 冰青 / P2 品红） */
+html.theme-neon[data-page^="battle-group"] .tech-highlight {
+  color: var(--nt-cyan);
+  border: 1px solid rgba(0, 229, 255, .55);
+  border-radius: 8px;
+  background: rgba(8, 6, 22, .7);
+  text-shadow: 0 0 8px var(--nt-cyan-s);
+  box-shadow: 0 0 12px var(--nt-cyan-f);
+  animation: nt-glow-cyan 2.2s ease-in-out infinite, nt-float 3.2s ease-in-out infinite;
+}
+html.theme-neon[data-page^="battle-group"] .tech-highlight.player2 {
+  color: var(--nt-magenta);
+  border-color: rgba(255, 46, 136, .55);
+  text-shadow: 0 0 8px var(--nt-magenta-s);
+  box-shadow: 0 0 12px var(--nt-magenta-f);
+  animation: nt-glow-magenta 2.2s ease-in-out infinite, nt-float 3.2s ease-in-out infinite;
+}
+html.theme-neon[data-page^="battle-group"] .tech-highlight.crossed {
+  animation: none !important;
+  color: var(--nt-red) !important;
+  box-shadow: none;
+}
+
+/* 技池 */
+html.theme-neon[data-page^="battle-group"] .tricks-pool {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+  background: rgba(8, 6, 20, .82);
+}
+html.theme-neon[data-page^="battle-group"] .tricks-pool h3 {
+  font-family: var(--nt-mono);
+  font-size: 11px;
+  letter-spacing: .32em;
+  color: var(--nt-ink-dim);
+}
+html.theme-neon[data-page^="battle-group"] .tricks-pool-player {
+  border: 1px solid var(--nt-steel);
+  border-radius: 8px;
+}
+html.theme-neon[data-page^="battle-group"] .trick-item {
+  border: 1px solid var(--nt-steel);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .035);
+}
+html.theme-neon[data-page^="battle-group"] .trick-item:hover {
+  border-color: var(--na);
+  box-shadow: 0 0 12px var(--na-f);
+}
+html.theme-neon[data-page^="battle-group"] .trick-item.crossed { color: var(--nt-red); }
+
+/* 胜者（金只属于胜者） */
+html.theme-neon[data-page^="battle-group"] .winner {
+  border: 2px solid var(--nt-gold) !important;
+  background: rgba(24, 18, 4, .8) !important;
+  animation: nt-win-pulse 1.8s ease-in-out infinite;
+}
+html.theme-neon[data-page^="battle-group"] .winner h3 {
+  color: var(--nt-gold) !important;
+  text-shadow: 0 0 10px var(--nt-gold-s), 0 0 30px var(--nt-gold-s) !important;
+}
+html.theme-neon[data-page^="battle-group"] .winner-announcement {
+  border: 1px solid var(--nt-gold);
+  border-radius: 10px;
+  background: rgba(22, 16, 4, .92);
+  color: var(--nt-gold);
+  text-shadow: 0 0 14px var(--nt-gold-s);
+  box-shadow: 0 0 34px var(--nt-gold-f);
+}
+
+/* 章节弹窗 */
+html.theme-neon[data-page^="battle-group"] .prompt-content {
+  border: 1px solid var(--nt-steel-strong);
+  border-radius: 10px;
+  background: rgba(10, 8, 24, .95);
+}
+
+/* —— battle-group2 家族专属（抽签式结构：#playerList 名单 + 大字展示位） —— */
+html.theme-neon[data-page="battle-group2"] header,
+html.theme-neon[data-page="battle-group2-2"] header {
+  border-bottom: 1px solid var(--nt-steel);
+  background:
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, .02) 0 10px, transparent 10px 20px),
+    linear-gradient(90deg, rgba(0, 229, 255, .06), rgba(143, 107, 255, .05), rgba(255, 46, 136, .05)),
+    rgba(4, 3, 14, .82);
+}
+html.theme-neon[data-page="battle-group2"] main,
+html.theme-neon[data-page="battle-group2-2"] main {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+  background-color: rgba(7, 6, 20, .84);
+  position: relative;
+}
+html.theme-neon[data-page="battle-group2"] main::before,
+html.theme-neon[data-page="battle-group2-2"] main::before {
+  content: ""; position: absolute; top: -1px; left: -1px; width: 15px; height: 15px;
+  border-top: 2px solid var(--na); border-left: 2px solid var(--na);
+  filter: drop-shadow(0 0 4px var(--na-s)); pointer-events: none;
+}
+html.theme-neon[data-page="battle-group2"] main::after,
+html.theme-neon[data-page="battle-group2-2"] main::after {
+  content: ""; position: absolute; bottom: -1px; right: -1px; width: 15px; height: 15px;
+  border-bottom: 2px solid var(--na); border-right: 2px solid var(--na);
+  filter: drop-shadow(0 0 4px var(--na-s)); pointer-events: none;
+}
+html.theme-neon[data-page="battle-group2"] h2.small-text,
+html.theme-neon[data-page="battle-group2-2"] h2.small-text {
+  font: 700 11px/1 var(--nt-mono);
+  letter-spacing: .32em;
+  color: var(--nt-ink-dim);
+}
+html.theme-neon[data-page="battle-group2"] h3.large-text,
+html.theme-neon[data-page="battle-group2-2"] h3.large-text {
+  font-family: var(--nt-disp);
+  letter-spacing: .1em;
+  text-shadow: 0 0 12px currentColor, 0 0 36px currentColor;
+}
+html.theme-neon[data-page="battle-group2"] #currentPlayer,
+html.theme-neon[data-page="battle-group2-2"] #currentPlayer { color: var(--na); }
+html.theme-neon[data-page="battle-group2"] #currentTrick,
+html.theme-neon[data-page="battle-group2-2"] #currentTrick { color: var(--nt-lime); }
+html.theme-neon[data-page="battle-group2"] #currentMusic,
+html.theme-neon[data-page="battle-group2-2"] #currentMusic { color: var(--nt-orange); }
+html.theme-neon[data-page="battle-group2"] li,
+html.theme-neon[data-page="battle-group2-2"] li {
+  border: 1px solid var(--nt-steel);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .035);
+  text-align: center;
+}
+html.theme-neon[data-page="battle-group2"] li:hover,
+html.theme-neon[data-page="battle-group2-2"] li:hover {
+  border-color: var(--na);
+  box-shadow: 0 0 12px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="battle-group2"] li.crossed,
+html.theme-neon[data-page="battle-group2-2"] li.crossed { color: var(--nt-red); }
+html.theme-neon[data-page="battle-group2"] #shuffleButton,
+html.theme-neon[data-page="battle-group2-2"] #shuffleButton { border-color: var(--nt-blue); box-shadow: 0 0 12px var(--nt-blue-f); }
+html.theme-neon[data-page="battle-group2"] #drawTrickButton,
+html.theme-neon[data-page="battle-group2-2"] #drawTrickButton { border-color: var(--nt-lime); box-shadow: 0 0 12px var(--nt-lime-f); }
+html.theme-neon[data-page="battle-group2"] #drawMusicButton,
+html.theme-neon[data-page="battle-group2-2"] #drawMusicButton { border-color: var(--nt-orange); box-shadow: 0 0 12px var(--nt-orange-f); }
+html.theme-neon[data-page="battle-group2"] #playMusicButton,
+html.theme-neon[data-page="battle-group2-2"] #playMusicButton { border-color: var(--nt-magenta); box-shadow: 0 0 12px var(--nt-magenta-f); }
+html.theme-neon[data-page="battle-group2"] #nextPlayerButton,
+html.theme-neon[data-page="battle-group2-2"] #nextPlayerButton { border-color: var(--nt-violet); box-shadow: 0 0 12px var(--nt-violet-f); }
+html.theme-neon[data-page="battle-group2"] #clearCacheButton,
+html.theme-neon[data-page="battle-group2-2"] #clearCacheButton { border-color: var(--nt-red); box-shadow: 0 0 12px var(--nt-red-f); }
+
+/* ============================================================
+ * 六、团体赛（group-battle，主色紫）
+ * ============================================================ */
+html.theme-neon[data-page="group-battle"] .container {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+  background-color: rgba(7, 6, 20, .84);
+}
+html.theme-neon[data-page="group-battle"] header h1 {
+  font-family: var(--nt-disp);
+  color: var(--nt-violet);
+  letter-spacing: .14em;
+  text-shadow: 0 0 10px var(--nt-violet-s), 0 0 34px var(--nt-violet-s);
+}
+html.theme-neon[data-page="group-battle"] .section-title {
+  font-family: var(--nt-mono);
+  font-size: 11px;
+  letter-spacing: .32em;
+  color: var(--nt-ink-dim);
+}
+html.theme-neon[data-page="group-battle"] #status-section {
+  border: 1px solid var(--nt-steel);
+  border-radius: 8px;
+  background:
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, .025) 0 10px, transparent 10px 20px),
+    linear-gradient(90deg, rgba(143, 107, 255, .07), rgba(0, 229, 255, .05), rgba(255, 46, 136, .06));
+}
+html.theme-neon[data-page="group-battle"] #bracket-status {
+  color: var(--nt-violet);
+  text-shadow: 0 0 10px var(--nt-violet-s);
+  letter-spacing: .2em;
+}
+html.theme-neon[data-page="group-battle"] #unassigned-section {
+  border: 1px dashed var(--nt-violet);
+  border-radius: 10px;
+}
+html.theme-neon[data-page="group-battle"] .member-chip {
+  border: 1px solid var(--nt-steel);
+  border-radius: 7px;
+}
+html.theme-neon[data-page="group-battle"] .member-chip:hover {
+  border-color: var(--nt-violet);
+  box-shadow: 0 0 12px var(--nt-violet-f);
+}
+html.theme-neon[data-page="group-battle"] .member-chip.selected {
+  border-color: var(--nt-violet);
+  box-shadow: 0 0 14px var(--nt-violet-f), inset 0 0 10px var(--nt-violet-f);
+}
+
+html.theme-neon[data-page="group-battle"] .group-card {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+  background: rgba(9, 7, 24, .78);
+}
+html.theme-neon[data-page="group-battle"] .group-title {
+  font-family: var(--nt-mono);
+  letter-spacing: .26em;
+  color: var(--nt-violet);
+  text-shadow: 0 0 10px var(--nt-violet-s);
+}
+html.theme-neon[data-page="group-battle"] .member-name { border-radius: 6px; }
+html.theme-neon[data-page="group-battle"] .member-name.selectable:hover { box-shadow: 0 0 10px var(--nt-violet-f); }
+html.theme-neon[data-page="group-battle"] .member-name.active-fighter {
+  border-color: var(--nt-gold);
+  color: var(--nt-gold);
+  text-shadow: 0 0 8px var(--nt-gold-s);
+}
+html.theme-neon[data-page="group-battle"] .group-card.selected-group {
+  border-color: var(--nt-gold);
+  box-shadow: 0 0 20px var(--nt-gold-f);
+}
+html.theme-neon[data-page="group-battle"] .group-card.recommended { animation: nt-violet-pulse 1.6s infinite; }
+html.theme-neon[data-page="group-battle"] .group-card.eliminated { border-color: rgba(255, 59, 92, .3); }
+
+/* 对战竞技场：左右分光 + VS 徽记 */
+html.theme-neon[data-page="group-battle"] .arena-player {
+  border: 1px solid var(--nt-cyan);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(10, 8, 26, .88), rgba(6, 5, 18, .94));
+}
+html.theme-neon[data-page="group-battle"] #arena-player2 { border-color: var(--nt-magenta); }
+html.theme-neon[data-page="group-battle"] .arena-group-label {
+  font-family: var(--nt-mono);
+  letter-spacing: .3em;
+  color: var(--nt-cyan);
+}
+html.theme-neon[data-page="group-battle"] #arena-player2 .arena-group-label { color: var(--nt-magenta); }
+html.theme-neon[data-page="group-battle"] .arena-player-name {
+  font-family: var(--nt-disp);
+  letter-spacing: .1em;
+  color: var(--nt-cyan);
+  text-shadow: 0 0 8px var(--nt-cyan-s), 0 0 26px var(--nt-cyan-s);
+}
+html.theme-neon[data-page="group-battle"] #arena-player2 .arena-player-name {
+  color: var(--nt-magenta);
+  text-shadow: 0 0 8px var(--nt-magenta-s), 0 0 26px var(--nt-magenta-s);
+}
+html.theme-neon[data-page="group-battle"] .vs-divider {
+  position: relative;
+  font-family: var(--nt-disp);
+  color: #fff;
+  text-shadow: 0 0 12px var(--nt-cyan-s), 0 0 30px var(--nt-magenta-s);
+}
+html.theme-neon[data-page="group-battle"] .vs-divider::before {
+  content: "";
+  position: absolute; inset: -16px -22px;
+  border: 1px dashed rgba(0, 229, 255, .5);
+  border-radius: 50%;
+  animation: nt-spin 9s linear infinite;
+}
+html.theme-neon[data-page="group-battle"] .arena-player.winner-anim {
+  border-color: var(--nt-gold);
+  animation: nt-win-pulse 1.8s infinite;
+}
+html.theme-neon[data-page="group-battle"] .arena-player.loser-anim { border-color: var(--nt-red); }
+
+/* 技池 chips / 音乐信息 / 记录 */
+html.theme-neon[data-page="group-battle"] .trick-chip { border: 1px solid var(--nt-steel); border-radius: 7px; }
+html.theme-neon[data-page="group-battle"] .trick-chip.selected-trick {
+  border-color: var(--nt-violet);
+  box-shadow: 0 0 12px var(--nt-violet-f);
+}
+html.theme-neon[data-page="group-battle"] .music-info-track {
+  color: var(--nt-orange);
+  text-shadow: 0 0 10px var(--nt-orange-s);
+}
+html.theme-neon[data-page="group-battle"] .history-item {
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 8px;
+}
+
+/* 按钮语义色 */
+html.theme-neon[data-page="group-battle"] #match-groups-btn { border-color: var(--nt-violet); box-shadow: 0 0 12px var(--nt-violet-f); }
+html.theme-neon[data-page="group-battle"] #draw-music-btn   { border-color: var(--nt-orange); box-shadow: 0 0 12px var(--nt-orange-f); }
+html.theme-neon[data-page="group-battle"] #start-battle-btn { border-color: var(--nt-magenta);box-shadow: 0 0 12px var(--nt-magenta-f); }
+html.theme-neon[data-page="group-battle"] #clear-winner-btn { border-color: var(--nt-red);    box-shadow: 0 0 12px var(--nt-red-f); }
+html.theme-neon[data-page="group-battle"] #next-match-btn   { border-color: var(--nt-cyan);   box-shadow: 0 0 12px var(--nt-cyan-f); }
+
+/* VICTORY / ELIMINATED 全屏演出（页面既有节点，换挂主题关键帧与配色） */
+html.theme-neon[data-page="group-battle"] .win-text,
+html.theme-neon[data-page="group-battle"] .kill-text {
+  font-family: var(--nt-disp);
+  letter-spacing: .16em;
+}
+html.theme-neon[data-page="group-battle"] .win-text {
+  color: #fff4d6;
+  text-shadow: 0 0 18px var(--nt-gold-s), 0 0 52px rgba(255, 170, 40, .55), 0 0 110px rgba(255, 120, 30, .4);
+}
+html.theme-neon[data-page="group-battle"] .kill-text {
+  color: #ffd9df;
+  text-shadow: 0 0 18px var(--nt-red-s), 0 0 52px rgba(255, 0, 60, .5);
+}
+html.theme-neon[data-page="group-battle"] .anim-overlay::before {
+  content: "";
+  position: absolute; inset: -50%;
+  background: repeating-conic-gradient(from 0deg,
+    rgba(255, 46, 136, .1) 0 6deg, transparent 6deg 14deg,
+    rgba(0, 229, 255, .08) 14deg 20deg, transparent 20deg 28deg);
+  animation: nt-spin 26s linear infinite;
+  pointer-events: none;
+}
+html.theme-neon[data-page="group-battle"] .crown { color: var(--nt-gold); filter: drop-shadow(0 0 14px var(--nt-gold-s)); }
+
+/* ============================================================
+ * 七、对阵树（drag，主色金）
+ * ============================================================ */
+html.theme-neon[data-page="drag"] .app-wrapper { border-radius: 12px; }
+html.theme-neon[data-page="drag"] .control-bar {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+  background:
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, .02) 0 10px, transparent 10px 20px),
+    linear-gradient(90deg, rgba(255, 209, 102, .06), rgba(0, 229, 255, .05), rgba(255, 46, 136, .05));
+}
+html.theme-neon[data-page="drag"] .control-bar h1 {
+  font-family: var(--nt-disp);
+  letter-spacing: .12em;
+  color: var(--nt-gold);
+  text-shadow: 0 0 10px var(--nt-gold-s);
+}
+html.theme-neon[data-page="drag"] .mode-badge {
+  border: 1px solid var(--nt-gold);
+  border-radius: 999px;
+  color: var(--nt-gold);
+  text-shadow: 0 0 10px var(--nt-gold-s);
+  box-shadow: 0 0 12px var(--nt-gold-f);
+}
+html.theme-neon[data-page="drag"] .source-btn {
+  border: 1px solid var(--nt-steel);
+  border-radius: 7px;
+}
+html.theme-neon[data-page="drag"] .source-btn.active {
+  color: var(--nt-cyan);
+  border-color: var(--nt-cyan);
+  background: var(--nt-cyan-f);
+  box-shadow: inset 0 0 10px var(--nt-cyan-f), 0 0 10px var(--nt-cyan-f);
+  text-shadow: 0 0 8px var(--nt-cyan-s);
+}
+html.theme-neon[data-page="drag"] .round-label {
+  font-family: var(--nt-mono);
+  letter-spacing: .3em;
+  color: var(--nt-magenta);
+  text-shadow: 0 0 10px var(--nt-magenta-s);
+}
+html.theme-neon[data-page="drag"] .canvas {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+  background:
+    radial-gradient(80% 90% at 50% 50%, rgba(22, 14, 50, .45), rgba(5, 3, 15, .9)),
+    linear-gradient(180deg, rgba(9, 7, 26, .6), rgba(6, 4, 17, .85));
+}
+html.theme-neon[data-page="drag"] .center-axis {
+  background: linear-gradient(180deg, transparent, var(--nt-violet-s), transparent);
+  box-shadow: 0 0 12px var(--nt-violet-s);
+}
+
+/* 对阵节点：状态分光 */
+html.theme-neon[data-page="drag"] .node-box {
+  border: 1px solid var(--nt-steel);
+  border-radius: 8px;
+  background: rgba(9, 7, 24, .85);
+  backdrop-filter: blur(3px);
+}
+html.theme-neon[data-page="drag"] .node-box.state-occupied { border-color: var(--nt-steel-strong); }
+html.theme-neon[data-page="drag"] .node-box.state-advanced,
+html.theme-neon[data-page="drag"] .node-box.state-advanced .node-name {
+  border-color: var(--nt-cyan);
+  box-shadow: 0 0 14px var(--nt-cyan-f), inset 0 0 12px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="drag"] .node-box.state-pending { border-style: dashed; opacity: .75; }
+html.theme-neon[data-page="drag"] .node-box.dragging { border-color: var(--nt-magenta); box-shadow: 0 0 16px var(--nt-magenta-f); }
+html.theme-neon[data-page="drag"] .node-box.drop-target { border-color: var(--nt-cyan); border-style: dashed; }
+html.theme-neon[data-page="drag"] .node-box.champion-slot { border-color: var(--nt-gold); }
+html.theme-neon[data-page="drag"] .champion-glow {
+  border-color: var(--nt-gold) !important;
+  box-shadow: 0 0 22px var(--nt-gold-f), inset 0 0 16px var(--nt-gold-f) !important;
+  animation: nt-win-pulse 1.8s ease-in-out infinite;
+}
+html.theme-neon[data-page="drag"] .node-box .badge {
+  font-family: var(--nt-mono);
+  letter-spacing: .2em;
+}
+html.theme-neon[data-page="drag"] .node-box .w-badge { color: var(--nt-cyan); }
+html.theme-neon[data-page="drag"] .node-box .l-badge { color: var(--nt-red); }
+
+/* 连线：霓虹流动虚线（CSS 覆写 SVG presentation 属性） */
+html.theme-neon[data-page="drag"] .lines-layer line,
+html.theme-neon[data-page="drag"] .lines-layer polyline {
+  stroke: rgba(0, 229, 255, .6);
+  stroke-dasharray: 7 9;
+  filter: drop-shadow(0 0 4px rgba(0, 229, 255, .5));
+  animation: nt-dash 1.2s linear infinite;
+}
+html.theme-neon[data-page="drag"] .lines-layer .active-line {
+  stroke: #00e5ff;
+  stroke-dasharray: none;
+  filter: drop-shadow(0 0 6px rgba(0, 229, 255, .8));
+}
+html.theme-neon[data-page="drag"] .lines-layer .pending-line { stroke: rgba(150, 170, 220, .3); animation: none; }
+
+/* 音乐栏 / 状态栏 / 弹窗 */
+html.theme-neon[data-page="drag"] .music-bar {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+}
+html.theme-neon[data-page="drag"] .music-display {
+  color: var(--nt-orange);
+  text-shadow: 0 0 10px var(--nt-orange-s);
+}
+html.theme-neon[data-page="drag"] .draw-music-btn   { border-color: var(--nt-orange); box-shadow: 0 0 12px var(--nt-orange-f); }
+html.theme-neon[data-page="drag"] .start-battle-btn { border-color: var(--nt-magenta);box-shadow: 0 0 12px var(--nt-magenta-f); }
+html.theme-neon[data-page="drag"] .shuffle-btn      { border-color: var(--nt-gold);   box-shadow: 0 0 12px var(--nt-gold-f); }
+html.theme-neon[data-page="drag"] .status-bar {
+  font-family: var(--nt-mono);
+  letter-spacing: .18em;
+  color: var(--nt-ink-dim);
+}
+html.theme-neon[data-page="drag"] .modal-box { border: 1px solid var(--nt-steel-strong); border-radius: 10px; }
+html.theme-neon[data-page="drag"] .modal-close-btn {
+  border: 1px solid var(--nt-magenta);
+  box-shadow: 0 0 14px var(--nt-magenta-f);
+}
+
+/* ============================================================
+ * 八、音乐抽取（music-draw，三曲库分光：冰青 / 品红 / 金）
+ * ============================================================ */
+html.theme-neon[data-page="music-draw"] .container {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+  background-color: rgba(7, 6, 20, .9);
+}
+html.theme-neon[data-page="music-draw"] header h1 {
+  background: linear-gradient(94deg, #ffd9a8, var(--nt-orange) 30%, var(--nt-magenta) 70%, var(--nt-violet));
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 14px rgba(255, 138, 61, .35));
+}
+html.theme-neon[data-page="music-draw"] .music-group { border-radius: 10px; }
+html.theme-neon[data-page="music-draw"] .music-group:nth-child(1) { border-color: rgba(0, 229, 255, .45); }
+html.theme-neon[data-page="music-draw"] .music-group:nth-child(2) { border-color: rgba(255, 46, 136, .45); }
+html.theme-neon[data-page="music-draw"] .music-group:nth-child(3) { border-color: rgba(255, 209, 102, .45); }
+html.theme-neon[data-page="music-draw"] .music-group:nth-child(1) h2 {
+  color: var(--nt-cyan); text-shadow: 0 0 12px var(--nt-cyan-s);
+}
+html.theme-neon[data-page="music-draw"] .music-group:nth-child(2) h2 {
+  color: var(--nt-magenta); text-shadow: 0 0 12px var(--nt-magenta-s);
+}
+html.theme-neon[data-page="music-draw"] .music-group:nth-child(3) h2 {
+  color: var(--nt-gold); text-shadow: 0 0 12px var(--nt-gold-s);
+}
+
+/* 抽取窗口：老虎机上下渐隐 + 内嵌扫描线 */
+html.theme-neon[data-page="music-draw"] .music-info {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 8px;
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, .025) 0 2px, transparent 2px 6px),
+    linear-gradient(180deg, rgba(0, 0, 0, .4), rgba(0, 0, 0, .25));
+}
+html.theme-neon[data-page="music-draw"] .music-info::before,
+html.theme-neon[data-page="music-draw"] .music-info::after {
+  content: "";
+  position: absolute; left: 0; right: 0; height: 34%;
+  background: linear-gradient(180deg, rgba(5, 3, 15, .95), transparent);
+  pointer-events: none;
+}
+html.theme-neon[data-page="music-draw"] .music-info::before { top: 0; }
+html.theme-neon[data-page="music-draw"] .music-info::after { bottom: 0; transform: rotate(180deg); }
+html.theme-neon[data-page="music-draw"] .music-group:nth-child(1) .music-info { color: var(--nt-cyan);   text-shadow: 0 0 10px var(--nt-cyan-s); }
+html.theme-neon[data-page="music-draw"] .music-group:nth-child(2) .music-info { color: var(--nt-magenta);text-shadow: 0 0 10px var(--nt-magenta-s); }
+html.theme-neon[data-page="music-draw"] .music-group:nth-child(3) .music-info { color: var(--nt-gold);   text-shadow: 0 0 10px var(--nt-gold-s); }
+
+html.theme-neon[data-page="music-draw"] .draw-btn   { border: 2px solid var(--nt-lime);   border-radius: 8px; box-shadow: 0 0 12px var(--nt-lime-f); }
+html.theme-neon[data-page="music-draw"] .battle-btn { border: 2px solid var(--nt-magenta);border-radius: 8px; box-shadow: 0 0 12px var(--nt-magenta-f); }
+html.theme-neon[data-page="music-draw"] #home-btn   { border: 2px solid var(--nt-violet); border-radius: 8px; box-shadow: 0 0 12px var(--nt-violet-f); }
+
+/* ============================================================
+ * 九、BATTLE START 全屏演出（battle-group 系列 .battle-start 与
+ *     group-battle / music-draw 的 .battle-start-text 同套换肤：
+ *     保留页面动画时长/ forwards 语义，只换挂主题关键帧与配色）
+ * ============================================================ */
+html.theme-neon .battle-start,
+html.theme-neon .battle-start-text {
+  font-family: var(--nt-disp);
+  letter-spacing: .18em;
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  text-shadow:
+    0 0 14px rgba(255, 255, 255, .9),
+    0 0 34px var(--nt-magenta-s),
+    0 0 74px rgba(255, 46, 136, .5),
+    -3px 0 0 rgba(0, 229, 255, .65),
+    3px 0 0 rgba(255, 46, 136, .65);
+  animation-name: nt-battle-start;
+}
+html.theme-neon .battle-overlay {
+  background: radial-gradient(60% 60% at 50% 50%, rgba(16, 4, 22, .82), rgba(2, 1, 8, .95));
+}
+html.theme-neon .battle-overlay::before {
+  content: "";
+  position: absolute; inset: -50%;
+  background: repeating-conic-gradient(from 0deg,
+    rgba(255, 46, 136, .12) 0 6deg, transparent 6deg 14deg,
+    rgba(0, 229, 255, .1) 14deg 20deg, transparent 20deg 28deg);
+  animation: nt-spin 24s linear infinite;
+}
+html.theme-neon .click-to-stop {
+  border: 1px solid var(--nt-steel-strong);
+  border-radius: 999px;
+  font-family: var(--nt-mono);
+  letter-spacing: .3em;
+  color: rgba(220, 240, 255, .85);
+}
+
+/* ============================================================
+ * 十、比赛演出守卫（用户需求）：battle-mode 下隐藏本主题全部氛围层，
+ *     页面自身的 battle-mode 隐藏规则（.container 等）由各页 CSS 负责。
+ * ============================================================ */
+html.theme-neon body.battle-mode .neon-scan,
+html.theme-neon body.battle-mode .neon-floor,
+html.theme-neon body.battle-mode .neon-beams,
+html.theme-neon body.battle-mode .neon-ticker { display: none !important; }
+
+/* ============================================================
+ * 十一、关键帧库
+ * ============================================================ */
+@keyframes nt-flicker {
+  0%, 100% { opacity: 1; }
+  3.2% { opacity: .84; } 3.8% { opacity: 1; }
+  42% { opacity: 1; } 42.6% { opacity: .55; } 43.4% { opacity: 1; } 44.2% { opacity: .88; } 45% { opacity: 1; }
+  77% { opacity: 1; } 77.6% { opacity: .74; } 78.4% { opacity: 1; }
+}
+@keyframes nt-cta {
+  50% { box-shadow: 0 0 30px rgba(0, 229, 255, .36), 0 0 76px rgba(255, 46, 136, .26), inset 0 0 24px rgba(143, 107, 255, .15); }
+}
+@keyframes nt-glow-cyan {
+  0%, 100% { box-shadow: 0 0 8px var(--nt-cyan-f); }
+  50% { box-shadow: 0 0 20px var(--nt-cyan-s), 0 0 34px var(--nt-cyan-f); }
+}
+@keyframes nt-glow-magenta {
+  0%, 100% { box-shadow: 0 0 8px var(--nt-magenta-f); }
+  50% { box-shadow: 0 0 20px var(--nt-magenta-s), 0 0 34px var(--nt-magenta-f); }
+}
+@keyframes nt-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes nt-win-pulse {
+  0%, 100% { box-shadow: inset 0 0 26px rgba(255, 209, 102, .1), 0 0 18px rgba(255, 209, 102, .3); }
+  50% { box-shadow: inset 0 0 38px rgba(255, 209, 102, .18), 0 0 46px rgba(255, 209, 102, .5); }
+}
+@keyframes nt-violet-pulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(143, 107, 255, .3); border-color: rgba(143, 107, 255, .4); }
+  50% { box-shadow: 0 0 20px rgba(143, 107, 255, .5); border-color: var(--nt-violet); }
+}
+@keyframes nt-dash { to { stroke-dashoffset: -64; } }
+@keyframes nt-spin { to { transform: rotate(360deg); } }
+@keyframes nt-battle-start {
+  0%   { transform: translate(-50%, -50%) scale(.1) rotate(-5deg); opacity: 0; filter: blur(20px); }
+  5%   { transform: translate(-50%, -50%) scale(1.7) rotate(4deg); opacity: 1; filter: blur(0); }
+  10%  { transform: translate(-50%, -50%) scale(.85) rotate(-2deg); }
+  15%  { transform: translate(-50%, -50%) scale(1.3) rotate(2deg); }
+  22%  { transform: translate(-50%, -50%) scale(.95) rotate(-1deg); }
+  30%  { transform: translate(-50%, -50%) scale(1.12) rotate(.8deg); }
+  38%  { transform: translate(-50%, -50%) scale(1.04) rotate(-.5deg); }
+  46%  { transform: translate(-50%, -50%) scale(1.02) rotate(.3deg); }
+  52%  { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+  74%  { transform: translate(-50%, -50%) scale(1); opacity: 1; filter: blur(0); }
+  100% { transform: translate(-50%, -50%) scale(2); opacity: 0; filter: blur(20px); }
+}
+
+/* ============================================================
+ * 十二、结构增强层样式（front/enhance.js 注入的 nt-* 节点；
+ *      复现静态样例版式：kicker/日文行/徽标/VS 徽章/角标/侧轨/入场揭示）
+ * ============================================================ */
+
+/* —— 头部三件套 —— */
+html.theme-neon .nt-kicker {
+  font: 700 12px/1 var(--nt-mono);
+  letter-spacing: .42em;
+  text-transform: uppercase;
+  color: var(--nt-cyan);
+  text-shadow: 0 0 14px var(--nt-cyan-s);
+  margin-bottom: 12px;
+}
+html.theme-neon .nt-jp {
+  margin-top: 12px;
+  font-size: 12px;
+  letter-spacing: .5em;
+  color: var(--nt-ink-dim);
+}
+html.theme-neon .nt-title {
+  font-family: var(--nt-disp);
+  font-weight: 900;
+  letter-spacing: .08em;
+  font-size: clamp(30px, 4.4vw, 46px);
+}
+html.theme-neon .nt-title-main {
+  background: linear-gradient(94deg, #8ef3ff 0%, var(--nt-cyan) 18%, var(--nt-violet) 46%, var(--nt-magenta) 74%, #ffd166 100%);
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 16px rgba(0, 229, 255, .3)) drop-shadow(0 5px 24px rgba(255, 46, 136, .26));
+}
+html.theme-neon .nt-outline-num {
+  color: transparent;
+  -webkit-text-stroke: 2.5px var(--nt-cyan);
+  text-shadow: 0 0 26px var(--nt-cyan-s);
+}
+html.theme-neon .nt-h1-tag {
+  display: inline-block;
+  margin-left: 14px;
+  font: 700 10px/1 var(--nt-mono);
+  letter-spacing: .4em;
+  color: var(--nt-ink-dim);
+  vertical-align: .5em;
+}
+
+/* —— 竖排日文侧轨 —— */
+html.theme-neon .nt-rail {
+  position: fixed; top: 50%; transform: translateY(-50%);
+  z-index: 0; pointer-events: none;
+  writing-mode: vertical-rl; text-orientation: upright;
+  font: 700 11px/2 var(--nt-mono); letter-spacing: .9em;
+  color: rgba(140, 170, 255, .18);
+}
+html.theme-neon .nt-rail--l { left: 14px; }
+html.theme-neon .nt-rail--r { right: 14px; }
+@media (max-width: 1000px) { html.theme-neon .nt-rail { display: none; } }
+
+/* —— 卡片角标 / 徽标 / 描述（select / home / games 通用件） —— */
+html.theme-neon .nt-card-en {
+  font: 700 10px/1 var(--nt-mono);
+  letter-spacing: .22em;
+  color: var(--na, var(--nt-cyan));
+  text-shadow: 0 0 8px var(--nt-cyan-s);
+}
+html.theme-neon[data-page="select"] .mode-card .nt-card-en { margin-left: auto; align-self: center; flex: none; }
+html.theme-neon[data-page="home"] .nav-btn .nt-card-en { align-self: flex-end; }
+
+html.theme-neon .nt-badge {
+  width: 46px; height: 46px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 10px;
+  font: 900 12px/1 var(--nt-mono); letter-spacing: .05em;
+  color: var(--b, var(--nt-cyan));
+  border: 1px solid var(--b, var(--nt-cyan));
+  background: rgba(8, 6, 22, .6);
+  box-shadow: 0 0 14px var(--nt-cyan-f), inset 0 0 12px var(--nt-cyan-f);
+  text-shadow: 0 0 10px currentColor;
+}
+html.theme-neon .nt-badge--g1    { --b: #10ffa8; box-shadow: 0 0 14px rgba(16,255,168,.12), inset 0 0 12px rgba(16,255,168,.12); }
+html.theme-neon .nt-badge--g1-alt{ --b: #23e6c8; box-shadow: 0 0 14px rgba(35,230,200,.12), inset 0 0 12px rgba(35,230,200,.12); }
+html.theme-neon .nt-badge--g2    { --b: #3aa0ff; box-shadow: 0 0 14px var(--nt-blue-f), inset 0 0 12px var(--nt-blue-f); }
+html.theme-neon .nt-badge--g2-alt{ --b: #00e5ff; }
+html.theme-neon .nt-badge--team  { --b: #8f6bff; box-shadow: 0 0 14px var(--nt-violet-f), inset 0 0 12px var(--nt-violet-f); }
+html.theme-neon .nt-badge--drag  { --b: #ffd166; box-shadow: 0 0 14px var(--nt-gold-f), inset 0 0 12px var(--nt-gold-f); }
+html.theme-neon .nt-badge--music { --b: #ff8a3d; box-shadow: 0 0 14px var(--nt-orange-f), inset 0 0 12px var(--nt-orange-f); }
+
+/* home 宫格卡：重排为 标徽上/文字下（样例 nav-card 版式） */
+html.theme-neon[data-page="home"] .nav-btn {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  height: auto;
+  min-height: 0;
+  padding: 16px;
+}
+html.theme-neon[data-page="home"] .nav-btn .nt-card-body { display: flex; flex-direction: column; min-width: 0; }
+html.theme-neon[data-page="home"] .nav-btn .nt-card-desc { font-size: 12px; color: var(--nt-ink-dim); margin-top: 3px; }
+html.theme-neon[data-page="home"] .nav-btn .btn-label { font-size: 15px; }
+html.theme-neon #nav-buttons .nt-cta-en-row {
+  grid-column: 1 / -1;
+  text-align: center;
+  font: 700 11px/1 var(--nt-mono);
+  letter-spacing: .5em;
+  color: rgba(255, 255, 255, .5);
+  padding-top: 2px;
+}
+
+/* —— 游戏中心 —— */
+html.theme-neon .nt-coin {
+  margin-top: 18px;
+  font: 700 13px/1 var(--nt-mono);
+  letter-spacing: .5em;
+  color: var(--nt-gold);
+  text-shadow: 0 0 12px var(--nt-gold-s);
+  animation: nt-blink 1.4s steps(2, start) infinite;
+}
+html.theme-neon .nt-play {
+  margin-top: 10px;
+  font: 700 10px/1 var(--nt-mono);
+  letter-spacing: .4em;
+  color: rgba(255, 255, 255, .5);
+  border: 1px solid rgba(255, 255, 255, .2);
+  padding: 6px 16px;
+  border-radius: 999px;
+  transition: color .2s ease, border-color .2s ease, box-shadow .2s ease, text-shadow .2s ease;
+}
+html.theme-neon .game-card:hover .nt-play {
+  color: var(--nt-cyan);
+  border-color: var(--nt-cyan);
+  box-shadow: 0 0 14px var(--nt-cyan-f);
+  text-shadow: 0 0 8px var(--nt-cyan-s);
+}
+
+/* —— VS 竞技场（battle-group 系列：三列布局 + 旋转双环徽章） —— */
+html.theme-neon[data-page^="battle-group"] .players {
+  display: grid;
+  grid-template-columns: 1fr minmax(78px, auto) 1fr;
+  gap: 20px;
+  align-items: stretch;
+}
+html.theme-neon .nt-vs-emblem {
+  align-self: center;
+  position: relative; flex: none;
+  width: 92px; height: 92px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  font: 900 30px/1 var(--nt-disp);
+  color: #fff;
+  background: radial-gradient(circle at 32% 28%, #2a1e5e, #0a0718 72%);
+  border: 1px solid rgba(255, 255, 255, .28);
+  text-shadow: 0 0 12px var(--nt-cyan-s), 0 0 30px var(--nt-magenta-s);
+  animation: nt-emblem 2.4s ease-in-out infinite;
+}
+html.theme-neon .nt-vs-emblem::before,
+html.theme-neon .nt-vs-emblem::after { content: ""; position: absolute; border-radius: 50%; }
+html.theme-neon .nt-vs-emblem::before { inset: -12px; border: 1px dashed rgba(0, 229, 255, .55); animation: nt-spin 9s linear infinite; }
+html.theme-neon .nt-vs-emblem::after { inset: -22px; border: 1px dotted rgba(255, 46, 136, .45); animation: nt-spin 15s linear infinite reverse; }
+@keyframes nt-emblem { 50% { transform: scale(1.06); } }
+@media (max-width: 760px) {
+  html.theme-neon[data-page^="battle-group"] .players { grid-template-columns: 1fr; }
+  html.theme-neon .nt-vs-emblem { margin: 0 auto; }
+}
+
+/* —— 选手侧标 / 面板英文小标 —— */
+html.theme-neon .nt-side-tag {
+  display: block;
+  font: 700 11px/1 var(--nt-mono);
+  letter-spacing: .34em;
+  color: var(--na, var(--nt-cyan));
+  text-shadow: 0 0 10px var(--nt-cyan-s);
+  margin-bottom: 10px;
+  text-align: center;
+}
+html.theme-neon #player2 .nt-side-tag,
+html.theme-neon #arena-player2 .nt-side-tag { color: var(--nt-magenta); text-shadow: 0 0 10px var(--nt-magenta-s); }
+html.theme-neon .nt-h3-en,
+html.theme-neon .nt-lib-tag {
+  display: inline-block;
+  margin-left: 10px;
+  font: 700 10px/1 var(--nt-mono);
+  letter-spacing: .3em;
+  color: var(--nt-ink-mute, var(--nt-ink-dim));
+}
+html.theme-neon .nt-lib-tag { display: block; margin: 6px 0 0; text-align: center; }
+/* g2 家族大字展示位：兄弟节点版（页面 textContent 重写不破坏） */
+html.theme-neon .nt-h3-en--side {
+  display: block;
+  margin: 4px 0 0;
+  text-align: center;
+  letter-spacing: .4em;
+  opacity: .8;
+}
+
+/* —— 对阵树轴标 —— */
+html.theme-neon .nt-axis-tag {
+  position: absolute;
+  top: 4%; left: 50%; transform: translateX(-50%);
+  font: 700 9px/1 var(--nt-mono);
+  letter-spacing: .5em;
+  color: rgba(160, 180, 255, .6);
+}
+
+/* —— 卡片悬停扫光（样例 ncard shine sweep；.player 除外——胜者徽章需溢出可见） —— */
+html.theme-neon :is(.mode-card, .nav-btn, .game-card, .music-group, .group-card) {
+  position: relative;
+  overflow: hidden;
+}
+html.theme-neon :is(.mode-card, .nav-btn, .game-card, .music-group, .group-card)::after {
+  content: "";
+  position: absolute; top: 0; bottom: 0; left: -70%; width: 44%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, .09), transparent);
+  transform: skewX(-18deg);
+  transition: left .55s ease;
+  pointer-events: none;
+}
+html.theme-neon :is(.mode-card, .nav-btn, .game-card, .music-group, .group-card):hover::after { left: 130%; }
+
+/* —— HUD 角标括号（样例 panel corner brackets；避开被扫光占用 ::after 的选择器） —— */
+html.theme-neon :is(#battle-info, .tricks-pool, .random-tricks, .music, #status-section) { position: relative; }
+html.theme-neon :is(#battle-info, .tricks-pool, .random-tricks, .music, #status-section)::before,
+html.theme-neon :is(#battle-info, .tricks-pool, .random-tricks, .music, #status-section)::after {
+  content: ""; position: absolute; width: 15px; height: 15px; pointer-events: none;
+}
+html.theme-neon :is(#battle-info, .tricks-pool, .random-tricks, .music, #status-section)::before {
+  top: -1px; left: -1px;
+  border-top: 2px solid var(--na, var(--nt-cyan)); border-left: 2px solid var(--na, var(--nt-cyan));
+  filter: drop-shadow(0 0 4px var(--nt-cyan-s));
+}
+html.theme-neon :is(#battle-info, .tricks-pool, .random-tricks, .music, #status-section)::after {
+  bottom: -1px; right: -1px;
+  border-bottom: 2px solid var(--na, var(--nt-cyan)); border-right: 2px solid var(--na, var(--nt-cyan));
+  filter: drop-shadow(0 0 4px var(--nt-cyan-s));
+}
+
+/* —— 按钮贴近样例（更宽的霓虹按钮） —— */
+html.theme-neon button {
+  padding: 11px 22px;
+  border-radius: 10px;
+  font-weight: 600;
+  letter-spacing: .08em;
+}
+html.theme-neon button:hover:not(:disabled) { text-shadow: 0 0 10px var(--nt-cyan-s); }
+
+/* —— 入场揭示（错峰；reduced-motion 由第十二节停用） —— */
+html.theme-neon .nt-reveal {
+  opacity: 0;
+  animation: nt-rise .7s cubic-bezier(.16, .8, .24, 1) forwards;
+  animation-delay: var(--d, 0s);
+}
+@keyframes nt-rise {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes nt-blink { 50% { opacity: .25; } }
+
+/* —— battle-mode 守卫补充：侧轨与徽章随氛围层一起退场 ——
+   （注入在容器内的节点随页面自身 battle-mode 隐藏规则生效；
+   body 级的侧轨在此显式退场） */
+html.theme-neon body.battle-mode .nt-rail { display: none !important; }
+
+/* ============================================================
+ * 十四、扩展覆盖（内容换肤 · 第二批页面）：setting / rank / ranking /
+ *      team-rank / moving-sth / movement-teaching / music-import /
+ *      performance / plugin-manager / game-composer / custom-stage /
+ *      theme-manager（+ games 补遗）
+ *      氛围层与通用按钮皮肤已全局生效，本节只补各页内容层：
+ *      容器 / 标题 / 列表行 / 表单 / 语义色按钮（边色 + 辉光，参照 battle 节）。
+ *      可读性纪律：正文一律 --nt-ink / --nt-ink-dim，辉光只落在
+ *      标题 / 边框 / 交互态；图标按钮恢复紧凑形态（通用按钮内边距让位）。
+ *      （本节置于「十三、减弱动态偏好」之前：收尾守卫节保持文件末位）
+ * ============================================================ */
+
+/* ---------- 十四·一、设置中心（setting）：tab 导航 + 三管理面板 + 批量导入 ---------- */
+html.theme-neon[data-page="setting"] .container {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+  background-color: rgba(7, 6, 20, .84);
+}
+html.theme-neon[data-page="setting"] header h1 {
+  font-family: var(--nt-disp);
+  letter-spacing: .12em;
+  background: linear-gradient(94deg, #8ef3ff, var(--nt-cyan) 26%, var(--nt-violet) 58%, var(--nt-magenta));
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 14px rgba(0, 229, 255, .3));
+}
+html.theme-neon[data-page="setting"] .subtitle {
+  font-family: var(--nt-mono);
+  letter-spacing: .4em;
+  color: var(--nt-ink-dim);
+}
+
+/* tab 导航：恢复「标签」形态（通用按钮皮肤让位），激活 = 冰青文字 + 发丝底线辉光 */
+html.theme-neon[data-page="setting"] .tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0;
+  padding: 10px 20px;
+  font-family: var(--nt-mono);
+  letter-spacing: .18em;
+  color: var(--nt-ink-dim);
+}
+html.theme-neon[data-page="setting"] .tab-btn:hover:not(:disabled) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  transform: none;
+  color: var(--nt-cyan);
+}
+html.theme-neon[data-page="setting"] .tab-btn.active {
+  color: var(--nt-cyan);
+  text-shadow: 0 0 10px var(--nt-cyan-s);
+}
+html.theme-neon[data-page="setting"] .tab-btn.active::after {
+  background-color: var(--nt-cyan);
+  box-shadow: 0 0 10px var(--nt-cyan-s);
+}
+
+/* 面板骨架：双栏容器 / 列表行 / 表单域 */
+html.theme-neon[data-page="setting"] .section-header h2 {
+  font-family: var(--nt-disp);
+  letter-spacing: .14em;
+  color: var(--nt-cyan);
+  text-shadow: 0 0 10px var(--nt-cyan-s);
+}
+html.theme-neon[data-page="setting"] .data-list h3,
+html.theme-neon[data-page="setting"] .data-editor h3 {
+  font-family: var(--nt-mono);
+  letter-spacing: .18em;
+  color: var(--nt-ink);
+  border-bottom: 1px solid var(--nt-steel);
+}
+html.theme-neon[data-page="setting"] .data-list,
+html.theme-neon[data-page="setting"] .data-editor {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+  background-color: rgba(9, 7, 24, .78);
+}
+html.theme-neon[data-page="setting"] select,
+html.theme-neon[data-page="setting"] input,
+html.theme-neon[data-page="setting"] textarea {
+  background-color: rgba(10, 8, 26, .85);
+  border: 1px solid var(--nt-steel-strong);
+  color: var(--nt-ink);
+  border-radius: 7px;
+}
+html.theme-neon[data-page="setting"] input:focus,
+html.theme-neon[data-page="setting"] textarea:focus,
+html.theme-neon[data-page="setting"] select:focus {
+  outline: none;
+  border-color: var(--nt-cyan);
+  box-shadow: 0 0 10px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="setting"] label { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="setting"] .radio-label input[type="radio"] { accent-color: var(--nt-cyan); }
+html.theme-neon[data-page="setting"] li {
+  border: 1px solid var(--nt-steel);
+  border-radius: 7px;
+  background-color: rgba(255, 255, 255, .035);
+  color: var(--nt-ink);
+}
+html.theme-neon[data-page="setting"] li:hover {
+  border-color: var(--nt-cyan);
+  box-shadow: 0 0 12px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="setting"] .item-description { color: var(--nt-ink-dim); }
+
+/* 行内图标按钮：恢复紧凑形态（列表行内的编辑 / 删除小按钮） */
+html.theme-neon[data-page="setting"] .edit-btn,
+html.theme-neon[data-page="setting"] .delete-btn {
+  border: none;
+  background: none;
+  padding: 3px 5px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+html.theme-neon[data-page="setting"] .edit-btn:hover:not(:disabled),
+html.theme-neon[data-page="setting"] .delete-btn:hover:not(:disabled) {
+  border: none;
+  background: none;
+  box-shadow: none;
+  transform: none;
+}
+html.theme-neon[data-page="setting"] .edit-btn:hover { color: var(--nt-cyan); }
+html.theme-neon[data-page="setting"] .delete-btn:hover { color: var(--nt-red); text-shadow: 0 0 8px var(--nt-red-s); }
+
+/* 批量导入：虚线霓虹框 + 聚焦（dragover）辉光 */
+html.theme-neon[data-page="setting"] #drop-area,
+html.theme-neon[data-page="setting"] #trick-drop-area {
+  border: 1px dashed var(--nt-steel-strong);
+  background-color: rgba(9, 7, 24, .6);
+}
+html.theme-neon[data-page="setting"] #drop-area.dragover,
+html.theme-neon[data-page="setting"] #trick-drop-area.dragover {
+  border-color: var(--nt-cyan);
+  box-shadow: 0 0 18px var(--nt-cyan-f), inset 0 0 14px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="setting"] .drop-zone {
+  border: 1px dashed var(--nt-steel);
+  background-color: rgba(255, 255, 255, .02);
+}
+html.theme-neon[data-page="setting"] .drop-message { color: var(--nt-cyan); text-shadow: 0 0 8px var(--nt-cyan-f); }
+html.theme-neon[data-page="setting"] .import-hint { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="setting"] .import-label {
+  background-color: rgba(10, 8, 26, .85);
+  color: var(--nt-cyan);
+  border: 1px solid var(--nt-cyan-f);
+}
+html.theme-neon[data-page="setting"] .import-label:hover { box-shadow: 0 0 14px var(--nt-cyan-f); }
+html.theme-neon[data-page="setting"] .import-mode { background-color: rgba(255, 255, 255, .03); }
+html.theme-neon[data-page="setting"] .mode-title { color: var(--nt-ink); }
+
+/* 语义色按钮（id 级覆写边色与辉光，参照 battle 节写法）：
+   保存 = lime / 新增·提交 = 冰青（通用 hover 同色，无需覆写）/ 取消 = red /
+   返回主页 = orange / 音乐导入页跳转 = blue */
+html.theme-neon[data-page="setting"] #save-players-btn,
+html.theme-neon[data-page="setting"] #save-tricks-btn,
+html.theme-neon[data-page="setting"] #save-awards-btn,
+html.theme-neon[data-page="setting"] #save-feature-toggles-btn {
+  border-color: var(--nt-lime);
+  box-shadow: 0 0 12px var(--nt-lime-f);
+}
+html.theme-neon[data-page="setting"] button[type="submit"],
+html.theme-neon[data-page="setting"] #add-award-btn {
+  border-color: var(--nt-cyan);
+  box-shadow: 0 0 12px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="setting"] #cancel-player-edit,
+html.theme-neon[data-page="setting"] #cancel-trick-edit,
+html.theme-neon[data-page="setting"] #cancel-award-edit {
+  border-color: var(--nt-red);
+  box-shadow: 0 0 12px var(--nt-red-f);
+}
+html.theme-neon[data-page="setting"] #home-btn {
+  border-color: var(--nt-orange);
+  box-shadow: 0 0 12px var(--nt-orange-f);
+}
+html.theme-neon[data-page="setting"] #goto-music-import-btn {
+  border-color: var(--nt-blue);
+  box-shadow: 0 0 12px var(--nt-blue-f);
+}
+
+/* 功能开关卡片：开关滑块 = 冰青击发；Drag 人数 = 橙（沿用页面语义） */
+html.theme-neon[data-page="setting"] .feature-switches {
+  border: 1px solid var(--nt-steel);
+  background-color: rgba(9, 7, 24, .78);
+}
+html.theme-neon[data-page="setting"] .feature-item {
+  border: 1px solid var(--nt-steel);
+  background-color: rgba(255, 255, 255, .03);
+}
+html.theme-neon[data-page="setting"] .feature-text h3 { color: var(--nt-ink); border: none; }
+html.theme-neon[data-page="setting"] .feature-text p { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="setting"] .slider { background-color: rgba(150, 170, 220, .25); }
+html.theme-neon[data-page="setting"] .switch input:checked + .slider {
+  background-color: var(--nt-cyan);
+  box-shadow: 0 0 12px var(--nt-cyan-s);
+}
+html.theme-neon[data-page="setting"] .drag-count-setting input[type="number"] {
+  color: var(--nt-orange);
+  border-color: rgba(255, 138, 61, .45);
+}
+html.theme-neon[data-page="setting"] .drag-count-setting input[type="number"]:focus {
+  border-color: var(--nt-orange);
+  box-shadow: 0 0 10px var(--nt-orange-f);
+}
+
+/* 音乐导入引导卡 + 状态条 + 确认对话框 */
+html.theme-neon[data-page="setting"] .music-import-intro {
+  border: 1px solid var(--nt-steel);
+  background-color: rgba(9, 7, 24, .7);
+}
+html.theme-neon[data-page="setting"] #status-message {
+  background-color: rgba(10, 8, 24, .92);
+  border: 1px solid var(--nt-steel-strong);
+}
+html.theme-neon[data-page="setting"] #status-message.success {
+  background-color: rgba(8, 32, 22, .92);
+  border-color: var(--nt-lime);
+}
+html.theme-neon[data-page="setting"] #status-message.error {
+  background-color: rgba(36, 8, 16, .92);
+  border-color: var(--nt-red);
+}
+html.theme-neon[data-page="setting"] .custom-dialog {
+  background-color: rgba(10, 8, 24, .95);
+  border: 1px solid var(--nt-steel-strong);
+}
+html.theme-neon[data-page="setting"] .confirm-btn {
+  background: rgba(0, 229, 255, .18);
+  border: 1px solid var(--nt-cyan);
+  color: #eaffff;
+}
+html.theme-neon[data-page="setting"] .cancel-btn {
+  background: rgba(255, 59, 92, .16);
+  border: 1px solid var(--nt-red);
+  color: #ffe9ee;
+}
+html.theme-neon[data-page="setting"] .cancel-btn:hover:not(:disabled) {
+  background: rgba(255, 59, 92, .28);
+  border-color: var(--nt-red);
+  box-shadow: 0 0 14px var(--nt-red-f);
+}
+
+/* ---------- 十四·二、对阵排名（rank）：领奖台 / 总冠军金辉 / 流程图 ---------- */
+html.theme-neon[data-page="rank"] .container {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+  background-color: rgba(7, 6, 20, .84);
+}
+html.theme-neon[data-page="rank"] header h1 {
+  font-family: var(--nt-disp);
+  letter-spacing: .12em;
+  background: linear-gradient(94deg, #8ef3ff, var(--nt-cyan) 26%, var(--nt-violet) 58%, var(--nt-magenta));
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 14px rgba(0, 229, 255, .3));
+}
+html.theme-neon[data-page="rank"] .subtitle {
+  font-family: var(--nt-mono);
+  letter-spacing: .4em;
+  color: var(--nt-ink-dim);
+}
+html.theme-neon[data-page="rank"] section h2 {
+  font-family: var(--nt-disp);
+  letter-spacing: .16em;
+  color: var(--nt-ink);
+  text-shadow: 0 0 10px var(--nt-cyan-f);
+  border-bottom: 1px solid var(--nt-steel);
+}
+
+/* 领奖台：保留金/银/铜色相，补辉光与霓虹描边（金只属于第一名） */
+html.theme-neon[data-page="rank"] .rank-position {
+  border: 2px solid var(--nt-steel);
+  background-color: rgba(9, 7, 24, .8);
+}
+html.theme-neon[data-page="rank"] .rank-gold {
+  border-color: var(--nt-gold);
+  background-color: rgba(36, 27, 6, .8);
+  box-shadow: 0 0 18px var(--nt-gold-f), inset 0 0 18px rgba(255, 209, 102, .1);
+}
+html.theme-neon[data-page="rank"] .rank-silver {
+  border-color: rgba(210, 214, 224, .75);
+  background-color: rgba(22, 24, 34, .8);
+  box-shadow: 0 0 14px rgba(210, 214, 224, .14);
+}
+html.theme-neon[data-page="rank"] .rank-bronze {
+  border-color: rgba(230, 150, 84, .7);
+  background-color: rgba(30, 18, 8, .8);
+  box-shadow: 0 0 14px rgba(230, 150, 84, .14);
+}
+html.theme-neon[data-page="rank"] .player-item { background-color: rgba(0, 0, 0, .45); text-shadow: 0 0 8px currentColor; }
+
+/* 总冠军：金辉 + 奖杯 halo */
+html.theme-neon[data-page="rank"] .champion-display {
+  background-color: rgba(24, 18, 4, .9);
+  border: 2px solid var(--nt-gold);
+  box-shadow: 0 0 30px var(--nt-gold-f), inset 0 0 22px rgba(255, 209, 102, .08);
+}
+html.theme-neon[data-page="rank"] .champion-display p { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="rank"] .champion-name {
+  color: var(--nt-gold);
+  text-shadow: 0 0 10px var(--nt-gold-s), 0 0 34px var(--nt-gold-s);
+}
+html.theme-neon[data-page="rank"] .champion-trophy { filter: drop-shadow(0 0 14px var(--nt-gold-s)); }
+
+/* 比赛流程图：章节分色沿用页面语义（胜者 lime / 败者 red / 决赛 gold） */
+html.theme-neon[data-page="rank"] .bracket-container {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+  background-color: rgba(8, 6, 20, .82);
+}
+html.theme-neon[data-page="rank"] .bracket-title { border-bottom-color: var(--nt-steel); }
+html.theme-neon[data-page="rank"] .winner-title { color: var(--nt-lime); text-shadow: 0 0 8px var(--nt-lime-f); }
+html.theme-neon[data-page="rank"] .loser-title  { color: var(--nt-red);  text-shadow: 0 0 8px var(--nt-red-f); }
+html.theme-neon[data-page="rank"] .final-title  { color: var(--nt-gold); text-shadow: 0 0 8px var(--nt-gold-f); }
+html.theme-neon[data-page="rank"] .round-title { font-family: var(--nt-mono); letter-spacing: .16em; color: var(--nt-ink-dim); }
+html.theme-neon[data-page="rank"] .match-card {
+  border: 1px solid var(--nt-steel);
+  border-radius: 7px;
+  background-color: rgba(255, 255, 255, .035);
+}
+html.theme-neon[data-page="rank"] .match-card:hover {
+  border-color: var(--nt-cyan);
+  box-shadow: 0 0 14px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="rank"] .winner-match { border-left-color: var(--nt-lime); }
+html.theme-neon[data-page="rank"] .loser-match  { border-left-color: var(--nt-red); }
+html.theme-neon[data-page="rank"] .final-match  { border-left-color: var(--nt-gold); background-color: rgba(24, 18, 4, .55); }
+html.theme-neon[data-page="rank"] .match-player { background-color: rgba(0, 0, 0, .35); }
+html.theme-neon[data-page="rank"] .match-player.winner {
+  background-color: rgba(61, 255, 160, .14);
+  color: #b8ffdd;
+  text-shadow: 0 0 8px var(--nt-lime-f);
+}
+html.theme-neon[data-page="rank"] .match-vs { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="rank"] .loading { font-family: var(--nt-mono); letter-spacing: .2em; color: var(--nt-ink-dim); }
+
+/* 章节切换按钮语义色（沿用页面 #home 蓝 / #chapter1 橙 / #chapter2 品红） */
+html.theme-neon[data-page="rank"] #home-btn     { border-color: var(--nt-blue);   box-shadow: 0 0 12px var(--nt-blue-f); }
+html.theme-neon[data-page="rank"] #chapter1-btn { border-color: var(--nt-orange); box-shadow: 0 0 12px var(--nt-orange-f); }
+html.theme-neon[data-page="rank"] #chapter2-btn { border-color: var(--nt-magenta);box-shadow: 0 0 12px var(--nt-magenta-f); }
+
+/* ---------- 十四·三、排名榜（ranking）：榜单行 + 金银铜辉光 ---------- */
+html.theme-neon[data-page="ranking"] header { border-bottom: 1px solid var(--nt-steel); }
+html.theme-neon[data-page="ranking"] h1 {
+  font-family: var(--nt-disp);
+  letter-spacing: .12em;
+  color: var(--nt-ink);
+  text-shadow: 0 0 12px var(--nt-cyan-s), 0 0 32px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="ranking"] section {
+  border: 1px solid var(--nt-steel);
+  background-color: rgba(7, 6, 20, .8);
+}
+html.theme-neon[data-page="ranking"] section h2 {
+  font-family: var(--nt-mono);
+  letter-spacing: .3em;
+  color: var(--nt-ink-dim);
+}
+html.theme-neon[data-page="ranking"] #playersList li {
+  border: 1px solid var(--nt-steel);
+  background-color: rgba(255, 255, 255, .035);
+}
+html.theme-neon[data-page="ranking"] #playersList li:hover {
+  border-color: var(--nt-cyan);
+  box-shadow: 0 0 12px var(--nt-cyan-f);
+}
+
+/* 前三名：保留金/银/铜色相，加辉光与霓虹描边；4/5 名钢灰 */
+html.theme-neon[data-page="ranking"] .rank-position {
+  border: 2px solid var(--nt-steel);
+  background-color: rgba(255, 255, 255, .03);
+}
+html.theme-neon[data-page="ranking"] .rank-gold {
+  border-color: var(--nt-gold);
+  box-shadow: 0 0 18px var(--nt-gold-f), inset 0 0 16px rgba(255, 209, 102, .1);
+}
+html.theme-neon[data-page="ranking"] .rank-silver {
+  border-color: rgba(210, 214, 224, .75);
+  box-shadow: 0 0 14px rgba(210, 214, 224, .14);
+}
+html.theme-neon[data-page="ranking"] .rank-bronze {
+  border-color: rgba(230, 150, 84, .7);
+  box-shadow: 0 0 14px rgba(230, 150, 84, .14);
+}
+html.theme-neon[data-page="ranking"] .rank-position[data-rank="4"],
+html.theme-neon[data-page="ranking"] .rank-position[data-rank="5"] {
+  border-color: var(--nt-steel-strong);
+  box-shadow: none;
+}
+html.theme-neon[data-page="ranking"] .player-item { text-shadow: 0 0 8px rgba(0, 0, 0, .55); }
+html.theme-neon[data-page="ranking"] .award-container {
+  border: 1px solid var(--nt-steel-strong);
+  background-color: rgba(0, 0, 0, .35);
+}
+html.theme-neon[data-page="ranking"] .rank-gold .award-container { border-color: rgba(255, 209, 102, .55); }
+html.theme-neon[data-page="ranking"] .rank-silver .award-container { border-color: rgba(210, 214, 224, .5); }
+html.theme-neon[data-page="ranking"] .rank-bronze .award-container { border-color: rgba(230, 150, 84, .5); }
+html.theme-neon[data-page="ranking"] .award-description { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="ranking"] #homeButton    { border-color: var(--nt-blue);    box-shadow: 0 0 12px var(--nt-blue-f); }
+html.theme-neon[data-page="ranking"] #battleButton  { border-color: var(--nt-magenta); box-shadow: 0 0 12px var(--nt-magenta-f); }
+
+/* ---------- 十四·四、团体赛排名（team-rank）：金辉榜单 ---------- */
+html.theme-neon[data-page="team-rank"] .container {
+  border: 1px solid var(--nt-steel);
+  border-radius: 12px;
+  background-color: rgba(7, 6, 20, .88);
+}
+html.theme-neon[data-page="team-rank"] header h1 {
+  font-family: var(--nt-disp);
+  letter-spacing: .14em;
+  color: var(--nt-gold);
+  text-shadow: 0 0 12px var(--nt-gold-s), 0 0 36px var(--nt-gold-f);
+}
+html.theme-neon[data-page="team-rank"] header h1 .title-icon { filter: drop-shadow(0 0 8px var(--nt-gold-s)); }
+html.theme-neon[data-page="team-rank"] .rank-item {
+  border: 2px solid var(--nt-steel);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(12, 10, 28, .9), rgba(6, 5, 18, .94));
+}
+html.theme-neon[data-page="team-rank"] .rank-item.first {
+  border-color: var(--nt-gold);
+  box-shadow: 0 0 22px var(--nt-gold-f), inset 0 0 18px rgba(255, 209, 102, .08);
+}
+html.theme-neon[data-page="team-rank"] .rank-item.second {
+  border-color: rgba(210, 214, 224, .75);
+  box-shadow: 0 0 14px rgba(210, 214, 224, .12);
+}
+html.theme-neon[data-page="team-rank"] .rank-item.third {
+  border-color: rgba(230, 150, 84, .7);
+  box-shadow: 0 0 14px rgba(230, 150, 84, .12);
+}
+html.theme-neon[data-page="team-rank"] .rank-group {
+  color: var(--nt-violet);
+  text-shadow: 0 0 12px var(--nt-violet-s);
+}
+html.theme-neon[data-page="team-rank"] .rank-stats { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="team-rank"] #home-btn {
+  border-color: var(--nt-violet);
+  box-shadow: 0 0 12px var(--nt-violet-f);
+}
+html.theme-neon[data-page="team-rank"] footer { color: var(--nt-ink-dim); }
+
+/* ---------- 十四·五、定时搬化棒（moving-sth，index + settings 同页命名空间） ---------- */
+html.theme-neon[data-page="moving-sth"] header h1 {
+  font-family: var(--nt-disp);
+  letter-spacing: .12em;
+  color: var(--na);
+  text-shadow: 0 0 12px var(--na-s), 0 0 34px var(--na-s);
+}
+html.theme-neon[data-page="moving-sth"] .subtitle {
+  font-family: var(--nt-mono);
+  letter-spacing: .4em;
+  color: var(--nt-ink-dim);
+}
+html.theme-neon[data-page="moving-sth"] .game-container,
+html.theme-neon[data-page="moving-sth"] .settings-container {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+  background-color: rgba(7, 6, 20, .78);
+}
+
+/* 计时大字：冰青辉光；警告态 = 红（沿用页面 .warning 语义） */
+html.theme-neon[data-page="moving-sth"] .timer {
+  font-family: var(--nt-mono);
+  color: var(--na);
+  border: 1px solid var(--nt-steel-strong);
+  background-color: rgba(9, 7, 24, .85);
+  text-shadow: 0 0 12px var(--na-s), 0 0 32px var(--na-s);
+}
+html.theme-neon[data-page="moving-sth"] .timer.warning {
+  color: var(--nt-red);
+  border-color: rgba(255, 59, 92, .45);
+  text-shadow: 0 0 14px var(--nt-red-s), 0 0 34px var(--nt-red-s);
+}
+html.theme-neon[data-page="moving-sth"] .time-setting { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="moving-sth"] #time-limit {
+  color: var(--nt-cyan);
+  text-shadow: 0 0 10px var(--nt-cyan-s);
+}
+html.theme-neon[data-page="moving-sth"] #music-name {
+  color: var(--nt-orange);
+  text-shadow: 0 0 10px var(--nt-orange-s);
+}
+
+/* 倒计时演出：保留页面动画，只换霓虹配色 */
+html.theme-neon[data-page="moving-sth"] .countdown-container {
+  color: var(--nt-cyan);
+  text-shadow: 0 0 16px var(--nt-cyan-s), 0 0 44px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="moving-sth"] .start-animation {
+  color: var(--nt-lime);
+  text-shadow: 0 0 20px var(--nt-lime-s), 0 0 50px var(--nt-lime-f);
+}
+html.theme-neon[data-page="moving-sth"] .modal-content {
+  border: 1px solid var(--nt-steel-strong);
+  border-radius: 10px;
+  background-color: rgba(10, 8, 24, .95);
+}
+html.theme-neon[data-page="moving-sth"] .modal-content h2 {
+  color: var(--nt-cyan);
+  text-shadow: 0 0 12px var(--nt-cyan-s);
+}
+html.theme-neon[data-page="moving-sth"] .modal-content p { color: var(--nt-ink-dim); }
+
+/* 按钮语义色：开始 = lime / 暂停 = gold / 设置 = violet / 返回类 = red /
+   重试 = lime / 保存设置 = lime / 恢复默认 = orange / 返回游戏 = cyan */
+html.theme-neon[data-page="moving-sth"] #start-timer-btn,
+html.theme-neon[data-page="moving-sth"] #try-again-btn,
+html.theme-neon[data-page="moving-sth"] #save-settings-btn { border-color: var(--nt-lime);   box-shadow: 0 0 12px var(--nt-lime-f); }
+html.theme-neon[data-page="moving-sth"] #pause-timer-btn    { border-color: var(--nt-gold);   box-shadow: 0 0 12px var(--nt-gold-f); }
+html.theme-neon[data-page="moving-sth"] #settings-btn       { border-color: var(--nt-violet); box-shadow: 0 0 12px var(--nt-violet-f); }
+html.theme-neon[data-page="moving-sth"] #reset-default-btn  { border-color: var(--nt-orange); box-shadow: 0 0 12px var(--nt-orange-f); }
+html.theme-neon[data-page="moving-sth"] #back-to-game-btn   { border-color: var(--nt-cyan);   box-shadow: 0 0 12px var(--nt-cyan-f); }
+html.theme-neon[data-page="moving-sth"] #back-btn,
+html.theme-neon[data-page="moving-sth"] #home-btn,
+html.theme-neon[data-page="moving-sth"] #back-to-menu-btn   { border-color: var(--nt-red);    box-shadow: 0 0 12px var(--nt-red-f); }
+
+/* settings 表单：输入 / 滑块聚焦辉光 */
+html.theme-neon[data-page="moving-sth"] #time-setting,
+html.theme-neon[data-page="moving-sth"] #opacity-setting {
+  background-color: rgba(10, 8, 26, .85);
+  border: 1px solid var(--nt-steel-strong);
+}
+html.theme-neon[data-page="moving-sth"] #time-setting:focus {
+  border-color: var(--nt-cyan);
+  box-shadow: 0 0 10px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="moving-sth"] #time-setting,
+html.theme-neon[data-page="moving-sth"] #opacity-value { color: var(--nt-cyan); }
+html.theme-neon[data-page="moving-sth"] #opacity-setting::-webkit-slider-thumb {
+  background: var(--nt-cyan);
+  box-shadow: 0 0 8px var(--nt-cyan-s);
+}
+html.theme-neon[data-page="moving-sth"] #opacity-setting::-moz-range-thumb {
+  background: var(--nt-cyan);
+  box-shadow: 0 0 8px var(--nt-cyan-s);
+}
+html.theme-neon[data-page="moving-sth"] .setting-group label { color: var(--nt-ink); }
+html.theme-neon[data-page="moving-sth"] .setting-description { color: var(--nt-ink-dim); }
+/* 浮动化棒装饰：木色渐变 → 霓虹三色 */
+html.theme-neon[data-page="moving-sth"] .floating-stick {
+  background: linear-gradient(to bottom, var(--nt-cyan), var(--nt-violet), var(--nt-magenta));
+  box-shadow: 0 0 12px var(--nt-cyan-f);
+}
+
+/* ---------- 十四·六、体态传技（movement-teaching，index + settings + records 同页命名空间） ---------- */
+html.theme-neon[data-page="movement-teaching"] h1 {
+  font-family: var(--nt-disp);
+  letter-spacing: .12em;
+  color: var(--nt-ink);
+  text-shadow: 0 0 12px var(--nt-cyan-s), 0 0 34px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="movement-teaching"] .subtitle {
+  font-family: var(--nt-mono);
+  letter-spacing: .4em;
+  color: var(--nt-ink-dim);
+}
+
+/* 三页共有容器面板：游戏区 / 设置面板 / 记录面板 */
+html.theme-neon[data-page="movement-teaching"] #game-area,
+html.theme-neon[data-page="movement-teaching"] #result-screen,
+html.theme-neon[data-page="movement-teaching"] .settings-panel,
+html.theme-neon[data-page="movement-teaching"] .records-panel {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+  background-color: rgba(9, 7, 24, .8);
+}
+html.theme-neon[data-page="movement-teaching"] .panel-header {
+  border-bottom: 1px solid var(--nt-steel);
+}
+html.theme-neon[data-page="movement-teaching"] .panel-header h2 {
+  color: var(--nt-cyan);
+  text-shadow: 0 0 10px var(--nt-cyan-s);
+}
+
+/* 当前技 / 隐藏占位 / 计时：分色霓虹（保留页面 pulse 动画） */
+html.theme-neon[data-page="movement-teaching"] .current-trick {
+  color: var(--nt-lime);
+  border: 1px solid rgba(61, 255, 160, .4);
+  background-color: rgba(10, 26, 18, .7);
+  text-shadow: 0 0 12px var(--nt-lime-s);
+}
+html.theme-neon[data-page="movement-teaching"] .hidden-placeholder {
+  color: #e4dcff;
+  border: 1px solid rgba(143, 107, 255, .4);
+  background-color: rgba(20, 12, 36, .7);
+  text-shadow: 0 0 10px var(--nt-violet-s);
+}
+html.theme-neon[data-page="movement-teaching"] .timer {
+  font-family: var(--nt-mono);
+  color: var(--nt-lime);
+  border: 1px solid rgba(61, 255, 160, .35);
+  background-color: rgba(8, 20, 14, .8);
+  text-shadow: 0 0 12px var(--nt-lime-s);
+}
+html.theme-neon[data-page="movement-teaching"] .timer-label,
+html.theme-neon[data-page="movement-teaching"] footer { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="movement-teaching"] #result-trick,
+html.theme-neon[data-page="movement-teaching"] #result-time {
+  color: var(--nt-gold);
+  text-shadow: 0 0 10px var(--nt-gold-s);
+}
+
+/* 按钮语义色（id 级）：抽技 = violet / 开始 = cyan / 结束 = red / 重置 = gold /
+   保存记录与保存技能 = lime / 取消·停止·清空 = red / 试听·刷新·搜索·查看记录 = cyan */
+html.theme-neon[data-page="movement-teaching"] #draw-trick-btn { border-color: var(--nt-violet); box-shadow: 0 0 12px var(--nt-violet-f); }
+html.theme-neon[data-page="movement-teaching"] #start-btn,
+html.theme-neon[data-page="movement-teaching"] #try-again-btn  { border-color: var(--nt-cyan);   box-shadow: 0 0 12px var(--nt-cyan-f); }
+html.theme-neon[data-page="movement-teaching"] #end-btn        { border-color: var(--nt-red);    box-shadow: 0 0 12px var(--nt-red-f); }
+html.theme-neon[data-page="movement-teaching"] #reset-btn      { border-color: var(--nt-gold);   box-shadow: 0 0 12px var(--nt-gold-f); }
+html.theme-neon[data-page="movement-teaching"] #save-record-btn,
+html.theme-neon[data-page="movement-teaching"] #save-tricks-btn,
+html.theme-neon[data-page="movement-teaching"] #save-trick-edit { border-color: var(--nt-lime);  box-shadow: 0 0 12px var(--nt-lime-f); }
+html.theme-neon[data-page="movement-teaching"] #cancel-trick-edit,
+html.theme-neon[data-page="movement-teaching"] #stop-metronome-btn { border-color: var(--nt-red);box-shadow: 0 0 12px var(--nt-red-f); }
+html.theme-neon[data-page="movement-teaching"] #test-metronome-btn,
+html.theme-neon[data-page="movement-teaching"] #records-btn    { border-color: var(--nt-cyan);   box-shadow: 0 0 12px var(--nt-cyan-f); }
+
+/* records 页工具行：图标按钮恢复紧凑形态（scoped 到 .records-panel，
+   不误伤主游戏页共用 .action-btn 类的 #draw-trick-btn） */
+html.theme-neon[data-page="movement-teaching"] .records-panel .action-btn {
+  border: 1px solid var(--nt-steel);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .035);
+  padding: 8px 12px;
+  color: var(--nt-cyan);
+}
+html.theme-neon[data-page="movement-teaching"] .records-panel .action-btn:hover:not(:disabled) {
+  border-color: var(--nt-cyan);
+  background: var(--nt-cyan-f);
+  box-shadow: 0 0 12px var(--nt-cyan-f);
+  transform: none;
+}
+html.theme-neon[data-page="movement-teaching"] .records-panel .action-btn.danger {
+  border-color: rgba(255, 59, 92, .55);
+  color: var(--nt-red);
+  background: var(--nt-red-f);
+}
+html.theme-neon[data-page="movement-teaching"] .records-panel .action-btn.danger:hover:not(:disabled) {
+  border-color: var(--nt-red);
+  background: rgba(255, 59, 92, .22);
+  box-shadow: 0 0 12px var(--nt-red-f);
+  color: var(--nt-red);
+}
+html.theme-neon[data-page="movement-teaching"] .records-panel .btn-icon {
+  border: none;
+  background: none;
+  padding: 5px;
+}
+html.theme-neon[data-page="movement-teaching"] .records-panel .btn-icon:hover:not(:disabled) {
+  border: none;
+  background: none;
+  box-shadow: none;
+  transform: none;
+}
+html.theme-neon[data-page="movement-teaching"] .records-panel .btn-delete:hover { color: var(--nt-red); text-shadow: 0 0 8px var(--nt-red-s); }
+html.theme-neon[data-page="movement-teaching"] .records-panel #search-input {
+  background-color: rgba(10, 8, 26, .85);
+  border: 1px solid var(--nt-steel-strong);
+  color: var(--nt-ink);
+}
+html.theme-neon[data-page="movement-teaching"] .records-panel #search-input:focus {
+  outline: none;
+  border-color: var(--nt-cyan);
+  box-shadow: 0 0 10px var(--nt-cyan-f);
+}
+
+/* records 统计卡 / 表格 */
+html.theme-neon[data-page="movement-teaching"] .stat-card {
+  border: 1px solid var(--nt-steel);
+  background-color: rgba(255, 255, 255, .03);
+}
+html.theme-neon[data-page="movement-teaching"] .stat-card h3 { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="movement-teaching"] .stat-card p {
+  color: var(--nt-cyan);
+  text-shadow: 0 0 10px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="movement-teaching"] .records-container { border: 1px solid var(--nt-steel); }
+html.theme-neon[data-page="movement-teaching"] .records-container th {
+  background-color: rgba(16, 13, 34, .9);
+  border-bottom: 1px solid var(--nt-steel-strong);
+  color: var(--nt-ink-dim);
+}
+html.theme-neon[data-page="movement-teaching"] .records-container td { border-bottom: 1px solid var(--nt-steel); }
+html.theme-neon[data-page="movement-teaching"] .records-container tr:not(.loading-row):hover { background-color: rgba(255, 255, 255, .03); }
+html.theme-neon[data-page="movement-teaching"] .correct   { color: var(--nt-lime); }
+html.theme-neon[data-page="movement-teaching"] .incorrect { color: var(--nt-red); }
+html.theme-neon[data-page="movement-teaching"] .loading-row td,
+html.theme-neon[data-page="movement-teaching"] .empty-row td { color: var(--nt-ink-dim); }
+
+/* settings 页：技列表行 / 表单 / 节拍器 */
+html.theme-neon[data-page="movement-teaching"] .data-editor {
+  border: 1px solid var(--nt-steel);
+  background-color: rgba(255, 255, 255, .03);
+}
+html.theme-neon[data-page="movement-teaching"] .trick-list { border: 1px solid var(--nt-steel); background-color: rgba(255, 255, 255, .03); }
+html.theme-neon[data-page="movement-teaching"] .trick-list li {
+  border: 1px solid var(--nt-steel);
+  background-color: rgba(255, 255, 255, .035);
+  color: var(--nt-ink);
+}
+html.theme-neon[data-page="movement-teaching"] .trick-list li:hover {
+  border-color: var(--nt-cyan);
+  box-shadow: 0 0 10px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="movement-teaching"] .trick-list button {
+  border: none;
+  background: none;
+  padding: 2px;
+}
+html.theme-neon[data-page="movement-teaching"] .trick-list button:hover:not(:disabled) {
+  border: none;
+  background: none;
+  box-shadow: none;
+  transform: none;
+}
+html.theme-neon[data-page="movement-teaching"] .trick-list .edit-btn:hover { color: var(--nt-lime); }
+html.theme-neon[data-page="movement-teaching"] .trick-list .delete-btn:hover { color: var(--nt-red); }
+html.theme-neon[data-page="movement-teaching"] .form-group label { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="movement-teaching"] .form-group input {
+  background-color: rgba(10, 8, 26, .85);
+  border: 1px solid var(--nt-steel-strong);
+  color: var(--nt-ink);
+}
+html.theme-neon[data-page="movement-teaching"] .form-group input:focus {
+  border-color: var(--nt-cyan);
+  box-shadow: 0 0 10px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="movement-teaching"] .setting-control { border: 1px solid var(--nt-steel); background-color: rgba(255, 255, 255, .03); }
+html.theme-neon[data-page="movement-teaching"] .setting-item label { color: var(--nt-ink); }
+html.theme-neon[data-page="movement-teaching"] #bpm-value {
+  color: var(--nt-cyan);
+  background-color: rgba(10, 8, 26, .85);
+  text-shadow: 0 0 8px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="movement-teaching"] #bpm-setting::-webkit-slider-thumb {
+  background: var(--nt-cyan);
+  box-shadow: 0 0 8px var(--nt-cyan-s);
+}
+html.theme-neon[data-page="movement-teaching"] #bpm-setting::-moz-range-thumb {
+  background: var(--nt-cyan);
+  box-shadow: 0 0 8px var(--nt-cyan-s);
+}
+html.theme-neon[data-page="movement-teaching"] .metronome-pattern { border: 1px solid var(--nt-steel); background-color: rgba(255, 255, 255, .03); }
+html.theme-neon[data-page="movement-teaching"] .beat.light {
+  background-color: rgba(0, 229, 255, .16);
+  box-shadow: 0 0 8px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="movement-teaching"] .beat.heavy {
+  background-color: rgba(255, 46, 136, .16);
+  box-shadow: 0 0 8px var(--nt-magenta-f);
+}
+html.theme-neon[data-page="movement-teaching"] .beat.light.active {
+  background-color: rgba(0, 229, 255, .32);
+  box-shadow: 0 0 14px var(--nt-cyan-s);
+}
+html.theme-neon[data-page="movement-teaching"] .beat.heavy.active {
+  background-color: rgba(255, 46, 136, .32);
+  box-shadow: 0 0 14px var(--nt-magenta-s);
+}
+
+/* 技能揭示 / 记录表单 / 确认对话框 */
+html.theme-neon[data-page="movement-teaching"] .reveal-content,
+html.theme-neon[data-page="movement-teaching"] .record-form,
+html.theme-neon[data-page="movement-teaching"] .modal-form,
+html.theme-neon[data-page="movement-teaching"] .custom-dialog {
+  border: 1px solid var(--nt-steel-strong);
+  background-color: rgba(10, 8, 24, .95);
+}
+html.theme-neon[data-page="movement-teaching"] .trick-name {
+  color: var(--nt-cyan);
+  text-shadow: 0 0 12px var(--nt-cyan-s);
+}
+
+/* ---------- 十四·七、音乐导入（music-import）：上传拖放区 + 文件表 ---------- */
+html.theme-neon[data-page="music-import"] .container {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+  background-color: rgba(7, 6, 20, .84);
+}
+html.theme-neon[data-page="music-import"] header h1 {
+  font-family: var(--nt-disp);
+  letter-spacing: .12em;
+  background: linear-gradient(94deg, #8ef3ff, var(--nt-cyan) 26%, var(--nt-violet) 58%, var(--nt-magenta));
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 14px rgba(0, 229, 255, .3));
+}
+html.theme-neon[data-page="music-import"] .subtitle {
+  font-family: var(--nt-mono);
+  letter-spacing: .4em;
+  color: var(--nt-ink-dim);
+}
+
+/* 组别切换：激活 = 冰青文字 + 底光（参照 drag .source-btn.active 写法） */
+html.theme-neon[data-page="music-import"] .group-btn {
+  border: 1px solid var(--nt-steel);
+  background-color: rgba(9, 7, 24, .7);
+  color: var(--nt-ink-dim);
+}
+html.theme-neon[data-page="music-import"] .group-btn.active {
+  border-color: var(--nt-cyan);
+  background-color: rgba(9, 7, 24, .85);
+  color: var(--nt-cyan);
+  text-shadow: 0 0 8px var(--nt-cyan-s);
+  box-shadow: inset 0 0 10px var(--nt-cyan-f), 0 0 10px var(--nt-cyan-f);
+}
+
+/* 上传拖放区：霓虹虚线 + dragover 辉光 */
+html.theme-neon[data-page="music-import"] .upload-container {
+  border: 2px dashed var(--nt-steel-strong);
+  background-color: rgba(9, 7, 24, .6);
+}
+html.theme-neon[data-page="music-import"] .upload-container.dragover {
+  border-color: var(--nt-cyan);
+  background-color: rgba(0, 229, 255, .05);
+  box-shadow: 0 0 20px var(--nt-cyan-f), inset 0 0 16px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="music-import"] .upload-container h3 { color: var(--nt-ink); }
+html.theme-neon[data-page="music-import"] .upload-hint { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="music-import"] .file-input-label {
+  background-color: rgba(0, 229, 255, .12);
+  border: 1px solid var(--nt-cyan);
+  color: #eaffff;
+  text-shadow: 0 0 8px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="music-import"] .file-input-label:hover { background-color: rgba(0, 229, 255, .22); }
+
+/* 预览列表 / 目标组别 / 组别信息卡 / 文件表 */
+html.theme-neon[data-page="music-import"] .preview-section h3,
+html.theme-neon[data-page="music-import"] .info-card h3,
+html.theme-neon[data-page="music-import"] .music-files-section h3 {
+  font-family: var(--nt-mono);
+  letter-spacing: .18em;
+  color: var(--nt-cyan);
+  text-shadow: 0 0 8px var(--nt-cyan-f);
+  border-bottom: 1px solid var(--nt-steel);
+}
+html.theme-neon[data-page="music-import"] .file-list-container,
+html.theme-neon[data-page="music-import"] .music-files-container {
+  border: 1px solid var(--nt-steel);
+  background-color: rgba(8, 6, 20, .8);
+}
+html.theme-neon[data-page="music-import"] .file-item { border-bottom: 1px solid var(--nt-steel); }
+html.theme-neon[data-page="music-import"] .file-name { color: var(--nt-ink); }
+html.theme-neon[data-page="music-import"] .file-size { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="music-import"] .delete-file-btn {
+  border: none;
+  background: none;
+  padding: 5px 10px;
+  color: var(--nt-red);
+}
+html.theme-neon[data-page="music-import"] .delete-file-btn:hover:not(:disabled) {
+  border: none;
+  background: none;
+  box-shadow: none;
+  color: var(--nt-red);
+  text-shadow: 0 0 8px var(--nt-red-s);
+}
+html.theme-neon[data-page="music-import"] .upload-target-selection {
+  border: 1px solid var(--nt-steel);
+  background-color: rgba(255, 255, 255, .03);
+}
+html.theme-neon[data-page="music-import"] .upload-target-selection h4 { color: var(--nt-cyan); }
+html.theme-neon[data-page="music-import"] .upload-target-select {
+  background-color: rgba(10, 8, 26, .85);
+  border: 1px solid var(--nt-steel-strong);
+  color: var(--nt-ink);
+}
+html.theme-neon[data-page="music-import"] .upload-target-select:focus {
+  border-color: var(--nt-cyan);
+  box-shadow: 0 0 10px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="music-import"] .info-card {
+  border: 1px solid var(--nt-steel);
+  background-color: rgba(9, 7, 24, .78);
+}
+html.theme-neon[data-page="music-import"] .info-card p { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="music-import"] .info-card span { color: var(--nt-ink); }
+html.theme-neon[data-page="music-import"] #music-files-table th {
+  background-color: rgba(16, 13, 34, .9);
+  border-bottom: 1px solid var(--nt-steel-strong);
+  color: var(--nt-ink-dim);
+}
+html.theme-neon[data-page="music-import"] #music-files-table td { border-bottom: 1px solid var(--nt-steel); }
+html.theme-neon[data-page="music-import"] #music-files-table tr:hover { background-color: rgba(255, 255, 255, .03); }
+html.theme-neon[data-page="music-import"] .loading-row td,
+html.theme-neon[data-page="music-import"] .empty-row td { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="music-import"] #refresh-music-list {
+  border: none;
+  background: none;
+  padding: 5px;
+  color: var(--nt-cyan);
+}
+html.theme-neon[data-page="music-import"] #refresh-music-list:hover:not(:disabled) {
+  border: none;
+  background: rgba(0, 229, 255, .12);
+  box-shadow: none;
+}
+html.theme-neon[data-page="music-import"] .move-to-recycle-btn {
+  border: 1px solid rgba(255, 59, 92, .55);
+  background: var(--nt-red-f);
+  padding: 6px 10px;
+  color: #ffd9df;
+}
+html.theme-neon[data-page="music-import"] .move-to-recycle-btn:hover:not(:disabled) {
+  border-color: var(--nt-red);
+  background: rgba(255, 59, 92, .22);
+  box-shadow: 0 0 10px var(--nt-red-f);
+}
+
+/* 上传动作 / 进度条 / 状态条 */
+html.theme-neon[data-page="music-import"] #start-upload-btn { border-color: var(--nt-cyan); box-shadow: 0 0 12px var(--nt-cyan-f); }
+html.theme-neon[data-page="music-import"] #clear-files-btn  { border-color: var(--nt-red);  box-shadow: 0 0 12px var(--nt-red-f); }
+html.theme-neon[data-page="music-import"] .progress-container {
+  border: 1px solid var(--nt-steel-strong);
+  background-color: rgba(10, 8, 24, .92);
+}
+html.theme-neon[data-page="music-import"] .progress-bar { background-color: rgba(255, 255, 255, .08); }
+html.theme-neon[data-page="music-import"] .progress-bar-inner { background-color: var(--nt-cyan); box-shadow: 0 0 10px var(--nt-cyan-s); }
+html.theme-neon[data-page="music-import"] .upload-success .progress-bar-inner { background-color: var(--nt-lime); box-shadow: 0 0 10px var(--nt-lime-s); }
+html.theme-neon[data-page="music-import"] .upload-error .progress-bar-inner { background-color: var(--nt-red); box-shadow: 0 0 10px var(--nt-red-s); }
+html.theme-neon[data-page="music-import"] .status-message {
+  background-color: rgba(10, 8, 24, .92);
+  border: 1px solid var(--nt-steel-strong);
+}
+html.theme-neon[data-page="music-import"] .status-message.success { border-color: var(--nt-lime); }
+html.theme-neon[data-page="music-import"] .status-message.error { border-color: var(--nt-red); }
+html.theme-neon[data-page="music-import"] .status-message.warning { border-color: var(--nt-gold); }
+html.theme-neon[data-page="music-import"] .status-message.info { border-color: var(--nt-cyan); }
+
+/* ---------- 十四·八、演出页（performance）：当前为空占位骨架，
+      无内容可换肤；仅统一正文墨色，待演出功能落地后内容自动继承主题令牌 ---------- */
+html.theme-neon[data-page="performance"] body { color: var(--nt-ink); }
+
+/* ---------- 十四·九、插件管理（plugin-manager）：tab / 搜索 / 列表行 / 状态点 ---------- */
+html.theme-neon[data-page="plugin-manager"] .pm-panel {
+  border: 1px solid var(--nt-steel);
+  background: rgba(7, 6, 20, .8);
+}
+html.theme-neon[data-page="plugin-manager"] .pm-brand-text .pm-title {
+  font-family: var(--nt-disp);
+  letter-spacing: .1em;
+  text-shadow: 0 0 14px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="plugin-manager"] .pm-brand-icon {
+  border: 1px solid var(--nt-steel-strong);
+  background: rgba(255, 255, 255, .04);
+  color: var(--nt-cyan);
+  filter: drop-shadow(0 0 6px var(--nt-cyan-f));
+}
+html.theme-neon[data-page="plugin-manager"] .pm-subtitle { color: var(--nt-ink-dim); }
+
+/* tab：恢复「胶囊标签」形态；激活 = 冰青文字 + 底光（参照 .source-btn.active） */
+html.theme-neon[data-page="plugin-manager"] .pm-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  height: 40px;
+  padding: 0 16px;
+  color: var(--nt-ink-dim);
+}
+html.theme-neon[data-page="plugin-manager"] .pm-tab:hover:not(:disabled) {
+  background: rgba(255, 255, 255, .05);
+  border-color: transparent;
+  box-shadow: none;
+  transform: none;
+  color: var(--nt-ink);
+}
+html.theme-neon[data-page="plugin-manager"] .pm-tab[aria-selected="true"] {
+  background: var(--nt-cyan-f);
+  border-color: rgba(0, 229, 255, .55);
+  color: var(--nt-cyan);
+  text-shadow: 0 0 8px var(--nt-cyan-s);
+  box-shadow: inset 0 0 10px var(--nt-cyan-f), 0 0 10px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="plugin-manager"] .pm-tab[aria-selected="true"] .pm-tab-count {
+  background: rgba(0, 229, 255, .16);
+  color: var(--nt-cyan);
+}
+
+/* 搜索框 / 筛选 chips：聚焦与激活辉光 */
+html.theme-neon[data-page="plugin-manager"] .pm-search-input {
+  background: rgba(0, 0, 0, .4);
+  border: 1px solid var(--nt-steel-strong);
+  color: var(--nt-ink);
+}
+html.theme-neon[data-page="plugin-manager"] .pm-search-input:focus {
+  border-color: var(--nt-cyan);
+  box-shadow: 0 0 0 3px var(--nt-cyan-f), 0 0 14px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="plugin-manager"] .pm-chip {
+  background: transparent;
+  border: 1px solid var(--nt-steel);
+  border-radius: 999px;
+  height: 36px;
+  padding: 0 14px;
+  color: var(--nt-ink-dim);
+}
+html.theme-neon[data-page="plugin-manager"] .pm-chip:hover:not(:disabled) {
+  background: rgba(255, 255, 255, .05);
+  border-color: var(--nt-steel-strong);
+  box-shadow: none;
+  transform: none;
+  color: var(--nt-ink);
+}
+html.theme-neon[data-page="plugin-manager"] .pm-chip[aria-pressed="true"] {
+  background: var(--nt-cyan-f);
+  border-color: rgba(0, 229, 255, .55);
+  color: var(--nt-cyan);
+  text-shadow: 0 0 8px var(--nt-cyan-s);
+  box-shadow: 0 0 10px var(--nt-cyan-f);
+}
+
+/* 插件行：悬停描边辉光；状态点 / 徽标加辉（色相沿用页面语义） */
+html.theme-neon[data-page="plugin-manager"] .pm-item:hover {
+  background: rgba(255, 255, 255, .03);
+  box-shadow: inset 0 0 0 1px var(--nt-steel-strong), 0 0 14px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="plugin-manager"] .pm-title { color: var(--nt-ink); }
+html.theme-neon[data-page="plugin-manager"] .pm-id { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="plugin-manager"] .pm-dot--on,
+html.theme-neon[data-page="plugin-manager"] .pm-dot--warn { text-shadow: 0 0 8px currentColor; }
+html.theme-neon[data-page="plugin-manager"] .pm-badge--plugin { text-shadow: 0 0 8px rgba(0, 229, 255, .35); }
+html.theme-neon[data-page="plugin-manager"] .pm-badge--front  { text-shadow: 0 0 8px rgba(143, 107, 255, .4); }
+html.theme-neon[data-page="plugin-manager"] .pm-stat-num { color: var(--nt-ink); }
+html.theme-neon[data-page="plugin-manager"] .pm-config-text {
+  background: rgba(0, 0, 0, .4);
+  border: 1px solid var(--nt-steel-strong);
+  color: var(--nt-ink);
+}
+html.theme-neon[data-page="plugin-manager"] .pm-config-text:focus {
+  border-color: var(--nt-cyan);
+  box-shadow: 0 0 0 3px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="plugin-manager"] .pm-btn { padding: 0 20px; }
+html.theme-neon[data-page="plugin-manager"] .pm-btn--sm { padding: 0 14px; }
+html.theme-neon[data-page="plugin-manager"] .pm-tg-toggle {
+  border: none;
+  background: transparent;
+}
+html.theme-neon[data-page="plugin-manager"] .pm-tg-toggle:hover:not(:disabled) {
+  border: none;
+  background: rgba(255, 255, 255, .04);
+  box-shadow: none;
+  transform: none;
+}
+html.theme-neon[data-page="plugin-manager"] .pm-tg-card { border: 1px solid var(--nt-steel); background: rgba(255, 255, 255, .03); }
+html.theme-neon[data-page="plugin-manager"] .pm-tg-card:hover { border-color: var(--nt-steel-strong); }
+html.theme-neon[data-page="plugin-manager"] .pm-bar { border-top: 1px solid var(--nt-steel); }
+html.theme-neon[data-page="plugin-manager"] .pm-hint { color: var(--nt-gold); }
+
+/* ---------- 十四·十、可视化编排（game-composer）：三栏面板 / 卡片 / 连线徽标 ---------- */
+html.theme-neon[data-page="game-composer"] .gcmp-toolbar,
+html.theme-neon[data-page="game-composer"] .gcmp-panel,
+html.theme-neon[data-page="game-composer"] .gcmp-preview {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+  background: rgba(9, 7, 24, .8);
+}
+html.theme-neon[data-page="game-composer"] .gcmp-brand h1 {
+  font-family: var(--nt-disp);
+  letter-spacing: .1em;
+  text-shadow: 0 0 12px var(--nt-cyan-s), 0 0 32px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="game-composer"] .gcmp-brand-ic {
+  border: 1px solid var(--nt-steel-strong);
+  color: var(--nt-cyan);
+  filter: drop-shadow(0 0 6px var(--nt-cyan-f));
+}
+html.theme-neon[data-page="game-composer"] .gcmp-panel-title {
+  font-family: var(--nt-mono);
+  letter-spacing: .22em;
+  color: var(--nt-ink-dim);
+}
+html.theme-neon[data-page="game-composer"] .gcmp-sub,
+html.theme-neon[data-page="game-composer"] .gcmp-hint,
+html.theme-neon[data-page="game-composer"] .gcmp-picker-label,
+html.theme-neon[data-page="game-composer"] .gcmp-name-label,
+html.theme-neon[data-page="game-composer"] .gcmp-field-label { color: var(--nt-ink-dim); }
+
+/* palette / 画布卡片：悬停与选中 = 冰青描边辉光 */
+html.theme-neon[data-page="game-composer"] .gcmp-palette-item,
+html.theme-neon[data-page="game-composer"] .gcmp-item {
+  border: 1px solid var(--nt-steel);
+  background: rgba(255, 255, 255, .035);
+}
+html.theme-neon[data-page="game-composer"] .gcmp-palette-item:hover,
+html.theme-neon[data-page="game-composer"] .gcmp-item:hover {
+  border-color: var(--nt-steel-strong);
+  background: rgba(255, 255, 255, .055);
+  box-shadow: 0 0 12px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="game-composer"] .gcmp-item.is-selected {
+  border-color: rgba(0, 229, 255, .6);
+  background: var(--nt-cyan-f);
+  box-shadow: 0 0 14px var(--nt-cyan-f), inset 0 0 10px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="game-composer"] .gcmp-item-name { color: var(--nt-ink); }
+html.theme-neon[data-page="game-composer"] .gcmp-empty { border: 1px dashed var(--nt-steel-strong); }
+html.theme-neon[data-page="game-composer"] .gcmp-empty-title { color: var(--nt-ink); }
+html.theme-neon[data-page="game-composer"] .gcmp-empty-hint { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="game-composer"] .gcmp-preview-stage { border: 1px dashed var(--nt-steel-strong); }
+html.theme-neon[data-page="game-composer"] .gcmp-preview-stage .stage-slot {
+  border: 1px solid var(--nt-steel);
+  background: rgba(255, 255, 255, .03);
+}
+
+/* 属性面板输入：聚焦 = 冰青描边 + 辉光（保留 outline 可见性，只换色） */
+html.theme-neon[data-page="game-composer"] .gcmp-input,
+html.theme-neon[data-page="game-composer"] .gcmp-textarea,
+html.theme-neon[data-page="game-composer"] .gcmp-select {
+  background: rgba(0, 0, 0, .4);
+  border: 1px solid var(--nt-steel-strong);
+  color: var(--nt-ink);
+}
+html.theme-neon[data-page="game-composer"] .gcmp-input:focus-visible,
+html.theme-neon[data-page="game-composer"] .gcmp-textarea:focus-visible,
+html.theme-neon[data-page="game-composer"] .gcmp-select:focus-visible {
+  outline: 2px solid var(--nt-cyan);
+  outline-offset: 1px;
+  box-shadow: 0 0 12px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="game-composer"] .gcmp-btn { padding: 8px 14px; }
+html.theme-neon[data-page="game-composer"] .gcmp-btn--sm { padding: 5px 10px; }
+html.theme-neon[data-page="game-composer"] .gcmp-icon-btn { padding: 0; }
+
+/* 语义色（类级，补 :hover 对抗通用击发色）：保存·应用 = lime / 删除 = red */
+html.theme-neon[data-page="game-composer"] .gcmp-btn--primary,
+html.theme-neon[data-page="game-composer"] .gcmp-btn--primary:hover:not(:disabled) {
+  border-color: var(--nt-lime);
+}
+html.theme-neon[data-page="game-composer"] .gcmp-btn--primary { box-shadow: 0 0 12px var(--nt-lime-f); }
+html.theme-neon[data-page="game-composer"] .gcmp-btn--primary:hover:not(:disabled) {
+  box-shadow: 0 0 18px var(--nt-lime-f), inset 0 0 10px var(--nt-lime-f);
+}
+html.theme-neon[data-page="game-composer"] .gcmp-btn--danger,
+html.theme-neon[data-page="game-composer"] .gcmp-btn--danger:hover:not(:disabled) {
+  border-color: rgba(255, 59, 92, .6);
+}
+html.theme-neon[data-page="game-composer"] .gcmp-btn--danger { box-shadow: 0 0 12px var(--nt-red-f); }
+html.theme-neon[data-page="game-composer"] .gcmp-btn--danger:hover:not(:disabled) {
+  box-shadow: 0 0 18px var(--nt-red-f), inset 0 0 10px var(--nt-red-f);
+}
+html.theme-neon[data-page="game-composer"] .gcmp-icon-btn--danger:hover:not(:disabled) {
+  border-color: rgba(255, 59, 92, .6);
+  background: var(--nt-red-f);
+  color: #ffd9df;
+  box-shadow: 0 0 10px var(--nt-red-f);
+}
+
+/* 未保存徽标 / 高级标签 / 连线类型徽标：保留语义色相，加辉光 */
+html.theme-neon[data-page="game-composer"] .gcmp-dirty,
+html.theme-neon[data-page="game-composer"] .gcmp-tag {
+  border-color: rgba(255, 209, 102, .45);
+  color: var(--nt-gold);
+  text-shadow: 0 0 8px var(--nt-gold-f);
+}
+html.theme-neon[data-page="game-composer"] .gcmp-wiring-badge.is-event {
+  border-color: rgba(255, 209, 102, .45);
+  color: var(--nt-gold);
+  text-shadow: 0 0 8px var(--nt-gold-f);
+}
+html.theme-neon[data-page="game-composer"] .gcmp-wiring-badge.is-data,
+html.theme-neon[data-page="game-composer"] .gcmp-preview-conn {
+  border-color: rgba(0, 229, 255, .45);
+  color: var(--nt-cyan);
+  text-shadow: 0 0 8px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="game-composer"] .gcmp-wiring-title { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="game-composer"] .gcmp-wiring-item { border: 1px solid var(--nt-steel); background: rgba(255, 255, 255, .03); }
+
+/* ---------- 十四·十一、组合舞台（custom-stage）：布局卡 / 运行插槽 ---------- */
+html.theme-neon[data-page="custom-stage"] .custom-stage-header { border-bottom: 1px solid var(--nt-steel); }
+html.theme-neon[data-page="custom-stage"] .custom-stage-title {
+  font-family: var(--nt-disp);
+  letter-spacing: .1em;
+  text-shadow: 0 0 12px var(--nt-cyan-s), 0 0 32px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="custom-stage"] .custom-stage-title svg {
+  color: var(--nt-cyan);
+  filter: drop-shadow(0 0 6px var(--nt-cyan-s));
+}
+html.theme-neon[data-page="custom-stage"] .stage-link,
+html.theme-neon[data-page="custom-stage"] .stage-btn {
+  border: 1px solid var(--nt-steel-strong);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .04);
+  color: var(--nt-ink);
+  padding: 7px 14px;
+}
+html.theme-neon[data-page="custom-stage"] .stage-link:hover,
+html.theme-neon[data-page="custom-stage"] .stage-btn:hover:not(:disabled) {
+  border-color: var(--nt-cyan);
+  background: var(--nt-cyan-f);
+  box-shadow: 0 0 12px var(--nt-cyan-f);
+  color: #fff;
+}
+html.theme-neon[data-page="custom-stage"] .stage-msg { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="custom-stage"] .stage-msg--error { color: var(--nt-red); text-shadow: 0 0 8px var(--nt-red-f); }
+html.theme-neon[data-page="custom-stage"] .card.stage-card {
+  border: 1px solid var(--nt-steel);
+  background: rgba(9, 7, 24, .78);
+}
+html.theme-neon[data-page="custom-stage"] .card.stage-card:hover {
+  border-color: var(--nt-cyan);
+  box-shadow: 0 0 18px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="custom-stage"] .stage-card__name { color: var(--nt-ink); }
+html.theme-neon[data-page="custom-stage"] .stage-card__time { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="custom-stage"] .stage-card__open { color: var(--nt-cyan); text-shadow: 0 0 8px var(--nt-cyan-f); }
+html.theme-neon[data-page="custom-stage"] .stage-slot {
+  border: 1px solid var(--nt-steel);
+  border-radius: 10px;
+  background: rgba(9, 7, 24, .6);
+}
+
+/* ---------- 十四·十二、主题管理（theme-manager）：主题卡 / 启用徽标 / 指南 ---------- */
+html.theme-neon[data-page="theme-manager"] .container {
+  border: 1px solid var(--nt-steel);
+  background-color: rgba(7, 6, 20, .84);
+}
+html.theme-neon[data-page="theme-manager"] header h1 {
+  font-family: var(--nt-disp);
+  letter-spacing: .14em;
+  background: linear-gradient(94deg, #8ef3ff, var(--nt-cyan) 26%, var(--nt-violet) 58%, var(--nt-magenta));
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 14px rgba(0, 229, 255, .3));
+}
+html.theme-neon[data-page="theme-manager"] .subtitle {
+  font-family: var(--nt-mono);
+  letter-spacing: .3em;
+  color: var(--nt-ink-dim);
+}
+html.theme-neon[data-page="theme-manager"] .tm-card {
+  border: 1px solid var(--nt-steel);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(255, 255, 255, .012));
+}
+html.theme-neon[data-page="theme-manager"] .tm-card:hover {
+  border-color: var(--nt-steel-strong);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .4), 0 0 16px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="theme-manager"] .tm-card--active {
+  border-color: rgba(0, 229, 255, .65);
+  box-shadow: 0 0 0 1px rgba(0, 229, 255, .3), 0 0 22px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="theme-manager"] .tm-theme-name { color: var(--nt-ink); }
+html.theme-neon[data-page="theme-manager"] .tm-theme-tag { color: var(--nt-cyan); text-shadow: 0 0 8px var(--nt-cyan-f); }
+html.theme-neon[data-page="theme-manager"] .tm-theme-desc,
+html.theme-neon[data-page="theme-manager"] .tm-theme-features,
+html.theme-neon[data-page="theme-manager"] .tm-default-note { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="theme-manager"] .tm-active-badge { box-shadow: 0 0 14px rgba(125, 211, 252, .35); }
+html.theme-neon[data-page="theme-manager"] .tm-use-btn {
+  border: 1px solid rgba(0, 229, 255, .55);
+  background: rgba(0, 229, 255, .08);
+  border-radius: 9px;
+  padding: 10px 16px;
+  color: #eaffff;
+}
+html.theme-neon[data-page="theme-manager"] .tm-use-btn:hover:not(:disabled) {
+  background: rgba(0, 229, 255, .16);
+  box-shadow: 0 0 16px var(--nt-cyan-f);
+}
+html.theme-neon[data-page="theme-manager"] .tm-guide { border-top: 1px solid var(--nt-steel); }
+html.theme-neon[data-page="theme-manager"] .tm-guide summary { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="theme-manager"] .tm-guide summary:hover { color: var(--nt-cyan); text-shadow: 0 0 8px var(--nt-cyan-f); }
+html.theme-neon[data-page="theme-manager"] .tm-guide-body li { color: var(--nt-ink-dim); }
+html.theme-neon[data-page="theme-manager"] .tm-guide-body code { color: var(--nt-cyan); background: rgba(0, 229, 255, .08); }
+html.theme-neon[data-page="theme-manager"] #theme-status { color: var(--nt-lime); text-shadow: 0 0 8px var(--nt-lime-f); }
+html.theme-neon[data-page="theme-manager"] #theme-status.error { color: var(--nt-red); text-shadow: 0 0 8px var(--nt-red-f); }
+html.theme-neon[data-page="theme-manager"] footer { color: var(--nt-ink-dim); }
+
+/* ---------- 十四·十三、游戏中心补遗（games）：页脚 + 键盘焦点环 ---------- */
+html.theme-neon[data-page="games"] footer {
+  border-top: 1px solid var(--nt-steel);
+  color: var(--nt-ink-dim);
+}
+html.theme-neon[data-page="games"] .game-card:focus-visible {
+  outline: 2px solid var(--nt-cyan);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+ * 十三、减弱动态偏好：本主题全部装饰动画停用
+ * ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  html.theme-neon[data-page] *,
+  html.theme-neon .neon-floor,
+  html.theme-neon .neon-beams i,
+  html.theme-neon .neon-ticker-in { animation: none !important; }
+  html.theme-neon .neon-beams i:first-child,
+  html.theme-neon .neon-beams i:last-child { transform: rotate(15deg); }
+}

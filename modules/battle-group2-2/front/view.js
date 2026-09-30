@@ -743,7 +743,7 @@ function setupEventListeners(signal) {
   if (DOM.homeButton) {
     DOM.homeButton.addEventListener("click", () => {
       saveState();
-      window.location.href = "index.html";
+      window.location.href = "/m/home";
     }, { signal });
   }
 

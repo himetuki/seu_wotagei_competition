@@ -1,0 +1,52 @@
+/* ============================================================
+ * neon-penlights —— 荧光棒人浪样式（component-neon-penlights 自带）
+ *
+ * 显隐守卫（全部在此，JS 侧零逻辑）：
+ *   - 默认 display:none；仅 html.theme-neon 时显形（主题激活由
+ *     component-theme-neon 拨 html 类）
+ *   - body.battle-mode（比赛演出：隐藏所有元素只留背景图）→ 强制隐藏
+ *   - prefers-reduced-motion: reduce → 摆动/明暗动画停用，保留静态点灯
+ * ============================================================ */
+
+.npl-row { display: none; }
+
+html.theme-neon .npl-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 15px;
+  pointer-events: none;
+}
+
+/* 常驻条：fixed 底缘观众席（不占布局） */
+html.theme-neon .npl-row--fixed {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  padding: 0 12px 7px;
+  z-index: 40;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+
+/* 内联排布（被编排页当组件实例化时） */
+.npl-row--inline { position: static; padding: 10px 0; }
+
+/* 单根荧光棒：端头亮芯 + 光晕，origin 底部小角度摆动 */
+.npl {
+  width: 10px; height: var(--h, 48px); border-radius: 6px; flex: none;
+  background: linear-gradient(180deg, var(--c) 0%, #ffffff 8%, var(--c) 32%, rgba(10, 6, 24, .5) 100%);
+  box-shadow: 0 0 8px var(--c), 0 0 20px var(--c-s), 0 0 42px var(--c-s);
+  transform-origin: 50% 100%;
+  animation: npl-sway 2.6s ease-in-out infinite alternate, npl-glow 2.6s ease-in-out infinite alternate;
+  animation-delay: var(--d, 0s), var(--d, 0s);
+}
+@keyframes npl-sway { from { transform: rotate(-6deg); } to { transform: rotate(6deg); } }
+@keyframes npl-glow { from { filter: brightness(.8); } to { filter: brightness(1.35); } }
+
+/* 比赛演出模式：整条退场（只留背景图） */
+html.theme-neon body.battle-mode .npl-row { display: none !important; }
+
+/* 减弱动态偏好：定格为静态点灯 */
+@media (prefers-reduced-motion: reduce) {
+  html.theme-neon .npl { animation: none !important; }
+}

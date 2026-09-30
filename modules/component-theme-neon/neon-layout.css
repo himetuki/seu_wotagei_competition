@@ -1,0 +1,1412 @@
+/* ============================================================
+ * NEON STAGE 动态流式布局层（component-theme-neon · 单屏呈现）
+ *
+ * 定位：纯布局 CSS（theme.css 之后的第二个 <link>，由 front/plugin.js
+ *   ensureStylesheet 注入，id "theme-neon-layout-css"）。职责只有一件事——
+ *   让所有页面在常规视口下尽量免滚动单屏呈现；配色/换肤仍归 theme.css。
+ *
+ * 纪律：
+ *   - 全部选择器挂在 html.theme-neon 之下（默认主题零影响）；
+ *   - 不改任何页面文件、不改内核；只覆写布局盒模型（尺寸/间距/滚动），
+ *     不动被 JS 引用的 id/类，不新增动画，不用 color-mix/@property；
+ *   - 视口锁定只在 @media (min-height: 720px) 生效（height:100dvh +
+ *     100vh 回退）；矮视口三级压缩见文末（820 / 700 / 620），
+ *     620 以下一律恢复页面滚动——内容永远可达；
+ *   - 天然超高内容改为内部滚动（配统一细霓虹滚动条），不隐藏任何
+ *     含交互元素的区块（display:none 仅限纯装饰节点）；
+ *   - body.battle-mode 的隐藏规则由各页 CSS 负责，本层不参与、不干扰。
+ * ============================================================ */
+
+/* ============================================================
+ * 〇、全局：统一细霓虹滚动条（内部滚动容器的观感基座）
+ * ============================================================ */
+html.theme-neon {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 229, 255, 0.38) transparent;
+}
+html.theme-neon *::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+html.theme-neon *::-webkit-scrollbar-track {
+  background: transparent;
+}
+html.theme-neon *::-webkit-scrollbar-thumb {
+  background: rgba(0, 229, 255, 0.3);
+  border-radius: 999px;
+}
+html.theme-neon *::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 229, 255, 0.55);
+}
+
+/* ============================================================
+ * 一、home（首页）：标题/宫格纵向压缩；≥1100px 宽 3 列宫格
+ * ============================================================ */
+html.theme-neon[data-page="home"] .container {
+  padding: clamp(44px, 6.5vh, 58px) clamp(14px, 2vw, 24px) clamp(56px, 8vh, 76px);
+}
+html.theme-neon[data-page="home"] .container > header {
+  margin-bottom: clamp(12px, 2.6vh, 28px);
+}
+html.theme-neon[data-page="home"] header h1 {
+  font-size: clamp(1.7rem, 1.1vw + 2.8vh, 3.1rem);
+}
+html.theme-neon[data-page="home"] header .nt-kicker {
+  margin-bottom: clamp(6px, 1.2vh, 12px);
+}
+html.theme-neon[data-page="home"] header .nt-jp {
+  margin-top: clamp(6px, 1.2vh, 12px);
+}
+html.theme-neon[data-page="home"] #nav-buttons {
+  gap: clamp(10px, 1.6vh, 14px);
+}
+html.theme-neon[data-page="home"] .start-btn {
+  height: clamp(50px, 7.4vh, 64px);
+}
+html.theme-neon[data-page="home"] .nav-btn {
+  padding: clamp(10px, 1.8vh, 16px) clamp(12px, 1.4vw, 16px);
+  gap: clamp(6px, 1.2vh, 10px);
+}
+html.theme-neon[data-page="home"] .nav-btn .btn-icon {
+  width: clamp(30px, 4.6vh, 38px);
+  height: clamp(30px, 4.6vh, 38px);
+}
+@media (min-width: 1100px) {
+  html.theme-neon[data-page="home"] #nav-buttons {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-width: 1040px;
+  }
+}
+
+/* ============================================================
+ * 二、select（赛制选择）：卡片网格 minmax 收窄 + 间距压缩
+ * ============================================================ */
+html.theme-neon[data-page="select"] body {
+  padding: clamp(10px, 2vh, 44px) clamp(10px, 1.6vw, 16px);
+}
+html.theme-neon[data-page="select"] .container {
+  padding: clamp(14px, 2.6vh, 28px) clamp(14px, 2.4vw, 28px) clamp(16px, 3.2vh, 44px);
+}
+html.theme-neon[data-page="select"] header {
+  margin-bottom: clamp(12px, 2.8vh, 28px);
+}
+html.theme-neon[data-page="select"] header h1 {
+  font-size: clamp(1.5rem, 1.2vw + 2.4vh, 2.2rem);
+}
+html.theme-neon[data-page="select"] .mode-group {
+  margin-top: clamp(14px, 2.8vh, 28px);
+}
+html.theme-neon[data-page="select"] .group-label {
+  margin-bottom: clamp(8px, 1.4vh, 14px);
+}
+html.theme-neon[data-page="select"] .mode-grid {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: clamp(12px, 1.8vh, 20px);
+}
+html.theme-neon[data-page="select"] .mode-card {
+  padding: clamp(10px, 1.6vh, 14px) clamp(12px, 1.4vw, 16px);
+  gap: clamp(8px, 1.2vh, 14px);
+}
+html.theme-neon[data-page="select"] .card-icon {
+  width: clamp(38px, 5.2vh, 46px);
+  height: clamp(38px, 5.2vh, 46px);
+}
+html.theme-neon[data-page="select"] .mode-group--footer {
+  margin-top: clamp(16px, 3vh, 44px);
+  padding-top: clamp(12px, 2.4vh, 28px);
+}
+html.theme-neon[data-page="select"] .setting-footer-btn {
+  min-height: clamp(44px, 6.4vh, 52px);
+  padding: clamp(8px, 1.4vh, 12px) 16px;
+}
+html.theme-neon[data-page="select"] footer {
+  margin-top: clamp(12px, 2.4vh, 44px);
+}
+@media (min-height: 720px) {
+  html.theme-neon[data-page="select"] body {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  html.theme-neon[data-page="select"] .container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  html.theme-neon[data-page="select"] main {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+}
+
+/* ============================================================
+ * 三、games（游戏中心）：单屏 flex 容器
+ * ============================================================ */
+html.theme-neon[data-page="games"] header {
+  margin-bottom: clamp(14px, 3.4vh, 30px);
+}
+html.theme-neon[data-page="games"] header h1 {
+  font-size: clamp(1.6rem, 1.3vw + 2.4vh, 2.5rem);
+  margin-bottom: clamp(6px, 1.2vh, 10px);
+}
+html.theme-neon[data-page="games"] .subtitle {
+  font-size: clamp(1rem, 1.1vw + 1.2vh, 1.2rem);
+  margin-bottom: clamp(8px, 2vh, 20px);
+}
+html.theme-neon[data-page="games"] .games-grid {
+  gap: clamp(12px, 2.2vh, 20px);
+  margin-bottom: clamp(12px, 2.8vh, 40px);
+}
+html.theme-neon[data-page="games"] .game-card {
+  padding: clamp(12px, 2.2vh, 20px);
+}
+html.theme-neon[data-page="games"] .game-icon {
+  font-size: clamp(2rem, 1.4vw + 2.6vh, 3rem);
+  margin-bottom: clamp(8px, 1.6vh, 15px);
+}
+html.theme-neon[data-page="games"] .game-card h2 {
+  font-size: clamp(1.15rem, 1.1vw + 1.6vh, 1.5rem);
+  margin-bottom: clamp(6px, 1.2vh, 10px);
+}
+html.theme-neon[data-page="games"] .navigation {
+  padding-top: clamp(8px, 1.8vh, 20px);
+}
+html.theme-neon[data-page="games"] footer {
+  margin-top: clamp(8px, 1.8vh, 20px);
+}
+@media (min-height: 720px) {
+  html.theme-neon[data-page="games"] body {
+    overflow: hidden;
+  }
+  html.theme-neon[data-page="games"] .container {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  html.theme-neon[data-page="games"] main {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+}
+
+/* ============================================================
+ * 四、battle-group1 / battle-group1-2：VS 竞技场 + 技池内部滚动
+ * ============================================================ */
+html.theme-neon[data-page^="battle-group1"] .container {
+  padding: clamp(10px, 2vh, 20px);
+}
+html.theme-neon[data-page^="battle-group1"] header h1 {
+  font-size: clamp(1.4rem, 1.2vw + 2.6vh, 2.5rem);
+  margin-bottom: clamp(8px, 1.8vh, 20px);
+}
+html.theme-neon[data-page="battle-group1-2"] header .subtitle {
+  margin-bottom: clamp(8px, 1.8vh, 20px);
+  font-size: clamp(0.95rem, 1.1vw + 1.2vh, 1.2rem);
+}
+html.theme-neon[data-page^="battle-group1"] section {
+  margin-bottom: clamp(10px, 2vh, 30px);
+}
+html.theme-neon[data-page^="battle-group1"] #battle-info {
+  padding: clamp(6px, 1.2vh, 10px);
+}
+html.theme-neon[data-page^="battle-group1"] #battle-info h2 {
+  font-size: clamp(1.05rem, 1.1vw + 1.6vh, 1.5rem);
+}
+html.theme-neon[data-page^="battle-group1"] .players {
+  gap: clamp(10px, 2vh, 20px);
+}
+html.theme-neon[data-page^="battle-group1"] .player {
+  padding: clamp(8px, 1.6vh, 15px);
+}
+html.theme-neon[data-page^="battle-group1"] .player h3 {
+  font-size: clamp(18px, 1vw + 2.2vh, 30px);
+  margin-bottom: clamp(6px, 1.2vh, 15px);
+  padding-bottom: clamp(4px, 1vh, 10px);
+}
+html.theme-neon[data-page^="battle-group1"] .actions {
+  gap: clamp(6px, 1.2vh, 10px);
+  margin: clamp(8px, 1.6vh, 20px) 0;
+}
+html.theme-neon[data-page^="battle-group1"] #actions-section button,
+html.theme-neon[data-page^="battle-group1"] .navigation button {
+  padding: clamp(6px, 1.3vh, 12px) clamp(12px, 1.6vw, 20px);
+  font-size: clamp(13px, 1.7vh, 16px);
+}
+html.theme-neon[data-page^="battle-group1"] .random-tricks,
+html.theme-neon[data-page^="battle-group1"] .music {
+  padding: clamp(8px, 1.6vh, 15px);
+}
+html.theme-neon[data-page^="battle-group1"] .random-tricks h3,
+html.theme-neon[data-page^="battle-group1"] .music h3 {
+  margin-bottom: clamp(4px, 1vh, 10px);
+}
+html.theme-neon[data-page="battle-group1"] #random-tricks-display {
+  font-size: clamp(16px, 1vw + 1.6vh, 24px);
+  min-height: clamp(40px, 6.6vh, 60px);
+}
+html.theme-neon[data-page^="battle-group1"] #music-name {
+  font-size: clamp(16px, 1vw + 1.6vh, 24px);
+  min-height: clamp(24px, 4vh, 36px);
+  margin: clamp(4px, 1vh, 10px) 0;
+}
+html.theme-neon[data-page="battle-group1"] .tricks-pool {
+  padding: clamp(8px, 1.6vh, 15px);
+}
+html.theme-neon[data-page="battle-group1"] .tricks-pool h3 {
+  margin-bottom: clamp(6px, 1.2vh, 15px);
+}
+html.theme-neon[data-page="battle-group1"] .tricks-pool-player {
+  padding: clamp(6px, 1.4vh, 15px);
+}
+html.theme-neon[data-page="battle-group1"] .tricks-pool-player h4 {
+  margin-bottom: clamp(4px, 1vh, 10px);
+}
+html.theme-neon[data-page="battle-group1-2"] #tournament-bracket {
+  padding: clamp(10px, 1.8vh, 20px);
+  margin-bottom: clamp(10px, 2vh, 25px);
+}
+html.theme-neon[data-page="battle-group1-2"] .bracket-container {
+  max-height: 26vh;
+  overflow: auto;
+}
+html.theme-neon[data-page="battle-group1-2"] #bracket-display {
+  min-height: clamp(120px, 18vh, 180px);
+}
+html.theme-neon[data-page^="battle-group1"] .navigation {
+  margin-top: clamp(6px, 1.4vh, 20px);
+}
+@media (min-height: 720px) {
+  html.theme-neon[data-page^="battle-group1"] body {
+    overflow: hidden;
+  }
+  html.theme-neon[data-page^="battle-group1"] .container {
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  html.theme-neon[data-page^="battle-group1"] main {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  /* 技池吃掉富余高度，列表内部滚动（页面 max-height:300px 由本层接管） */
+  html.theme-neon[data-page="battle-group1"] #tricks-pool-section {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+  html.theme-neon[data-page="battle-group1"] .tricks-pool {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  html.theme-neon[data-page="battle-group1"] .tricks-pool-container {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+  html.theme-neon[data-page="battle-group1"] .tricks-pool-player {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  html.theme-neon[data-page="battle-group1"] .tricks-pool-list {
+    flex: 1 1 0;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+  }
+  html.theme-neon[data-page="battle-group1-2"] #tournament-bracket {
+    flex: 0 1 auto;
+    min-height: 0;
+  }
+}
+
+/* ============================================================
+ * 五、battle-group2 / battle-group2-2：名单/技名列表内部滚动
+ * ============================================================ */
+html.theme-neon[data-page^="battle-group2"] header {
+  padding: clamp(4px, 1.2vh, 10px) clamp(10px, 2vw, 20px);
+}
+html.theme-neon[data-page^="battle-group2"] .header-buttons {
+  margin-bottom: clamp(4px, 1vh, 10px);
+}
+html.theme-neon[data-page^="battle-group2"] header h1 {
+  font-size: clamp(1.2rem, 1.1vw + 2.2vh, 2rem);
+  margin: clamp(2px, 0.8vh, 10px) 0;
+}
+html.theme-neon[data-page^="battle-group2"] .clear-cache-btn {
+  padding: clamp(4px, 1vh, 8px) clamp(10px, 1.4vw, 15px);
+  font-size: clamp(12px, 1.5vh, 14px);
+}
+html.theme-neon[data-page^="battle-group2"] main {
+  margin: clamp(8px, 1.6vh, 20px);
+  padding: clamp(10px, 1.8vh, 20px);
+}
+html.theme-neon[data-page^="battle-group2"] #playerSection,
+html.theme-neon[data-page^="battle-group2"] #trickSection {
+  width: 100%;
+}
+html.theme-neon[data-page^="battle-group2"] h2.small-text {
+  font-size: clamp(13px, 1.8vh, 16px);
+  margin: clamp(2px, 0.6vh, 6px) 0;
+}
+html.theme-neon[data-page^="battle-group2"] #playerList {
+  max-height: 28vh;
+  overflow-y: auto;
+}
+html.theme-neon[data-page^="battle-group2"] #playerList li,
+html.theme-neon[data-page^="battle-group2"] #trickList li {
+  padding: clamp(6px, 1.2vh, 10px);
+}
+html.theme-neon[data-page^="battle-group2"] #currentPlayer,
+html.theme-neon[data-page^="battle-group2"] #currentTrick,
+html.theme-neon[data-page^="battle-group2"] #currentMusic {
+  font-size: clamp(20px, 1vw + 3.6vh, 44px);
+  margin: clamp(2px, 0.8vh, 10px) 0;
+}
+html.theme-neon[data-page^="battle-group2"] .nt-h3-en--side {
+  margin: 2px 0 0;
+}
+html.theme-neon[data-page^="battle-group2"] #buttons {
+  margin-top: clamp(8px, 1.6vh, 20px);
+}
+html.theme-neon[data-page^="battle-group2"] #buttons button {
+  margin: clamp(4px, 0.9vh, 10px);
+  padding: clamp(6px, 1.3vh, 10px) clamp(12px, 1.6vw, 20px);
+  font-size: clamp(13px, 1.7vh, 16px);
+}
+@media (min-height: 720px) {
+  html.theme-neon[data-page^="battle-group2"] body {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  html.theme-neon[data-page^="battle-group2"] header {
+    flex: 0 0 auto;
+  }
+  html.theme-neon[data-page^="battle-group2"] main {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  html.theme-neon[data-page^="battle-group2"] #playerSection {
+    flex: 0 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  html.theme-neon[data-page^="battle-group2"] #trickSection {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  /* 技名列表吃掉富余高度，内部滚动 */
+  html.theme-neon[data-page^="battle-group2"] #trickList {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+  }
+}
+
+/* ============================================================
+ * 六、group-battle（团体赛）：成员池/记录内部滚动，卡面压缩
+ * ============================================================ */
+html.theme-neon[data-page="group-battle"] .container {
+  padding: clamp(10px, 2vh, 20px);
+}
+html.theme-neon[data-page="group-battle"] header h1 {
+  font-size: clamp(1.4rem, 1.2vw + 2.4vh, 2.5rem);
+  margin-bottom: clamp(8px, 1.8vh, 20px);
+}
+html.theme-neon[data-page="group-battle"] section {
+  margin-bottom: clamp(10px, 2vh, 25px);
+}
+html.theme-neon[data-page="group-battle"] .section-title {
+  margin-bottom: clamp(6px, 1.2vh, 12px);
+  font-size: clamp(0.95rem, 1.1vw + 1.2vh, 1.2rem);
+}
+html.theme-neon[data-page="group-battle"] #status-section {
+  padding: clamp(8px, 1.6vh, 15px);
+}
+html.theme-neon[data-page="group-battle"] #bracket-status {
+  font-size: clamp(1rem, 1.1vw + 1.6vh, 1.3rem);
+  margin-bottom: clamp(2px, 0.8vh, 8px);
+}
+html.theme-neon[data-page="group-battle"] #system-hint {
+  font-size: clamp(0.9rem, 1.1vw + 1vh, 1.1rem);
+}
+html.theme-neon[data-page="group-battle"] #unassigned-section {
+  padding: clamp(8px, 1.4vh, 15px);
+}
+html.theme-neon[data-page="group-battle"] .unassigned-pool {
+  min-height: 0;
+  max-height: 16vh;
+  overflow-y: auto;
+}
+html.theme-neon[data-page="group-battle"] .member-chip {
+  padding: clamp(5px, 1.1vh, 8px) clamp(10px, 1.4vw, 16px);
+  font-size: clamp(0.85rem, 1.4vh, 0.95rem);
+}
+html.theme-neon[data-page="group-battle"] .group-card {
+  min-height: 0;
+  padding: clamp(8px, 1.6vh, 15px);
+}
+html.theme-neon[data-page="group-battle"] .group-title {
+  font-size: clamp(1rem, 1.1vw + 1.4vh, 1.3rem);
+  margin-bottom: clamp(4px, 1.2vh, 12px);
+}
+html.theme-neon[data-page="group-battle"] .group-members {
+  gap: clamp(2px, 0.6vh, 6px);
+}
+html.theme-neon[data-page="group-battle"] #battle-arena {
+  padding: clamp(8px, 1.6vh, 20px) 0;
+}
+html.theme-neon[data-page="group-battle"] .arena-vs {
+  gap: clamp(12px, 2vw, 30px);
+}
+html.theme-neon[data-page="group-battle"] .arena-player {
+  min-height: clamp(100px, 18vh, 180px);
+  padding: clamp(10px, 2.4vh, 25px);
+}
+html.theme-neon[data-page="group-battle"] .arena-player-name {
+  font-size: clamp(1.3rem, 1.2vw + 2vh, 2rem);
+}
+html.theme-neon[data-page="group-battle"] .vs-divider {
+  font-size: clamp(1.5rem, 1.2vw + 2.4vh, 2.5rem);
+}
+html.theme-neon[data-page="group-battle"] .actions {
+  gap: clamp(8px, 1.4vh, 12px);
+}
+html.theme-neon[data-page="group-battle"] #actions-section button {
+  padding: clamp(6px, 1.3vh, 12px) clamp(12px, 1.8vw, 22px);
+}
+html.theme-neon[data-page="group-battle"] #history-section {
+  padding: clamp(8px, 1.4vh, 15px);
+}
+html.theme-neon[data-page="group-battle"] #match-history {
+  max-height: clamp(90px, 16vh, 200px);
+  overflow-y: auto;
+}
+html.theme-neon[data-page="group-battle"] .navigation {
+  padding-top: clamp(8px, 1.6vh, 20px);
+}
+html.theme-neon[data-page="group-battle"] footer {
+  margin-top: clamp(8px, 1.6vh, 20px);
+}
+@media (min-height: 720px) {
+  html.theme-neon[data-page="group-battle"] body {
+    overflow: hidden;
+  }
+  html.theme-neon[data-page="group-battle"] .container {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
+/* ============================================================
+ * 七、drag（对阵树）：画布随视口高度收缩，保住音乐栏/状态栏
+ * ============================================================ */
+html.theme-neon[data-page="drag"] .app-wrapper {
+  gap: clamp(4px, 1vh, 8px);
+  /* 画布 16:9：用「高度预算反推宽度上限」保比缩放
+     （215px ≈ 控制栏 + 音乐栏 + 状态栏 + 间隙 + 上下呼吸） */
+  max-width: min(1200px, calc((100vh - 215px) * 1.7778));
+  max-width: min(1200px, calc((100dvh - 215px) * 1.7778));
+}
+html.theme-neon[data-page="drag"] .canvas {
+  max-height: 56vh;
+}
+html.theme-neon[data-page="drag"] .control-bar {
+  padding: clamp(4px, 1vh, 8px) clamp(10px, 1.6vw, 16px);
+}
+html.theme-neon[data-page="drag"] .control-bar h1 {
+  font-size: clamp(1rem, 1.1vw + 1.4vh, 1.3rem);
+}
+html.theme-neon[data-page="drag"] .header-right {
+  gap: clamp(6px, 1vh, 10px);
+}
+html.theme-neon[data-page="drag"] .source-btn,
+html.theme-neon[data-page="drag"] .ctrl-btn {
+  padding: clamp(3px, 0.8vh, 4px) clamp(8px, 1.2vw, 14px);
+  font-size: clamp(11px, 1.5vh, 13px);
+}
+html.theme-neon[data-page="drag"] .music-bar {
+  padding: clamp(4px, 1vh, 8px) clamp(10px, 1.6vw, 16px);
+}
+html.theme-neon[data-page="drag"] .music-actions button {
+  padding: clamp(4px, 1vh, 6px) clamp(10px, 1.4vw, 18px);
+  font-size: clamp(12px, 1.5vh, 14px);
+}
+html.theme-neon[data-page="drag"] .status-bar {
+  padding: clamp(3px, 0.9vh, 8px) clamp(10px, 1.6vw, 16px);
+  font-size: clamp(11px, 1.5vh, 13px);
+}
+
+/* ============================================================
+ * 八、music-draw（音乐抽取）：三曲库卡内部压缩
+ * ============================================================ */
+html.theme-neon[data-page="music-draw"] .container {
+  padding: clamp(12px, 2.4vh, 30px);
+}
+html.theme-neon[data-page="music-draw"] header h1 {
+  font-size: clamp(1.5rem, 1.3vw + 2.4vh, 2.5rem);
+  margin-bottom: clamp(10px, 2.6vh, 30px);
+}
+html.theme-neon[data-page="music-draw"] .music-group {
+  padding: clamp(10px, 1.8vh, 20px);
+}
+html.theme-neon[data-page="music-draw"] .music-group h2 {
+  font-size: clamp(1.1rem, 1.1vw + 1.6vh, 1.5rem);
+  margin-bottom: clamp(6px, 1.4vh, 15px);
+}
+html.theme-neon[data-page="music-draw"] .music-info {
+  min-height: clamp(34px, 6vh, 50px);
+  padding: clamp(6px, 1.2vh, 15px);
+  margin-bottom: clamp(6px, 1.4vh, 15px);
+  font-size: clamp(0.95rem, 1.1vw + 1.2vh, 1.1rem);
+}
+html.theme-neon[data-page="music-draw"] .button-group {
+  gap: clamp(8px, 1.2vh, 12px);
+}
+html.theme-neon[data-page="music-draw"] .button-group button {
+  padding: clamp(7px, 1.4vh, 12px) clamp(10px, 1.4vw, 18px);
+  font-size: clamp(0.9rem, 1.1vw + 1vh, 1.1rem);
+}
+html.theme-neon[data-page="music-draw"] .navigation {
+  margin-top: clamp(10px, 2.4vh, 30px);
+  padding-top: clamp(6px, 1.6vh, 20px);
+}
+html.theme-neon[data-page="music-draw"] footer {
+  margin-top: clamp(8px, 1.6vh, 20px);
+}
+@media (min-height: 720px) {
+  html.theme-neon[data-page="music-draw"] body {
+    overflow: hidden;
+  }
+  html.theme-neon[data-page="music-draw"] .container {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  html.theme-neon[data-page="music-draw"] #music-section {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+  }
+}
+
+/* ============================================================
+ * 九、setting（设置中心）：面板内滚为主，表单密度压缩
+ * ============================================================ */
+html.theme-neon[data-page="setting"] .container {
+  padding: clamp(10px, 2vh, 20px);
+}
+html.theme-neon[data-page="setting"] header {
+  margin-bottom: clamp(10px, 2.6vh, 30px);
+}
+html.theme-neon[data-page="setting"] header h1 {
+  font-size: clamp(1.5rem, 1.3vw + 2.2vh, 2.5rem);
+  margin-bottom: clamp(4px, 1vh, 10px);
+}
+html.theme-neon[data-page="setting"] .subtitle {
+  font-size: clamp(0.95rem, 1.1vw + 1.2vh, 1.2rem);
+  margin-bottom: clamp(8px, 2vh, 20px);
+}
+html.theme-neon[data-page="setting"] .tab-nav {
+  margin-bottom: clamp(10px, 2.6vh, 30px);
+}
+html.theme-neon[data-page="setting"] .tab-btn {
+  padding: clamp(6px, 1.4vh, 10px) clamp(10px, 1.6vw, 20px);
+  font-size: clamp(0.95rem, 1.1vw + 1.2vh, 1.1rem);
+}
+html.theme-neon[data-page="setting"] .section-header {
+  margin-bottom: clamp(8px, 1.8vh, 20px);
+}
+html.theme-neon[data-page="setting"] .data-list,
+html.theme-neon[data-page="setting"] .data-editor {
+  padding: clamp(10px, 1.8vh, 20px);
+}
+html.theme-neon[data-page="setting"] h3 {
+  margin-bottom: clamp(6px, 1.4vh, 15px);
+  padding-bottom: clamp(4px, 1vh, 8px);
+}
+html.theme-neon[data-page="setting"] .import-section {
+  padding: clamp(8px, 1.6vh, 16px);
+}
+html.theme-neon[data-page="setting"] .drop-zone {
+  padding: clamp(8px, 1.8vh, 18px);
+}
+@media (min-height: 720px) {
+  html.theme-neon[data-page="setting"] body {
+    overflow: hidden;
+  }
+  html.theme-neon[data-page="setting"] .container {
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  /* 激活面板吃掉富余高度，内部滚动（天然多内容页的兜底） */
+  html.theme-neon[data-page="setting"] main {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  html.theme-neon[data-page="setting"] .tab-panel.active {
+    min-height: 0;
+  }
+  html.theme-neon[data-page="setting"] .navigation {
+    flex: 0 0 auto;
+    padding-top: clamp(6px, 1.4vh, 14px);
+  }
+}
+
+/* ============================================================
+ * 十、rank / ranking / team-rank（榜单三页）
+ * ============================================================ */
+html.theme-neon[data-page="rank"] .container {
+  padding: clamp(10px, 2vh, 20px);
+}
+html.theme-neon[data-page="rank"] header h1 {
+  font-size: clamp(1.5rem, 1.3vw + 2.4vh, 2.5rem);
+  margin-bottom: clamp(4px, 1vh, 10px);
+}
+html.theme-neon[data-page="rank"] .subtitle {
+  font-size: clamp(0.95rem, 1.1vw + 1.2vh, 1.2rem);
+  margin-bottom: clamp(10px, 2.6vh, 30px);
+}
+html.theme-neon[data-page="rank"] section {
+  margin-bottom: clamp(14px, 3vh, 40px);
+}
+html.theme-neon[data-page="rank"] section h2 {
+  font-size: clamp(1.2rem, 1.2vw + 2vh, 1.8rem);
+  margin-bottom: clamp(8px, 2vh, 20px);
+  padding-bottom: clamp(4px, 1.2vh, 10px);
+}
+html.theme-neon[data-page="rank"] #tournament-bracket {
+  margin-top: clamp(12px, 2.6vh, 40px);
+  padding-bottom: clamp(6px, 1.6vh, 20px);
+}
+html.theme-neon[data-page="rank"] .bracket-container {
+  max-height: 44vh;
+  overflow: auto;
+  padding: clamp(10px, 2vh, 25px);
+}
+html.theme-neon[data-page="rank"] .navigation {
+  gap: clamp(8px, 1.4vh, 15px);
+}
+@media (min-height: 720px) {
+  html.theme-neon[data-page="rank"] body {
+    overflow: hidden;
+  }
+  html.theme-neon[data-page="rank"] .container {
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  html.theme-neon[data-page="rank"] main {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+}
+
+/* —— ranking（一年内组排名：header + 双栏 main） —— */
+html.theme-neon[data-page="ranking"] header {
+  padding: clamp(4px, 1.2vh, 10px) clamp(10px, 2vw, 20px);
+}
+html.theme-neon[data-page="ranking"] .header-buttons {
+  margin-bottom: clamp(4px, 1vh, 10px);
+}
+html.theme-neon[data-page="ranking"] header h1 {
+  font-size: clamp(1.3rem, 1.1vw + 2.2vh, 2rem);
+  margin: clamp(2px, 0.8vh, 10px) 0;
+}
+html.theme-neon[data-page="ranking"] main {
+  padding: clamp(10px, 1.8vh, 20px);
+}
+html.theme-neon[data-page="ranking"] section {
+  padding: clamp(10px, 1.8vh, 20px);
+}
+html.theme-neon[data-page="ranking"] #playersList {
+  gap: clamp(4px, 1vh, 8px);
+}
+html.theme-neon[data-page="ranking"] #playersList li {
+  padding: clamp(5px, 1.1vh, 8px) 15px;
+}
+@media (min-height: 720px) {
+  html.theme-neon[data-page="ranking"] body {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  html.theme-neon[data-page="ranking"] header {
+    flex: 0 0 auto;
+  }
+  html.theme-neon[data-page="ranking"] main {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+  html.theme-neon[data-page="ranking"] section {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+  }
+  html.theme-neon[data-page="ranking"] #playersList {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  html.theme-neon[data-page="ranking"] #rankingContainer {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+  }
+}
+
+/* —— team-rank（团体赛排名） —— */
+html.theme-neon[data-page="team-rank"] .container {
+  padding: clamp(14px, 3vh, 40px);
+}
+html.theme-neon[data-page="team-rank"] header h1 {
+  font-size: clamp(1.7rem, 1.2vw + 3vh, 3rem);
+  margin-bottom: clamp(12px, 3.4vh, 40px);
+}
+html.theme-neon[data-page="team-rank"] #rank-display {
+  padding: clamp(8px, 1.8vh, 20px);
+}
+html.theme-neon[data-page="team-rank"] .navigation {
+  margin-top: clamp(8px, 1.6vh, 18px);
+}
+html.theme-neon[data-page="team-rank"] footer {
+  margin-top: clamp(6px, 1.4vh, 16px);
+}
+@media (min-height: 720px) {
+  html.theme-neon[data-page="team-rank"] body {
+    overflow: hidden;
+  }
+  html.theme-neon[data-page="team-rank"] .container {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  html.theme-neon[data-page="team-rank"] #rank-display {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  /* margin:auto 居中：空间足够时居中、超高时顶到起点可滚达 */
+  html.theme-neon[data-page="team-rank"] #rank-list {
+    margin-block: auto;
+  }
+}
+
+/* ============================================================
+ * 十一、moving-sth（定时搬化棒，含 settings 子页）
+ * ============================================================ */
+html.theme-neon[data-page="moving-sth"] .container {
+  padding: clamp(16px, 3vh, 50px) clamp(12px, 2vw, 20px);
+}
+html.theme-neon[data-page="moving-sth"] header {
+  margin-bottom: clamp(10px, 2.6vh, 30px);
+}
+html.theme-neon[data-page="moving-sth"] header h1 {
+  font-size: clamp(1.6rem, 1.3vw + 2.4vh, 2.5rem);
+  margin-bottom: clamp(4px, 1vh, 10px);
+}
+html.theme-neon[data-page="moving-sth"] .subtitle {
+  font-size: clamp(0.95rem, 1.1vw + 1.2vh, 1.2rem);
+}
+html.theme-neon[data-page="moving-sth"] .game-container {
+  min-height: 0;
+  padding: clamp(14px, 2.6vh, 30px);
+  margin-bottom: clamp(10px, 2vh, 30px);
+}
+html.theme-neon[data-page="moving-sth"] .timer {
+  font-size: clamp(2rem, 1.4vw + 4.4vh, 3.4rem);
+}
+html.theme-neon[data-page="moving-sth"] .navigation {
+  margin-bottom: clamp(6px, 1.4vh, 14px);
+}
+html.theme-neon[data-page="moving-sth"] footer {
+  margin-top: clamp(6px, 1.4vh, 14px);
+}
+html.theme-neon[data-page="moving-sth"] .settings-container {
+  margin-bottom: clamp(10px, 2vh, 30px);
+}
+@media (min-height: 720px) {
+  html.theme-neon[data-page="moving-sth"] body {
+    overflow: hidden;
+  }
+  html.theme-neon[data-page="moving-sth"] .container {
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  html.theme-neon[data-page="moving-sth"] main {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  /* settings.html 子页：设置面板区内部滚动 */
+  html.theme-neon[data-page="moving-sth"] .container > .settings-container {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+  }
+}
+
+/* ============================================================
+ * 十二、movement-teaching（体态传技，含 settings/records 子页）
+ * ============================================================ */
+html.theme-neon[data-page="movement-teaching"] .container {
+  padding: clamp(10px, 2vh, 20px);
+}
+html.theme-neon[data-page="movement-teaching"] header {
+  margin-bottom: clamp(12px, 3vh, 40px);
+}
+html.theme-neon[data-page="movement-teaching"] h1 {
+  font-size: clamp(1.7rem, 1.3vw + 3vh, 3rem);
+}
+html.theme-neon[data-page="movement-teaching"] .settings-panel,
+html.theme-neon[data-page="movement-teaching"] .records-panel {
+  padding: clamp(12px, 2.4vh, 30px);
+  margin-bottom: clamp(10px, 2vh, 30px);
+}
+html.theme-neon[data-page="movement-teaching"] footer {
+  margin-top: clamp(6px, 1.4vh, 14px);
+}
+@media (min-height: 720px) {
+  html.theme-neon[data-page="movement-teaching"] .container {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  html.theme-neon[data-page="movement-teaching"] main {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+  html.theme-neon[data-page="movement-teaching"] .navigation {
+    flex: 0 0 auto;
+  }
+  /* settings/records 子页面板内部滚动（面板天然超高） */
+  html.theme-neon[data-page="movement-teaching"] .settings-panel,
+  html.theme-neon[data-page="movement-teaching"] .records-panel {
+    max-height: 72vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
+/* ============================================================
+ * 十三、music-import（音乐导入）：双栏面板内滚
+ * ============================================================ */
+html.theme-neon[data-page="music-import"] .container {
+  padding: clamp(10px, 2vh, 20px);
+}
+html.theme-neon[data-page="music-import"] header {
+  margin-bottom: clamp(10px, 2.4vh, 30px);
+}
+html.theme-neon[data-page="music-import"] header h1 {
+  font-size: clamp(1.5rem, 1.3vw + 2.2vh, 2.5rem);
+  margin-bottom: clamp(4px, 1vh, 10px);
+}
+html.theme-neon[data-page="music-import"] .subtitle {
+  margin-bottom: clamp(8px, 1.8vh, 20px);
+}
+html.theme-neon[data-page="music-import"] .group-selector {
+  gap: clamp(6px, 1.2vh, 10px);
+  margin-bottom: clamp(10px, 2vh, 24px);
+}
+html.theme-neon[data-page="music-import"] .group-btn {
+  padding: clamp(6px, 1.2vh, 10px) clamp(10px, 1.4vw, 16px);
+  font-size: clamp(12px, 1.6vh, 14px);
+}
+html.theme-neon[data-page="music-import"] main {
+  margin-bottom: clamp(10px, 2vh, 30px);
+}
+html.theme-neon[data-page="music-import"] .navigation {
+  padding-top: clamp(6px, 1.4vh, 14px);
+}
+html.theme-neon[data-page="music-import"] footer {
+  margin-top: clamp(6px, 1.4vh, 16px);
+}
+@media (min-height: 720px) {
+  html.theme-neon[data-page="music-import"] body {
+    overflow: hidden;
+  }
+  html.theme-neon[data-page="music-import"] .container {
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  html.theme-neon[data-page="music-import"] main {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+}
+
+/* ============================================================
+ * 十四、plugin-manager（插件管理）：三段式面板填满视口，列表内滚
+ * ============================================================ */
+html.theme-neon[data-page="plugin-manager"] body {
+  padding: clamp(12px, 2.4vh, 28px) clamp(12px, 2vw, 28px);
+}
+html.theme-neon[data-page="plugin-manager"] .pm-page {
+  gap: clamp(10px, 2vh, 20px);
+}
+html.theme-neon[data-page="plugin-manager"] .pm-brand-text .pm-title {
+  font-size: clamp(1.15rem, 1.1vw + 1.4vh, 1.45rem);
+}
+@media (min-height: 720px) {
+  html.theme-neon[data-page="plugin-manager"] body {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    align-items: stretch;
+  }
+  html.theme-neon[data-page="plugin-manager"] .pm-panel {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: clamp(12px, 2vh, 24px);
+  }
+  html.theme-neon[data-page="plugin-manager"] .pm-panel #plugin-root {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  html.theme-neon[data-page="plugin-manager"] .pm-view {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+  html.theme-neon[data-page="plugin-manager"] .pm-tabs,
+  html.theme-neon[data-page="plugin-manager"] .pm-toolbar,
+  html.theme-neon[data-page="plugin-manager"] .pm-status {
+    flex: 0 0 auto;
+  }
+  html.theme-neon[data-page="plugin-manager"] .pm-tabpanel {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  /* 插件列表吃掉富余高度（页面 max-height:min(56vh,560px) 由本层接管） */
+  html.theme-neon[data-page="plugin-manager"] .pm-list {
+    flex: 1 1 0;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+  }
+}
+
+/* ============================================================
+ * 十五、game-composer（可视化编排）：三栏填满视口，各栏内滚
+ * ============================================================ */
+html.theme-neon[data-page="game-composer"] .gcmp-page {
+  padding: clamp(10px, 2vh, 28px) clamp(10px, 1.6vw, 16px);
+}
+html.theme-neon[data-page="game-composer"] .gcmp-header .gcmp-sub {
+  margin: clamp(2px, 0.6vh, 6px) 0 0;
+}
+@media (min-height: 720px) {
+  html.theme-neon[data-page="game-composer"] body {
+    overflow: hidden;
+  }
+  html.theme-neon[data-page="game-composer"] .gcmp-page {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  /* 三栏面板拉伸到行高，栏内各自滚动 */
+  html.theme-neon[data-page="game-composer"] .gcmp-main {
+    flex: 1 1 0;
+    min-height: 0;
+    align-items: stretch;
+  }
+  html.theme-neon[data-page="game-composer"] .gcmp-palette,
+  html.theme-neon[data-page="game-composer"] .gcmp-canvas,
+  html.theme-neon[data-page="game-composer"] .gcmp-props {
+    min-height: 0;
+    max-height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  /* 预览态：画布区整体内滚 */
+  html.theme-neon[data-page="game-composer"] .gcmp-preview {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  html.theme-neon[data-page="game-composer"] .gcmp-preview-stage {
+    min-height: 0;
+  }
+}
+/* 窄屏三栏纵堆：改为整块滚动（锁定高度下内容可达） */
+@media (max-width: 1000px) and (min-height: 720px) {
+  html.theme-neon[data-page="game-composer"] .gcmp-main {
+    overflow-y: auto;
+  }
+  html.theme-neon[data-page="game-composer"] .gcmp-palette,
+  html.theme-neon[data-page="game-composer"] .gcmp-canvas,
+  html.theme-neon[data-page="game-composer"] .gcmp-props {
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+/* ============================================================
+ * 十六、custom-stage（组合舞台）：列表/运行台骨架单屏化
+ * ============================================================ */
+html.theme-neon[data-page="custom-stage"] .custom-stage-page {
+  padding: clamp(12px, 2.4vh, 24px) clamp(12px, 3vw, 28px) clamp(14px, 2.6vh, 40px);
+}
+html.theme-neon[data-page="custom-stage"] .custom-stage-header {
+  padding-bottom: clamp(8px, 1.6vh, 16px);
+}
+html.theme-neon[data-page="custom-stage"] .custom-stage-body {
+  margin-top: clamp(10px, 2vh, 20px);
+}
+@media (min-height: 720px) {
+  html.theme-neon[data-page="custom-stage"] body {
+    overflow: hidden;
+  }
+  html.theme-neon[data-page="custom-stage"] .custom-stage-page {
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  html.theme-neon[data-page="custom-stage"] .custom-stage-header {
+    flex: 0 0 auto;
+  }
+  html.theme-neon[data-page="custom-stage"] .custom-stage-body {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+}
+
+/* ============================================================
+ * 十七、theme-manager（主题管理）：主题卡网格内滚
+ * ============================================================ */
+html.theme-neon[data-page="theme-manager"] body {
+  padding: clamp(14px, 2.6vh, 40px) clamp(10px, 2vw, 16px) clamp(10px, 2vh, 30px);
+}
+html.theme-neon[data-page="theme-manager"] .container {
+  padding: clamp(14px, 2.4vh, 28px) clamp(14px, 2.4vw, 28px) clamp(10px, 2vh, 24px);
+}
+html.theme-neon[data-page="theme-manager"] header {
+  margin-bottom: clamp(10px, 2.6vh, 26px);
+}
+html.theme-neon[data-page="theme-manager"] header h1 {
+  font-size: clamp(1.4rem, 1.2vw + 2vh, 1.9rem);
+}
+html.theme-neon[data-page="theme-manager"] .subtitle {
+  margin-top: clamp(4px, 1vh, 8px);
+}
+html.theme-neon[data-page="theme-manager"] #theme-grid {
+  gap: clamp(10px, 1.8vh, 18px);
+}
+html.theme-neon[data-page="theme-manager"] .tm-guide {
+  margin-top: clamp(10px, 2vh, 20px);
+  padding-top: clamp(8px, 1.6vh, 16px);
+}
+html.theme-neon[data-page="theme-manager"] .navigation {
+  margin-top: clamp(8px, 1.6vh, 18px);
+}
+@media (min-height: 720px) {
+  html.theme-neon[data-page="theme-manager"] body {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  html.theme-neon[data-page="theme-manager"] .container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  /* 主题卡网格吃掉富余高度并内滚；下方指南/导航保持可见 */
+  html.theme-neon[data-page="theme-manager"] #theme-grid {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    max-height: none;
+    align-content: start;
+  }
+  html.theme-neon[data-page="theme-manager"] .tm-guide,
+  html.theme-neon[data-page="theme-manager"] .navigation,
+  html.theme-neon[data-page="theme-manager"] footer {
+    flex: 0 0 auto;
+  }
+}
+
+/* ============================================================
+ * 十八、矮视口分级压缩
+ *   820：收间距/字号；700：隐藏装饰行（荧光棒/卡描述/英文角标）；
+ *   620：恢复页面滚动兜底——内容永远可达。
+ * ============================================================ */
+
+/* —— 第一级：≤820px 高 —— */
+@media (max-height: 820px) {
+  html.theme-neon[data-page="home"] .start-btn {
+    height: 54px;
+  }
+  html.theme-neon[data-page="home"] .nav-btn {
+    padding: 10px 12px;
+  }
+  html.theme-neon[data-page="select"] .mode-grid {
+    gap: 14px;
+  }
+  html.theme-neon[data-page="select"] .mode-card {
+    padding: 10px 12px;
+  }
+  html.theme-neon[data-page="select"] .card-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 19px;
+  }
+  html.theme-neon[data-page="select"] .setting-footer-btn {
+    min-height: 46px;
+  }
+  html.theme-neon[data-page^="battle-group1"] section {
+    margin-bottom: 14px;
+  }
+  html.theme-neon[data-page^="battle-group1"] .actions {
+    margin: 10px 0;
+    gap: 8px;
+  }
+  html.theme-neon[data-page^="battle-group2"] #buttons button {
+    padding: 6px 14px;
+    margin: 6px;
+  }
+  html.theme-neon[data-page^="battle-group2"] #playerList {
+    max-height: 24vh;
+  }
+  html.theme-neon[data-page="group-battle"] .arena-player {
+    min-height: 110px;
+    padding: 12px;
+  }
+  html.theme-neon[data-page="drag"] .canvas {
+    max-height: 50vh;
+  }
+  html.theme-neon[data-page="drag"] .app-wrapper {
+    max-width: min(1200px, calc((100vh - 185px) * 1.7778));
+    max-width: min(1200px, calc((100dvh - 185px) * 1.7778));
+  }
+  html.theme-neon[data-page="music-draw"] .music-info {
+    min-height: 38px;
+  }
+  html.theme-neon[data-page="setting"] .data-list,
+  html.theme-neon[data-page="setting"] .data-editor {
+    padding: 14px;
+  }
+  html.theme-neon[data-page="rank"] section {
+    margin-bottom: 18px;
+  }
+  html.theme-neon[data-page="rank"] .bracket-container {
+    max-height: 38vh;
+  }
+  html.theme-neon[data-page="music-import"] .file-list-container {
+    max-height: 22vh;
+  }
+  html.theme-neon[data-page="music-import"] .music-files-container {
+    max-height: 30vh;
+  }
+  html.theme-neon[data-page="plugin-manager"] .pm-page {
+    gap: 12px;
+  }
+  html.theme-neon[data-page="plugin-manager"] .pm-panel {
+    padding: 14px;
+  }
+  html.theme-neon[data-page="game-composer"] .gcmp-page {
+    gap: 10px;
+  }
+}
+
+/* —— 第二级：≤700px 高（装饰性元素退场/压缩） —— */
+@media (max-height: 700px) {
+  /* 荧光棒人浪常驻条：纯装饰（aria-hidden），矮视口整条退场 */
+  html.theme-neon .npl-row--fixed {
+    display: none !important;
+  }
+  /* 转播条压扁，首页让位空间同步收紧 */
+  html.theme-neon .neon-ticker {
+    padding: 3px 0;
+  }
+  html.theme-neon[data-page="home"] .container {
+    padding-top: 36px;
+    padding-bottom: 56px;
+  }
+  html.theme-neon[data-page="home"] header .nt-kicker {
+    margin-bottom: 4px;
+    font-size: 10px;
+  }
+  html.theme-neon[data-page="home"] header .nt-jp {
+    margin-top: 4px;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+  }
+  /* 首页卡描述 / PRESS TO SELECT 角标：装饰性文本，退场 */
+  html.theme-neon[data-page="home"] .nav-btn .nt-card-desc {
+    display: none;
+  }
+  html.theme-neon[data-page="home"] #nav-buttons .nt-cta-en-row {
+    display: none;
+  }
+  html.theme-neon[data-page="home"] .start-btn {
+    height: 50px;
+  }
+  html.theme-neon[data-page="select"] header {
+    margin-bottom: 10px;
+  }
+  html.theme-neon[data-page="select"] footer {
+    margin-top: 10px;
+  }
+  html.theme-neon[data-page^="battle-group1"] #battle-info {
+    padding: 5px;
+  }
+  html.theme-neon[data-page^="battle-group1"] #battle-info h2 {
+    font-size: 1.05rem;
+  }
+  html.theme-neon[data-page="group-battle"] .unassigned-pool {
+    max-height: 12vh;
+  }
+  html.theme-neon[data-page="group-battle"] #match-history {
+    max-height: 12vh;
+  }
+  html.theme-neon[data-page="music-draw"] .music-info {
+    min-height: 30px;
+  }
+  html.theme-neon[data-page="setting"] .import-section {
+    padding: 10px;
+  }
+  html.theme-neon[data-page="rank"] .bracket-container {
+    max-height: 32vh;
+  }
+  html.theme-neon[data-page="game-composer"] .gcmp-header .gcmp-sub {
+    display: none;
+  }
+}
+
+/* —— 第三级：≤620px 高（恢复页面滚动兜底） —— */
+@media (max-height: 620px) {
+  /* drag 页自身 CSS 锁了 body 滚动：此处解锁，内容永远可达 */
+  html.theme-neon[data-page="drag"] body {
+    overflow: auto;
+  }
+  html.theme-neon[data-page="home"] .container {
+    padding-top: 32px;
+  }
+  html.theme-neon[data-page^="battle-group1"] section {
+    margin-bottom: 10px;
+  }
+  html.theme-neon[data-page="group-battle"] section {
+    margin-bottom: 10px;
+  }
+  html.theme-neon[data-page="music-draw"] .container {
+    padding: 10px;
+  }
+  html.theme-neon[data-page="setting"] .container {
+    padding: 8px;
+  }
+}
+
+/* ============================================================
+ * 十九、边界说明（无规则，仅备忘）
+ *   - 本层零新增动画/过渡；reduced-motion 回退由 theme.css 与各页 CSS 负责；
+ *   - body.battle-mode：页面自身隐藏规则（opacity/visibility/display）不受
+ *     本层影响——本层只改布局盒模型，battle-mode 期间守卫规则照常生效；
+ *   - min-height:720 锁定与 max-height:820/700 压缩在 720–820 区间叠加生效，
+ *     属预期（锁定形态下继续收紧）；≤719 高度锁定自然失效、页面回落文档流。
+ * ============================================================ */
+
+/* ============================================================
+ * 十五、主持人 UAT 补丁（残余溢出修正）
+ * ============================================================ */
+
+/* battle-group1 系：.info-toast 页面无定位规则 → 静态流 Permanent 占位
+   把页面撑出滚动；统一钉为 fixed 顶部居中（与 success/error toast 同位）。 */
+html.theme-neon .info-toast {
+  position: fixed !important;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  z-index: 1000;
+}
+
+/* movement-teaching：内容天然高于视口 → 容器内部滚动（页面本体免滚） */
+html.theme-neon[data-page="movement-teaching"] .container {
+  height: 100dvh;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+html.theme-neon[data-page="movement-teaching"] .container > section {
+  flex: 0 0 auto;
+}
+
+/* game-composer：8px 级溢出 → 页面骨架内边距压缩 */
+html.theme-neon[data-page="game-composer"] .gcmp-page {
+  padding-block: clamp(8px, 1.2vh, 14px);
+}
+html.theme-neon[data-page="game-composer"] .gcmp-main {
+  min-height: 0;
+}
+
+/* game-composer：#plugin-root/body 顶距 8px 归零（.gcmp-page 已锁 100dvh） */
+html.theme-neon[data-page="game-composer"] #plugin-root,
+html.theme-neon[data-page="game-composer"] body {
+  padding-top: 0;
+}
+
+/* 两页 body 8px 外边距归零（上8+下8 = 残余 16px 滚动） */
+html.theme-neon[data-page="movement-teaching"] body,
+html.theme-neon[data-page="game-composer"] body {
+  margin: 0;
+}

@@ -36,6 +36,10 @@
 该机制对**远程客户端不可达**：HTTP 层无法提交插件代码或改变插件路径；装配清单是本地文件，
 模块 id 经 slug 白名单校验（`^[a-z0-9][a-z0-9-]*$`）。
 
+主题插件系统未新增受信面：清单展示字段 `label` / `group` 为纯展示元数据（仅随
+`GET /api/plugins` 快照透传给管理页渲染）；`PUT /api/theme/active` 仅接受经
+`/^[a-z][a-z0-9-]{0,39}$/` 校验的主题 id，写入 SQLite 文档存储。
+
 ## 安全不变量
 
 1. HTTP 来源的路径片段必须经 `safeJoin`（resolve 后断言位于基准目录内）与 `safeBasename`

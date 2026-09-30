@@ -1253,6 +1253,14 @@ function setupEventListeners(signal) {
     DOM.clearCacheBtn.addEventListener("click", clearCacheAndResetGame, { signal });
   }
 
+  // 回到主页面按钮（插件化迁移补配：此前 index.html 有按钮但从未绑定，点击无响应）
+  const homeBtn = document.getElementById("home-btn");
+  if (homeBtn) {
+    homeBtn.addEventListener("click", () => {
+      window.location.href = "/m/home";
+    }, { signal });
+  }
+
   // 添加自动保存功能
   setupAutoSave();
 }

@@ -205,6 +205,14 @@
         "select"
       ],
       "order": 18
+    },
+    {
+      "id": "theme-manager",
+      "name": "主题管理",
+      "description": "系统主题切换：默认 / 霓虹 / 自建主题插件",
+      "icon": "sparkles",
+      "nav": [],
+      "order": 3
     }
   ]
 }

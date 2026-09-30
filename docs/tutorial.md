@@ -141,9 +141,11 @@ statusEl.innerHTML = icon("circle-check", { size: 16 }) + " 已保存";
 | L1 共享资产 | `web/lib/*.mjs`、`web/components/compose.mjs`、`web/components/grid.css` | 纯函数/纯样式：无监听、无定时器、无网络、无模块级可变状态；必须配 `*.test.js` | 直接 `import`（origin 相对路径），不注册插件、不进清单 |
 | L2 组件类插件 | `modules/component-<名>/`（仅 `front/{plugin,view}.js`） | 有生命周期（监听/定时器/网络/多媒体）且被 **≥2 个页面**复用 | 进 `web/front.json`（`kind:"component"` + `pages`），享受 `enabled:false` 禁用与热开关 |
 
-现有 L1 资产：`/web/lib/random.mjs` 的 `shuffle/pickN/pickOne`（等概率随机，替代有偏洗牌）、`/web/lib/persist.mjs` 的 `createPersistence`（双写持久化）、`/web/lib/undo.mjs` 的 `createUndoStack`（撤销栈）、`/web/components/compose.mjs` 的 `mountFromConfig`（页面装配器）、`/web/components/grid.css`（零媒体查询布局原语 `.grid-cards` / `.grid-flow` / `.grid-split` / `.card`）。现有 L2 组件：`music-player`（音乐播放 + 比赛模式）、`draw-machine`（抽签动画）。
+现有 L1 资产：`/web/lib/random.mjs` 的 `shuffle/pickN/pickOne`（等概率随机，替代有偏洗牌）、`/web/lib/persist.mjs` 的 `createPersistence`（双写持久化）、`/web/lib/undo.mjs` 的 `createUndoStack`（撤销栈）、`/web/components/compose.mjs` 的 `mountFromConfig`（页面装配器）、`/web/components/grid.css`（零媒体查询布局原语 `.grid-cards` / `.grid-flow` / `.grid-split` / `.card`）。现有 L2 组件：`music-player`（音乐播放 + 比赛模式）、`draw-machine`（抽签动画）、`toast`（轻提示）、`confirm-dialog`（确认对话框）、`player-list`（选手名单）、`score-board`（多队计分）、`countdown`（倒计时）、`music-source`（曲库数据源）、`neon-penlights`（霓虹荧光棒人浪），以及主题插件 `theme:neon`（霓虹主题核心）。
 
 组件表 API 共三个（`ctx.ui`）：`registerComponent(name, factory)`、`component(name)`（→ `factory | null`）、`listComponents()`——组件插件被 `enabled:false` 禁用后 `component(name)` 返回 `null`，页面据此降级。
+
+**主题插件（`component-theme-<主题id>/`）** 是 L2 的特化形态：注册名用 `theme:<id>` 前缀（主题管理页 `/m/theme-manager/` 按该前缀枚举组件表，自动发现并渲染主题卡），自带激活逻辑（注入样式 + 给 `<html>` 挂主题类 + `localStorage["ystage:theme"]` / `GET /api/theme/active` 对账），组内还可带组件成员（目录 `component-<主题id>-<名>/`，插件管理页「主题插件」标签归为一张组卡）。清单条目加 `label`（中文名）与 `group`（组显示名 / 显式成员）即获得中文名与组卡名。完整契约见[插件开发技术参考](./plugin-development.md) §1.5；主题之间互不 import，禁用 = 主题卡消失、页面回落默认皮肤。
 
 ### 6.1 脚手架（组件模式）
 
@@ -244,6 +246,7 @@ function saveState() {
 |------|------|------|
 | 模块目录 | 小写+连字符 | `modules/music-draw/` |
 | 组件类插件目录 | `component-<组件名>` | `modules/component-music-player/` |
+| 主题插件目录 | 核心 `component-theme-<主题id>`；成员 `component-<主题id>-<名>` | `modules/component-theme-neon/`、`modules/component-neon-penlights/` |
 | 后端/前端插件文件 | 固定名 | `plugin.js` / `front/plugin.js` |
 | API 端点 | `/api/{功能前缀}-{资源}` | `/api/drag-process` |
 | 数据库名 | 与 API 前缀对应 | `drag-process` |
@@ -273,6 +276,8 @@ function saveState() {
 | `modules/plugin-manager/` | 管理面：assembly 服务、config 机制、页面本身即可替换插件 |
 | `modules/component-music-player/` | L2 组件范例：音乐播放 + 比赛模式归一（`body` class 引用计数、宿主 audio 只 pause 不删） |
 | `modules/component-draw-machine/` | L2 组件范例：抽签/闪现动画归一（定时器登记、回调式结果交付、等概率 `pickOne`） |
+| `modules/component-theme-neon/` | 主题插件范例：`theme:` 组件注册、样式/氛围层注入、localStorage + 服务端激活对账、battle-mode 守卫 |
+| `modules/theme-manager/` | 主题管理页：枚举组件表自动发现主题卡、系统级主题 API（PUT id 校验 + SQLite 落盘） |
 | `modules/music-draw/` | 多实例接入范例：三曲库 = 3 个 `music-player` + 3 个 `draw-machine`（数组槽位按下标一一对应） |
 | `web/components/compose.mjs` | L1 装配器实现：`mountFromConfig` 的降级 / props 合并 / 多实例下标语义（配 `compose.test.js`） |
 

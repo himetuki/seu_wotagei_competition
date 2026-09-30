@@ -78,6 +78,28 @@ modules/component-<名>/
 
 跨页命中：`pages` 决定被哪些页面加载（`web/loader.mjs` 的 `matchPage`，缺省 = 只匹配 target 自身 id）；`enabled:false` 不 import、前端代码不下载。
 
+### 1.5 主题插件形态（`component-theme-<主题id>`，主题插件组核心）
+
+主题是 L2 组件类插件的特化形态。**目录契约**：`modules/component-theme-<主题id>/`（主题 id = 小写字母开头的 kebab-case，≤40 字符，与 `PUT /api/theme/active` 的校验同口径），仅 `front/{plugin,view}.js`（+ `theme.css` 等静态资产），无 `index.html`、无后端插件。
+
+`web/front.json` 条目（`pages` 必须列出主题要生效的全部页面 id）：
+
+```json
+{ "target": "modules/component-theme-neon", "enabled": true, "kind": "component",
+  "label": "霓虹主题核心",
+  "group": { "name": "霓虹主题", "members": ["component-neon-penlights"] },
+  "pages": ["home", "select", "..."] }
+```
+
+`apply` 内的职责（参考 `modules/component-theme-neon/front/plugin.js`）：
+
+1. `ctx.ui.registerComponent("theme:<id>", factory)`——factory 渲染主题管理页的主题预览卡（`props.active` = 是否当前主题）；theme-manager 按 `"theme:"` 前缀枚举组件表自动发现，无需登记进任何页面
+2. 资产注入无条件执行：挂自己的 `<link>` 样式与氛围层 DOM，样式规则全部挂在 `<html>` 主题类（如 `theme-neon`）之下——未激活零视觉残留
+3. **自带激活逻辑**：`localStorage["ystage:theme"]` 同步初判（避免首屏闪默认主题）+ `GET /api/theme/active` 异步对账（系统级首选；接口 404/异常 → 静默保持本地）
+4. 比赛演出守卫：`body.battle-mode` 下主题氛围全部退场只留背景图；`prefers-reduced-motion` 全量降级
+
+纪律：主题之间互不 import（组件纪律第 7 条）；禁用主题插件 = 主题从主题页消失、页面回落默认皮肤。组内**组件成员** = 目录 `modules/component-<组id>-<名>/` 的普通组件插件（如 `component-neon-penlights` 荧光棒人浪），按命名约定自动归组；约定覆盖不到的成员可在核心条目 `group.members` 显式列出 id（清单中不存在的 id 跳过）。
+
 ---
 
 ## 2. 后端插件 API
@@ -257,7 +279,7 @@ ctx.ui = {
 | `register` | `key: string`；`component: (el, meta, ctx) => cleanup \| void` | 注册页面组件。`el` = 容器元素（`#plugin-root`）；`meta` = front.json 条目的 `config`（缺省 `null`）；`ctx` = 前端 Context（`ctx.on/emit` 可用） |
 | `unregister` | `key` | 注销并触发其 cleanup |
 | `render` | `key, meta, container` | 未注册 → 渲染占位 `<div class="plugin-placeholder">插件未启用…</div>`；重复 render **先调用旧 cleanup**；组件抛错 → 捕获、降级渲染占位并 console.error（不会白屏） |
-| `registerComponent` | `name: string`（建议 kebab-case）；`factory: (hostEl, props, ctx) => cleanup \| void` | 注册组件工厂；同 name **后注册覆盖先注册**；name 非字符串/空串或 factory 非函数 → 抛错 |
+| `registerComponent` | `name: string`（建议 kebab-case）；`factory: (hostEl, props, ctx) => cleanup \| void` | 注册组件工厂；同 name **后注册覆盖先注册**；name 非字符串/空串或 factory 非函数 → 抛错。主题插件用 `theme:<id>` 前缀名（主题管理页按该前缀枚举发现主题卡，见 1.5） |
 | `component` | `name` | 返回工厂本体；未注册或非字符串名 → **`null`**（调用方据此优雅降级，不抛错） |
 | `listComponents` | — | 已注册组件名的**插入序快照**（防御性拷贝，调试/管理页/单测断言用） |
 
@@ -330,7 +352,7 @@ import { icon, iconEl, ICON_NAMES } from "/web/icons.mjs";
 |-----|------|-----------|
 | `icon(name, opts?)` | `name` 图标名；`opts = { size?, class?, stroke?, label? }` | 内联 SVG **字符串**。`size` 默认 20、`stroke` 默认 1.75（非法/非正数回退默认）、`class` 追加且基础类 `y-icon` 恒保留。**未知名字返回 `""`**（占位安全，不抛错） |
 | `iconEl(name, opts?)` | 同上 | 真实 `SVGElement`（经 `<template>` 构造）；无 DOM 环境（node 单测）或未知名字返回 `null` |
-| `ICON_NAMES` | — | 已内置图标名（冻结数组，当前 61 枚，字典序）；模块 `icon` 字段必须取自这里 |
+| `ICON_NAMES` | — | 已内置图标名（冻结数组，当前 65 枚，字典序）；模块 `icon` 字段必须取自这里 |
 
 无障碍语义：`label` 有值 → `role="img"` + `aria-label`（图标是唯一语义来源时用）；无值 → `aria-hidden="true"`（装饰性，旁边已有文字说明）。`label` / `class` 中的引号与尖括号会被属性转义。
 
@@ -439,6 +461,7 @@ const mounted = mountFromConfig({
 | `enabled` |  | 默认 true；`false` = 不挂载（路由/页面 404，SQLite 数据保留） |
 | `config` |  | 透传为 `apply(ctx, config)` 第二参（声明了 `Config` schema 则先校验） |
 | `provides` |  | 本插件向其他插件提供的服务名数组（并入 inject 白名单动态集合） |
+| `label` |  | 可选中文名（插件管理页显示与搜索命中，缺省回退 id；如 music-library 的「音乐库（扫描 / 上传 / 回收）」）；loader 对未知字段透明，由 plugin-manager 透传进 `GET /api/plugins` 快照 |
 
 **`web/front.json`**（前端装配）：
 
@@ -450,7 +473,7 @@ const mounted = mountFromConfig({
       "config": { "keepBg": true },
       "pages": ["drag", "performance"] },
     { "target": "modules/component-draw-machine", "enabled": true,
-      "kind": "component",
+      "kind": "component", "label": "抽签机",
       "pages": ["drag", "music-draw", "movement-teaching"] }
   ]
 }
@@ -462,6 +485,8 @@ const mounted = mountFromConfig({
 | `config` | 作为 `component(el, meta)` 的 `meta` 传入；页面条目用它声明组件装配（`compose` / `slots` / `components`，见 3.8） |
 | `pages` | 可选；覆盖默认的"target 即本模块页"匹配，用于跨页插件 |
 | `kind` | 组件类插件填 `"component"`——既是分类标记，也是服务端放行 `/m/component-*/**` 静态资源的**白名单依据**（`resolveComponentDir` 要求 `kind === "component"` 且 `enabled !== false`，fail closed；见 1.4） |
+| `label` | 可选中文名（插件管理页显示与搜索命中，缺省回退 id）；loader 对未知字段透明（内核零改动），`GET /api/plugins` 快照由 plugin-manager 读清单原文件透传，前端 toggle 写回整包保留未知字段 |
+| `group` | 仅主题组核心条目：`{ "name": "组显示名", "members": ["成员插件id", …] }`——name 为插件管理页组卡显示名（缺省回退组 id）；members 为显式成员声明（可选的未来适配，成员仍可纯靠 `component-<组id>-` 命名约定自动发现、零登记；清单中不存在的 id 跳过） |
 
 组件类插件条目**只存在于 `web/front.json`**（不进 `modules/modules.json` / `server/plugins.json`、不进导航）；组件目录含 `index.html` 也无意义——kernel 不会自动渲染组件名。
 
@@ -481,11 +506,13 @@ const mounted = mountFromConfig({
 ### 4.3 `/api/plugins` 快照结构（管理页数据源）
 
 ```json
-{ "backend": [ { "id", "name", "icon", "kind": "plugin|legacy", "enabled", "mounted", "error", "config" } ],
-  "front":   [ { "id", "name", "icon", "enabled", "kind" } ] }
+{ "backend": [ { "id", "name", "icon", "kind": "plugin|legacy", "enabled", "mounted", "error", "config", "label?" } ],
+  "front":   [ { "id", "name", "icon", "enabled", "kind", "label?", "group?" } ] }
 ```
 
 前端条目的 `kind` 是可选的分类元数据（P11 增量）：组件类插件为 `"component"`，普通页面条目为 `null`。`pkg` 单文件形态退役后（P6b）快照不再返回该字段。
+
+`label` / `group` 是可选的清单展示元数据：assembly 条目投影本身不含它们，plugin-manager 后端在 `GET /api/plugins` 时按 target 读两份清单**原文件**补进快照（dev/portable 双模式路径解析；读取失败降级返回原始快照），内核零改动。管理页用它显示中文名与主题插件组。
 
 便携模式（`Y_STAGE_PLUGINS_DIR` / `Y_STAGE_RESOURCE_DIR` 环境变量注入）下清单即 `plugins/` 目录的真实文件，所有写操作 `persisted: true`。
 
@@ -512,8 +539,8 @@ const mounted = mountFromConfig({
 | 脚手架（页面） | `node scripts/new-module.js <id> "名称" [--server]` | 生成一对插件骨架 + 自动追加三份清单 |
 | 脚手架（组件） | `node scripts/new-module.js <组件id> "名称" --component [--pages a,b]` | 生成组件类插件骨架（仅 `front/{plugin,view}.js` + `web/front.json` 的 `kind`/`pages` 条目；id 自动补 `component-` 前缀；与 `--server` 互斥） |
 | 数据库回归 | `node server.js --test` | 6 项，测完自动退出 |
-| 装配自检 | `node server.js --test-cordis` | A1-A6 + A6.9 排空端到端，32 项断言 |
-| 单元测试 | `node server/run-unit-tests.js` | 16 个测试文件（server 侧 9 + web 侧 7；含图标基座守门 `web/icons.test.js` 与 P11 新增 `web/ui.test.js`、`web/lib/{random,persist,undo}.test.js`、`web/components/compose.test.js`） |
+| 装配自检 | `node server.js --test-cordis` | A1-A6 + A6.9 排空端到端，31 项断言（数据库基线 24 个，含 `theme-store`、`game-composer-layouts`） |
+| 单元测试 | `node server/run-unit-tests.js` | 19 个测试文件（server 侧 9 + web 侧 10；含图标基座守门 `web/icons.test.js` 与 `web/ui.test.js`、`web/lib/{random,persist,undo,reactive,timers,body-class}.test.js`、`web/components/compose.test.js`） |
 | HTTP 行为基线 | `node scripts/endpoint-diff.js --compare` | 35 用例逐字节回放，**不重录直绿**是改动零漂移的证明 |
 
 **发布前检查单**（完整版见 `AGENTS.md` §6.8）：契约正确、inject 合法、三清单同步、key=模块 id、signal+cleanup、组件装配降级不崩（组件禁用时插槽留空）、管理页可见无 error、endpoint-diff 全绿。

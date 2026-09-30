@@ -50,7 +50,8 @@
     },
     {
       "target": "modules/music-library",
-      "enabled": true
+      "enabled": true,
+      "label": "音乐库（扫描 / 上传 / 回收）"
     },
     {
       "target": "modules/performance",
@@ -91,6 +92,10 @@
     },
     {
       "target": "modules/custom-stage",
+      "enabled": true
+    },
+    {
+      "target": "modules/theme-manager",
       "enabled": true
     }
   ]

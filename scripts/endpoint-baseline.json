@@ -1,6 +1,6 @@
 {
   "meta": {
-    "recordedAt": "2026-09-28T16:55:34.901Z",
+    "recordedAt": "2026-09-30T07:05:03.677Z",
     "httpLayer": "y-router+cordis",
     "node": "v24.19.0",
     "port": 3210
@@ -80,8 +80,8 @@
         "content-type": "application/json; charset=utf-8",
         "access-control-allow-origin": "*"
       },
-      "bodySha256": "21c1166ca65d063a7c9b2629b8f5480816884c72c404d0c999e0d2c1f7b06d9a",
-      "bodyLen": 3335,
+      "bodySha256": "c8b273e4766cf1b0718cd2c64e48ed780d48f9e46f0bfbe2281090ec76ce0671",
+      "bodyLen": 3519,
       "preview": "[{\"id\":\"home\",\"name\":\"主页\",\"description\":\"2026 Y.Stage 4 比赛现场入口\",\"icon\":\"home\",\"nav\":[],\"order\":0,\"route\":\"/m/home/\"},{\"i"
     },
     {
@@ -197,8 +197,8 @@
         "content-type": "text/html; charset=utf-8",
         "access-control-allow-origin": "*"
       },
-      "bodySha256": "c1a2333fb6333bb5398d64931a13492c2dace071b12c071cf7cffe499b5d355e",
-      "bodyLen": 879,
+      "bodySha256": "8fb7e156beac2e9f1f45a02f44818c1bceba1d4680fd3d93faef33e95c1edcc4",
+      "bodyLen": 1415,
       "preview": "<!doctype html>\n<html lang=\"zh-CN\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=devic"
     },
     {
@@ -239,8 +239,8 @@
         "content-type": "text/html; charset=utf-8",
         "access-control-allow-origin": "*"
       },
-      "bodySha256": "61ce34be5dec1845d62e6916f38e9f62dc751786392bee2402d252f535bffef4",
-      "bodyLen": 918,
+      "bodySha256": "b8f2ebff3f9285b818553b8df36a2317f6d78688cc9e8c37cfe0664184a41ed0",
+      "bodyLen": 1454,
       "preview": "<!doctype html>\n<html lang=\"zh-CN\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=devic"
     },
     {
@@ -267,8 +267,8 @@
         "content-type": "text/html; charset=utf-8",
         "access-control-allow-origin": "*"
       },
-      "bodySha256": "c668935e99bfdf157b25d0b4f55fb6f98ce6677d025f8ba14a3dff21447109a5",
-      "bodyLen": 4587,
+      "bodySha256": "b1ab292b4e992c3a1056c6aa3fbfb8a71bc2efd4b7ec653cb8b70eab8fbf0f54",
+      "bodyLen": 5123,
       "preview": "<!doctype html>\n<html lang=\"zh-CN\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=devic"
     },
     {
@@ -280,8 +280,8 @@
         "content-type": "text/html; charset=utf-8",
         "access-control-allow-origin": "*"
       },
-      "bodySha256": "c668935e99bfdf157b25d0b4f55fb6f98ce6677d025f8ba14a3dff21447109a5",
-      "bodyLen": 4587,
+      "bodySha256": "b1ab292b4e992c3a1056c6aa3fbfb8a71bc2efd4b7ec653cb8b70eab8fbf0f54",
+      "bodyLen": 5123,
       "preview": "<!doctype html>\n<html lang=\"zh-CN\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=devic"
     },
     {

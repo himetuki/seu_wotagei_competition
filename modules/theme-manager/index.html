@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>try{if(localStorage.getItem("ystage:theme")==="neon"){var h=document.documentElement;h.classList.add("theme-neon");var p=location.pathname.split("/");h.setAttribute("data-page",(p[1]==="m"&&p[2])?p[2].toLowerCase():"home");var a=function(i,u){if(!document.getElementById(i)){var s=document.createElement("link");s.id=i;s.rel="stylesheet";s.href=u;document.head.appendChild(s)}};a("theme-neon-css","/m/component-theme-neon/theme.css");a("theme-neon-layout-css","/m/component-theme-neon/neon-layout.css")}}catch(e){}</script>
+    <title>主题管理</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container" id="main-container">
+      <header>
+        <h1>主题管理</h1>
+        <p class="subtitle">SYSTEM THEME · 切换为系统级设置，全场屏幕同步生效</p>
+      </header>
+
+      <main id="theme-grid" aria-label="主题列表"></main>
+
+      <details class="tm-guide">
+        <summary>如何自建主题插件？</summary>
+        <div class="tm-guide-body">
+          <ol>
+            <li>新建目录 <code>modules/component-theme-&lt;id&gt;/</code>（仅 <code>front/plugin.js</code> + <code>front/view.js</code>，无 index.html、无后端插件）；</li>
+            <li>在 <code>web/front.json</code> 追加条目：<code>{ "target": "modules/component-theme-&lt;id&gt;", "enabled": true, "kind": "component", "pages": [ …要生效的页面 id… ] }</code>；</li>
+            <li><code>apply</code> 内 <code>ctx.ui.registerComponent("theme:&lt;id&gt;", factory)</code>——factory 渲染本页可见的主题预览卡；</li>
+            <li>自带激活逻辑：注入自己的样式表并给 <code>&lt;html&gt;</code> 挂主题类（参考 <code>modules/component-theme-neon/</code>）；读写主题选择用 <code>localStorage["ystage:theme"]</code> 与 <code>GET/PUT /api/theme/active</code>；</li>
+            <li>刷新本页即可看到新主题卡；比赛演出（battle-mode）期间请隐藏全部装饰只留背景图。</li>
+          </ol>
+        </div>
+      </details>
+
+      <section class="navigation">
+        <button id="home-btn" type="button">回到主页面</button>
+      </section>
+
+      <footer><p>&copy; 2027 Y.Stage-X YUKAORI</p></footer>
+    </div>
+
+    <!-- 前端插件挂载点（P4：页面 UI 由 /web/front.json 声明的 front/plugin.js 装配） -->
+    <div id="plugin-root" hidden></div>
+
+    <!-- 前端内核（ESM bundle：装配 front.json 插件 → ctx.ui.render） -->
+    <script type="module" src="/web/kernel.js"></script>
+  </body>
+</html>

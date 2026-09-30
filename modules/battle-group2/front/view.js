@@ -637,7 +637,7 @@ function setupEventListeners(signal) {
   // 返回主页按钮
   DOM.homeButton.addEventListener("click", () => {
     saveState(); // 保存状态
-    window.location.href = "index.html";
+    window.location.href = "/m/home";
   }, { signal });
 
   // 清除缓存按钮

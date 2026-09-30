@@ -18,7 +18,7 @@ WOTA艺（荧光棒舞蹈）对战平台。基于 **Node.js（内置 http + 自�
 ```
 Y.Stage3/
 ├── modules/                    # ★ 功能模块 = 一对插件 + 页面资产
-│   ├── modules.json            # 页面元数据清单（21 条，单一显示名单来源）
+│   ├── modules.json            # 页面元数据清单（22 条，单一显示名单来源）
 │   ├── _template/              # 旧脚手架模板（仅历史参考；新模块用 scripts/new-module.js 生成）
 │   ├── <模块id>/               # 页面模块：如 home / select / drag / plugin-manager ...
 │   │   ├── plugin.js           # 后端插件（CJS）：db.define + server.route + modules.registerPage
@@ -35,10 +35,10 @@ Y.Stage3/
 │   ├── icons.mjs               # ★ 共享图标基座（Tabler 内联 SVG 子集；icon/iconEl/ICON_NAMES，含 icons.test.js）
 │   ├── lib/                    # ★ L1 共享纯函数库（random / persist / undo / reactive / timers / body-class，含 *.test.js）
 │   ├── components/             # ★ L1 共享装配器与布局原语（compose.mjs + grid.css，含 compose.test.js）
-│   ├── front.json              # ★ 前端装配清单（{ provider, plugins: [{ target, enabled, kind?, pages?, config? }] }）
+│   ├── front.json              # ★ 前端装配清单（{ provider, plugins: [{ target, enabled, kind?, pages?, config?, label?, group? }] }）
 │   └── dist/kernel.js          # 构建产物（gitignored，npm run build:web 生成）
 ├── server/
-│   ├── plugins.json            # ★ 后端装配清单（{ provider, plugins: [{ target, enabled, config?, provides? }] }）
+│   ├── plugins.json            # ★ 后端装配清单（{ provider, plugins: [{ target, enabled, config?, provides?, label? }] }）
 │   ├── http/                   # y-router HTTP 层（无 Express）
 │   │   ├── index.js            # createApp()：listen 返回真 http.Server
 │   │   ├── router.js           # 路由匹配 + per-plugin scope（createScope/removeScope 物理热插拔）
@@ -413,6 +413,24 @@ music-player 的 `play(item)` 为 P15 新增 api（`item ? setItem(item) : 不�
 2. `modules/game-composer/front/layout.mjs` 的 `PALETTE_META` 补一行中文名/描述，并**同步补 `outs` / `ins` 连线词汇表**（P15，`[{name,label}]` 数组；无连线能力/服务类组件为空数组；不补中文名则 palette 显示原始组件名，不补 outs/ins 则连线表单选不到该组件的口子）；
 3. 验证：编辑器 palette 可见可添加 → 预览真挂载 → 保存后 custom-stage 深链可运行；有连线口的组件在编辑器建一条线 → 预览验证联动 → custom-stage 复验；手动禁用该组件插件后复验「插槽留空、页面照常」（降级不崩）。
 
+### 4.5 主题系统与插件组（2026-09-30）：主题 = 插件组，可切换、可自建
+
+一句话：**主题是插件组**（主题核心组件 + 若干成员组件），激活状态系统级存储（SQLite `theme-store`），切换全场屏幕刷新生效；既有页面文件零改动——非激活主题对页面零影响，激活主题经 CSS 覆盖 + 结构增强注入换肤。
+
+**主题插件契约**（自建主题照此实现，会被自动发现）：
+
+1. 目录 `modules/component-theme-<id>/`（仅 front/{plugin,view}.js + 主题样式等静态资产，无 index.html / 后端 plugin.js），`web/front.json` 条目 `{ target, enabled, kind:"component", label?, group?, pages:[…全部生效页面…] }`；
+2. apply 内 `ctx.ui.registerComponent("theme:<id>", factory)`——factory 渲染主题管理页的主题预览卡（props.active = 是否当前主题）；
+3. 自带激活逻辑（参照 `modules/component-theme-neon/front/plugin.js`）：注入自己的样式表、给 `<html>` 挂主题类、标注 `<html data-page>`；`localStorage["ystage:theme"]` 同步初判（防首屏闪默认）+ `GET /api/theme/active` 异步对账（服务端不一致 → 按服务端翻转或整页 reload）；
+4. 比赛演出守卫：`body.battle-mode` 期间隐藏全部主题氛围层，只留背景图；`prefers-reduced-motion: reduce` 全量停用装饰动画；
+5. 主题之间互不 import（组件纪律）；禁用主题插件 = 主题从管理页消失、页面回落默认皮肤。
+
+**主题管理页 `/m/theme-manager/`**（`modules/theme-manager`，nav 为空不进导航；入口 = 插件管理页「主题插件」tab 组卡「管理」链接 + 直链）：后端 `GET/PUT /api/theme/active`（PUT 校验 `/^[a-z][a-z0-9-]{0,39}$/`，落盘 db `theme-store`）；前端枚举 `ctx.ui.listComponents()` 中 `theme:` 前缀组件自动渲染主题卡（默认主题卡为页面内置），「设为系统主题」双写服务端 + localStorage 后刷新；页内附自建指南。
+
+**插件管理页「主题插件」tab = 插件组视图**：默认主题虚拟组卡 + 每主题一张组卡（组名 = 核心条目 `group.name` 声明，缺省 gid；「已启用 x / 共 y」；当前主题徽标）。组级控件：设为系统主题（激活组禁用）/ 启用整组 / 禁用整组（**串行**逐个 front toggle + `groupBusy` 锁防并发写清单；失败点名未生效条目）。成员行（「主题核心」/「组件成员」）可**只开组内某些组件**。成员归属 = `component-<gid>-` 命名约定**最长前缀**自动发现 ∪ 核心条目 `group.members` 显式并集。既有页面的「回主页」等站内跳转一律 origin 相对路径（`/m/home`），禁写 `index.html` 相对跳转（旧 MPA 遗留会原地打转）。
+
+**现状**：neon 主题（`component-theme-neon` 核心 + `component-neon-penlights` 荧光棒人浪成员）已交付——WOTA live 会场 × 电竞 HUD 视觉（荧光棒人浪/舞台光束/网格地板/扫描线/跑马灯/标题流光/BATTLE START·VICTORY 全屏演出/结构增强注入复现样例版式），battle-group 系列按组别分色（加组荧绿/加组二章青/内组蓝/内组二章冰青）。
+
 ---
 
 ## 5. 注意事项
@@ -564,8 +582,10 @@ export default {
 | 清单 | 作用 | 条目格式 |
 |------|------|----------|
 | `modules/modules.json` | 页面元数据（导航/管理页显示名单） | `{ id, name, description, icon, nav, order }`（`icon` = `ICON_NAMES` 中的图标名） |
-| `server/plugins.json` | 后端装配（provider: y-router/sqlite） | `{ target: "modules/<id>", enabled, config?, provides? }` |
+| `server/plugins.json` | 后端装配（provider: y-router/sqlite） | `{ target: "modules/<id>", enabled, config?, provides?, label? }` |
 | `web/front.json` | 前端装配（provider: dom） | 页面模块 `{ target: "modules/<id>", enabled, config? }`；组件类插件追加 `kind: "component"`（服务端放行 `/m/component-*/**` 的白名单依据）与 `pages: ["<模块id>", …]`（决定被哪些页面加载，缺省只匹配 target 自身 id） |
+
+**可选显示元数据（label / group）**：清单条目可带 `label`（中文显示名；纯英文 id 的插件应配，缺省回退 id/投影名）与主题组核心条目的 `group: { name, members? }`（组显示名 + 显式成员 id 数组——成员归属 = `component-<gid>-` 命名约定最长前缀自动发现 ∪ 显式 members 并集，约定能覆盖时 members 可省略）。loader 对未知字段透明（内核零改动）；`GET /api/plugins` 由 plugin-manager 后端读清单原文件把 label/group 补进快照（读取失败降级原始快照）；toggleFront 整包写回保留未知字段。已声明：10 个组件插件与 music-library 均有 label；component-theme-neon 带 `group:{name:"霓虹主题",members:["component-neon-penlights"]}`。
 
 语义：`enabled:false` 不挂载（后端路由/页面 404、前端代码不下载，SQLite 数据保留）；未列出 = 不挂载；`config` 作为插件配置传入（后端为 `apply(ctx, config)` 第二参，前端为组件 `meta`）。新模块**三份都要追加**——直接用脚手架，别手改。组件类插件**只进 `web/front.json`**（不进 `modules.json` / `plugins.json`、不进导航，见 4.2）。
 
@@ -587,7 +607,7 @@ export default {
 
 ### 6.6 插件管理页 `/m/plugin-manager/`
 
-本身就是插件。列表展示双端全部条目（kind / enabled / mounted / config / error）；操作生效时机：
+本身就是插件。列表展示双端全部条目（kind / enabled / mounted / config / error）+ **「主题插件」tab（插件组视图：默认主题虚拟组卡 + 每主题组卡，组级整组启停/设为系统主题、成员级独立启停，条目显示清单 label 中文名，见 4.5）**；操作生效时机：
 
 | API | 作用 | 生效时机 |
 |-----|------|----------|

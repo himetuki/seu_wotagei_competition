@@ -232,6 +232,18 @@ body {
   height: 15px;
 }
 
+/* 禁用态（组卡「设为系统主题」在当前组上置灰） */
+.pm-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pm-btn:disabled:hover {
+  background: var(--bg-inset);
+  border-color: var(--line-strong);
+  color: var(--text-strong);
+}
+
 /* ============================================================
  * 3) 主面板
  * ============================================================ */
@@ -756,6 +768,79 @@ body {
 .pm-empty-hint {
   color: var(--text-muted);
   font-size: 13px;
+}
+
+/* ============================================================
+ * 6.5) 主题插件组卡片（组视图：核心 + 成员 + 虚拟默认组；复用 pm-* 变量）
+ * ============================================================ */
+.pm-tg-card {
+  margin: 10px 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg-inset-soft);
+  transition: border-color 0.2s;
+}
+
+.pm-tg-card:hover {
+  border-color: var(--line-strong);
+}
+
+.pm-tg-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.pm-tg-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1 1 280px;
+  min-width: 0;
+  padding: 6px 8px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.pm-tg-toggle:hover {
+  background: var(--bg-inset);
+}
+
+.pm-tg-toggle:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.pm-tg-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.pm-tg-chevron {
+  display: inline-flex;
+  flex: none;
+  margin-left: auto;
+  color: var(--text-muted);
+}
+
+.pm-tg-chevron svg {
+  width: 18px;
+  height: 18px;
+}
+
+.pm-tg-body {
+  margin-top: 6px;
 }
 
 /* ============================================================

@@ -1155,7 +1155,7 @@ function setupEventListeners(signal) {
 
   // 导航按钮
   DOM.homeBtn.addEventListener("click", function () {
-    window.location.href = "index.html";
+    window.location.href = "/m/home";
   }, { signal });
 
   // 添加清除缓存按钮事件监听

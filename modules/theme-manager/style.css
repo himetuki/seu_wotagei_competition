@@ -1,0 +1,220 @@
+/* ============================================================
+ * theme-manager —— 系统主题管理页样式
+ * 本页需在「默认 / 霓虹 / 未来自建主题」下都正常：全部使用中性暗色玻璃，
+ * 不依赖任何主题令牌；霓虹主题激活时由 theme.css 的通用段落补一层按钮/标题辉光。
+ * ============================================================ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { background-color: #0a0a0c; }
+
+body {
+  min-height: 100vh;
+  font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background-image: url("/resource/images/bg_index.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-color: rgba(0, 0, 0, 0.82);
+  color: #dfe3ec;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 16px 30px;
+  overflow-x: hidden;
+}
+
+.container {
+  width: 100%;
+  max-width: 860px;
+  background-color: rgba(13, 13, 18, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 28px 28px 24px;
+  box-shadow: 0 0 28px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+}
+
+header { text-align: center; margin-bottom: 26px; }
+
+header h1 {
+  font-size: 1.9rem;
+  letter-spacing: 0.08em;
+  color: #f2f4f8;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+
+.subtitle {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  letter-spacing: 0.18em;
+  color: #94a3b8;
+}
+
+/* ---- 主题卡网格 ---- */
+#theme-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.tm-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 18px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.tm-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.4);
+}
+
+.tm-card--active {
+  border-color: rgba(88, 193, 255, 0.65);
+  box-shadow: 0 0 0 1px rgba(88, 193, 255, 0.35), 0 0 22px rgba(88, 193, 255, 0.16);
+}
+
+/* 主题 factory 渲染的内容区（各主题自带 markup，此处只兜底排版） */
+.tm-card__body { display: flex; flex-direction: column; gap: 10px; min-height: 130px; }
+
+.tm-theme-meta { display: flex; flex-direction: column; gap: 9px; }
+
+.tm-theme-name { font-size: 1.05rem; font-weight: 700; color: #f2f4f8; letter-spacing: 0.04em; }
+
+.tm-theme-tag {
+  margin-left: 8px;
+  font: 700 10px/1 ui-monospace, Consolas, monospace;
+  letter-spacing: 0.26em;
+  color: #7dd3fc;
+  vertical-align: 1px;
+}
+
+.tm-theme-desc { font-size: 12.5px; line-height: 1.8; color: #9aa3b8; }
+
+.tm-theme-features { font-size: 11.5px; line-height: 1.7; color: #7b8798; }
+
+.tm-swatches { display: flex; gap: 7px; }
+
+.tm-swatches i {
+  width: 15px; height: 15px; border-radius: 50%;
+  background: var(--v, #666);
+  box-shadow: 0 0 8px var(--v, transparent);
+}
+
+.tm-active-badge {
+  align-self: flex-start;
+  font: 700 10px/1 ui-monospace, Consolas, monospace;
+  letter-spacing: 0.3em;
+  color: #04202f;
+  background: linear-gradient(92deg, #7dd3fc, #38bdf8);
+  border-radius: 999px;
+  padding: 5px 12px 5px 14px;
+}
+
+.tm-use-btn {
+  align-self: stretch;
+  padding: 10px 16px;
+  border-radius: 9px;
+  border: 1px solid rgba(125, 211, 252, 0.5);
+  background: rgba(125, 211, 252, 0.08);
+  color: #e8f6ff;
+  font: 600 14px/1 inherit;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.tm-use-btn:hover {
+  background: rgba(125, 211, 252, 0.16);
+  box-shadow: 0 0 16px rgba(125, 211, 252, 0.25);
+  transform: translateY(-1px);
+}
+
+.tm-use-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* 默认主题卡（非 factory 渲染，本页静态兜底） */
+.tm-default-body { display: flex; flex-direction: column; gap: 9px; min-height: 130px; }
+.tm-default-body .tm-theme-desc { order: 2; }
+.tm-default-note {
+  order: 3;
+  font-size: 11.5px;
+  color: #7b8798;
+  line-height: 1.7;
+}
+
+/* 操作状态行 */
+#theme-status {
+  margin-top: 18px;
+  min-height: 20px;
+  text-align: center;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: #86efac;
+}
+#theme-status.error { color: #fca5a5; }
+
+/* ---- 自建指南 ---- */
+.tm-guide { margin-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 16px; }
+
+.tm-guide summary {
+  cursor: pointer;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: #9aa3b8;
+  user-select: none;
+}
+
+.tm-guide summary:hover { color: #dfe3ec; }
+
+.tm-guide-body { margin-top: 12px; }
+
+.tm-guide-body ol { margin-left: 18px; }
+
+.tm-guide-body li {
+  font-size: 12.5px;
+  line-height: 2;
+  color: #9aa3b8;
+}
+
+.tm-guide-body code {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11.5px;
+  color: #7dd3fc;
+  background: rgba(125, 211, 252, 0.08);
+  padding: 1px 6px;
+  border-radius: 5px;
+}
+
+/* ---- 导航 / 页脚 ---- */
+.navigation { margin-top: 18px; text-align: center; }
+
+.navigation button,
+footer { letter-spacing: 0.06em; }
+
+button {
+  padding: 10px 22px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.05);
+  color: #dfe3ec;
+  font: 600 14px/1 inherit;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+button:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.3); }
+
+footer { margin-top: 18px; text-align: center; font-size: 0.78rem; color: #64748b; }
+
+@media (max-width: 560px) {
+  .container { padding: 20px 16px; }
+  header h1 { font-size: 1.5rem; }
+}

@@ -325,6 +325,7 @@
       "target": "modules/component-music-player",
       "enabled": true,
       "kind": "component",
+      "label": "音乐播放器",
       "pages": [
         "battle-group1",
         "battle-group1-2",
@@ -341,6 +342,7 @@
       "target": "modules/component-draw-machine",
       "enabled": true,
       "kind": "component",
+      "label": "抽签机",
       "pages": [
         "battle-group1",
         "battle-group1-2",
@@ -358,6 +360,7 @@
       "target": "modules/component-toast",
       "enabled": true,
       "kind": "component",
+      "label": "轻提示",
       "pages": [
         "movement-teaching",
         "music-draw",
@@ -369,6 +372,7 @@
       "target": "modules/component-confirm-dialog",
       "enabled": true,
       "kind": "component",
+      "label": "确认对话框",
       "pages": [
         "movement-teaching",
         "setting",
@@ -389,6 +393,7 @@
       "target": "modules/component-player-list",
       "enabled": true,
       "kind": "component",
+      "label": "选手名单",
       "pages": [
         "game-composer",
         "custom-stage"
@@ -398,6 +403,7 @@
       "target": "modules/component-score-board",
       "enabled": true,
       "kind": "component",
+      "label": "多队计分",
       "pages": [
         "game-composer",
         "custom-stage"
@@ -407,6 +413,7 @@
       "target": "modules/component-countdown",
       "enabled": true,
       "kind": "component",
+      "label": "倒计时",
       "pages": [
         "game-composer",
         "custom-stage"
@@ -416,9 +423,64 @@
       "target": "modules/component-music-source",
       "enabled": true,
       "kind": "component",
+      "label": "曲库数据源",
       "pages": [
         "game-composer",
         "custom-stage"
+      ]
+    },
+    {
+      "target": "modules/theme-manager",
+      "enabled": true
+    },
+    {
+      "target": "modules/component-theme-neon",
+      "enabled": true,
+      "kind": "component",
+      "label": "霓虹主题核心",
+      "group": {
+        "name": "霓虹主题",
+        "members": ["component-neon-penlights"]
+      },
+      "pages": [
+        "home",
+        "select",
+        "setting",
+        "battle-group1",
+        "battle-group1-2",
+        "battle-group2",
+        "battle-group2-2",
+        "group-battle",
+        "drag",
+        "music-draw",
+        "music-import",
+        "performance",
+        "rank",
+        "ranking",
+        "team-rank",
+        "games",
+        "moving-sth",
+        "movement-teaching",
+        "plugin-manager",
+        "game-composer",
+        "custom-stage",
+        "theme-manager"
+      ]
+    },
+    {
+      "target": "modules/component-neon-penlights",
+      "enabled": true,
+      "kind": "component",
+      "label": "霓虹荧光棒人浪",
+      "pages": [
+        "home",
+        "battle-group1",
+        "battle-group1-2",
+        "battle-group2",
+        "battle-group2-2",
+        "group-battle",
+        "drag",
+        "music-draw"
       ]
     }
   ]
