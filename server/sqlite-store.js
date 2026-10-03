@@ -71,10 +71,18 @@ function parsePath(p) {
   return [];
 }
 
+// 原型污染防护（v6.3.1）：__proto__ / constructor 段一律拒绝——
+// 中间段命中会使 cur 穿透到 Object.prototype，最终段命中会改写对象原型。
+// 数据层为 JSON 文档（键为业务字段），合法数据不含这两个键名。
+function hasUnsafeToken(tokens) {
+  return tokens.some((t) => t === "__proto__" || t === "constructor");
+}
+
 /** 沿路径取值；中间缺失返回 undefined；空路径返回 obj 本身 */
 function getPath(obj, pathStr) {
   const tokens = parsePath(pathStr);
   if (tokens.length === 0) return obj;
+  if (hasUnsafeToken(tokens)) return undefined;
   let cur = obj;
   for (const t of tokens) {
     if (cur == null || typeof cur !== "object") return undefined;
@@ -97,10 +105,11 @@ function hasPath(obj, pathStr) {
   return true;
 }
 
-/** 就地写入值；中间缺失时创建 {} */
+/** 就地写入值；中间缺失时创建 {}；含 __proto__/constructor 段的路径整体拒绝（不写入） */
 function setPath(obj, pathStr, value) {
   const tokens = parsePath(pathStr);
   if (tokens.length === 0) return; // 调用方不会传空 path
+  if (hasUnsafeToken(tokens)) return;
   let cur = obj;
   for (let i = 0; i < tokens.length - 1; i++) {
     const t = tokens[i];
@@ -151,7 +160,32 @@ async function createEngine(sqliteFile) {
 
   if (fs.existsSync(sqliteFile)) {
     const buf = fs.readFileSync(sqliteFile);
-    db = new SQL.Database(buf);
+    try {
+      db = new SQL.Database(buf);
+    } catch (e) {
+      // 损坏库隔离（v6.3.1）：留证后以空库重建，服务可启动（原进程行为 = 拒启）。
+      // 隔离副本保留全部损坏字节供人工 salvage，绝不静默删除。改名失败（如杀软
+      // 瞬时占用）退复制——原件暂留原地也会在首次 persist 被 rename 覆盖，没有
+      // 副本时"原文件未删除"的承诺不成立。
+      const quarantined = `${sqliteFile}.corrupt-${Date.now()}`;
+      let how;
+      try {
+        fs.renameSync(sqliteFile, quarantined);
+        how = "已改名隔离";
+      } catch (_) {
+        try {
+          fs.copyFileSync(sqliteFile, quarantined);
+          how = "已复制隔离（原件暂留原地、首次落盘会被新库覆盖，抢救请用隔离副本）";
+        } catch (_) {
+          how = "隔离失败（原件留在原地、首次落盘会被新库覆盖）";
+        }
+      }
+      console.error(
+        "[sqlite-store] 数据库文件损坏、无法读取，" + how + "：" + quarantined +
+        "，以空库重建。原因: " + e.message
+      );
+      db = new SQL.Database();
+    }
   } else {
     db = new SQL.Database();
   }
@@ -200,10 +234,26 @@ async function createEngine(sqliteFile) {
       engine.persist();
     },
 
-    /** 从 db 导出并写盘（行为与 lowdb FileSync 一致：每次写后全量落盘） */
+    /** 从 db 导出并写盘（行为与 lowdb FileSync 一致：每次写后全量落盘）。
+     * 原子写（v6.3.1）：先写 .tmp 再 rename 覆盖，写盘中断不再截断整库；
+     * rename 失败（目标被占用等）退回直写并清理 tmp，尽量不丢本次写。 */
     persist() {
-      const data = db.export();
-      fs.writeFileSync(sqliteFile, Buffer.from(data));
+      const data = Buffer.from(db.export());
+      const tmp = `${sqliteFile}.tmp`;
+      try {
+        fs.writeFileSync(tmp, data);
+      } catch (e) {
+        // 写盘失败（磁盘满/被占用/只读）：内存已是新值、磁盘仍是旧值，必须显式留痕，
+        // 否则前端 saveState 的 .catch(() => {}) 吞错后无人感知分歧
+        console.error("[sqlite-store] 落盘失败（内存态已更新、磁盘保持旧值，进程退出前的写入有丢失风险）: " + e.message);
+        throw e;
+      }
+      try {
+        fs.renameSync(tmp, sqliteFile);
+      } catch (e) {
+        fs.writeFileSync(sqliteFile, data);
+        try { fs.unlinkSync(tmp); } catch (_) { /* tmp 下次落盘时覆盖 */ }
+      }
     },
 
     /** 读 __meta__ 表，无则 null */

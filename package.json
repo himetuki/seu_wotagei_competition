@@ -1,6 +1,6 @@
 {
   "name": "y-stage3",
-  "version": "6.3.0",
+  "version": "6.3.1",
   "description": "Y.Stage 4比赛系统",
   "main": "server.js",
   "scripts": {

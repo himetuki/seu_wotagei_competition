@@ -8,6 +8,13 @@ function getDB(name) {
   return dbManager.get(name);
 }
 
+// 原型污染防护（v6.3.1）：__proto__ / constructor / prototype 键一律拒绝——
+// 直接下标赋值或 setPath 点路径穿过这些段会改写对象原型 / Object.prototype，
+// 一条请求即可让全进程 hasOwnProperty 等基础方法失效直至重启。
+function isUnsafeKey(key) {
+  return key === "__proto__" || key === "constructor" || key === "prototype";
+}
+
 // 设置API路由
 function setupApiRoutes(app) {
   // 获胜者相关API
@@ -17,11 +24,16 @@ function setupApiRoutes(app) {
       const winnersDB = getDB("winners");
       const currentState = winnersDB.getState();
 
-      Object.entries(req.body).forEach(([chapterKey, rounds]) => {
+      // 先整体验证再变更：非法键名在触碰 state 之前以 400 拒绝
+      const chapterKeys = Object.keys(req.body || {});
+      if (chapterKeys.some(isUnsafeKey)) {
+        return res.status(400).send("非法键名");
+      }
+      chapterKeys.forEach((chapterKey) => {
         if (!currentState[chapterKey]) {
           currentState[chapterKey] = {};
         }
-        currentState[chapterKey] = { ...currentState[chapterKey], ...rounds };
+        currentState[chapterKey] = { ...currentState[chapterKey], ...req.body[chapterKey] };
       });
 
       winnersDB.setState(currentState).write();
@@ -71,6 +83,12 @@ function setupApiRoutes(app) {
       console.log(`保存到数据集[${collection}]:`, req.body);
       const db = dbManager.init(collection);
       const data = req.body;
+
+      // id 为点路径（存储层按 "." 拆段下标写入），含危险段以 400 显式拒绝
+      const idPath = data && data.id != null ? String(data.id) : "";
+      if (idPath.split(".").some(isUnsafeKey)) {
+        return res.status(400).json({ success: false, error: "id 含非法路径段" });
+      }
 
       if (data.id) {
         db.set(data.id.toString(), data).write();

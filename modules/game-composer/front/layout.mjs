@@ -89,7 +89,9 @@ export function componentLabel(name) {
  */
 export function stageItems(layout) {
   const out = [];
-  for (const item of (layout && layout.items) || []) {
+  // 非数组 items（畸形 layout 直接喂入时）回退空表，与 custom-stage 镜像实现同口径
+  const items = layout && Array.isArray(layout.items) ? layout.items : [];
+  for (const item of items) {
     const name = item && item.component;
     if (!name) continue; // 规格 §3 原语义：无组件名的项静默跳过
     if (typeof item.id !== "string" || !item.id) {

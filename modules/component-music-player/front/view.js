@@ -616,8 +616,13 @@ export function createMusicPlayer(hostEl, props = {}, ctx) {
     return true;
   }
 
-  /** P15 连线动作：设置曲目（可选）并立即进入播放（可视化编排的事件连线目标） */
+  /** P15 连线动作：设置曲目（可选）并立即进入播放（可视化编排的事件连线目标）。
+   *  换曲重入（v6.3.1）：播放/遮罩相位中再次触发（如抽签定格→播放连线）时，
+   *  setItem 对在播 audio 重写 src 会中断当前媒体加载（音频静默），而 start()
+   *  被 idle 门禁拦下、相位滞留——先 stop 干净再换曲起播。不传 item 维持原语义
+   *  （playing 中 no-op 返回 false，见 AGENTS §4.4）。 */
   function play(item) {
+    if (item && phase !== "idle") stop("manual");
     if (item) setItem(item);
     return start();
   }

@@ -161,7 +161,7 @@ const TEMPLATE = `
               <span class="pm-badge pm-badge--front">前端·页面</span>
               <span class="pm-dot" :class="stateOf(f).cls">{{ stateOf(f).label }}</span>
               <div class="pm-ops">
-                <button class="pm-btn pm-btn--sm" type="button" @click="toggleFront(f)">{{ f.enabled ? '禁用' : '启用' }}</button>
+                <button class="pm-btn pm-btn--sm" type="button" :disabled="groupBusy" @click="toggleFront(f)">{{ f.enabled ? '禁用' : '启用' }}</button>
                 <span class="pm-hint">刷新页面后生效</span>
               </div>
             </div>
@@ -187,7 +187,7 @@ const TEMPLATE = `
               <span class="pm-badge pm-badge--front">前端·组件</span>
               <span class="pm-dot" :class="stateOf(f).cls">{{ stateOf(f).label }}</span>
               <div class="pm-ops">
-                <button class="pm-btn pm-btn--sm" type="button" @click="toggleFront(f)">{{ f.enabled ? '禁用' : '启用' }}</button>
+                <button class="pm-btn pm-btn--sm" type="button" :disabled="groupBusy" @click="toggleFront(f)">{{ f.enabled ? '禁用' : '启用' }}</button>
                 <span class="pm-hint">刷新页面后生效</span>
               </div>
             </div>
@@ -248,7 +248,7 @@ const TEMPLATE = `
                   <div class="pm-side">
                     <span class="pm-dot" :class="stateOf(m).cls">{{ stateOf(m).label }}</span>
                     <div class="pm-ops">
-                      <button class="pm-btn pm-btn--sm" type="button" @click="toggleFront(m)">{{ m.enabled ? '禁用' : '启用' }}</button>
+                      <button class="pm-btn pm-btn--sm" type="button" :disabled="groupBusy" @click="toggleFront(m)">{{ m.enabled ? '禁用' : '启用' }}</button>
                       <span class="pm-hint">刷新页面后生效</span>
                     </div>
                   </div>
@@ -525,7 +525,13 @@ export function createManagerView({ root, api, signal }) {
       state.ready = true;
       state.loadError = "";
     } catch (e) {
-      state.loadError = `装配快照读取失败：${e.message}（插件装配服务未就绪，请重启服务）`;
+      const msg = `装配快照读取失败：${e.message}（插件装配服务未就绪，请重启服务）`;
+      if (state.ready) {
+        // 已就绪后失败：错误走状态行，避免与完整视图同屏叠显
+        setStatus(msg, true);
+      } else {
+        state.loadError = msg;
+      }
     }
     // 当前系统主题（theme-manager 的系统级偏好；服务不可用时保持"未知"不阻塞本页）
     try {

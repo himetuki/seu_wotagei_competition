@@ -30,7 +30,8 @@ module.exports = {
 
     ctx.effect(() => () => {
       // 无需清理：路由由 ctx.server.route 的 scope 生命周期统一移除；
-      // 扫描器无驻留句柄（全同步 fs 操作）
+      // 扫描器无长期驻留句柄（fs 全同步；启动扫描对 db 管理列表的延迟写入
+      // 为有界短定时器，写的是全局 dbManager、不属本插件 scope，v6.3.1）
     });
   },
 };

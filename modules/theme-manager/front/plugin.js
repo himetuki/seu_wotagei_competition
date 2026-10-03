@@ -43,21 +43,28 @@ export default {
         /** 写系统级偏好（服务端 + 本机双写）→ 刷新生效 */
         async function applyTheme(id) {
           setStatus("正在切换…");
+          let res;
           try {
-            const res = await fetch("/api/theme/active", {
+            res = await fetch("/api/theme/active", {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ active: id }),
             });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            localStorage.setItem(STORAGE_KEY, id);
-            setStatus(`已切换为「${id === "default" ? "默认主题" : id}」，即将刷新…`);
-            setTimeout(() => window.location.reload(), 550);
           } catch (e) {
+            // 网络失败（服务端不可达）→ 本机单写兜底，刷新后按本机偏好显示
             localStorage.setItem(STORAGE_KEY, id);
             setStatus(`服务端不可达（${e.message}），已仅在本机生效，即将刷新…`, true);
             setTimeout(() => window.location.reload(), 850);
+            return;
           }
+          // HTTP 拒绝（服务端可达但明确拒绝）→ 就地报错，不做任何写入
+          if (!res.ok) {
+            setStatus(`服务端拒绝了该主题（HTTP ${res.status}），未做更改`, true);
+            return;
+          }
+          localStorage.setItem(STORAGE_KEY, id);
+          setStatus(`已切换为「${id === "default" ? "默认主题" : id}」，即将刷新…`);
+          setTimeout(() => window.location.reload(), 550);
         }
 
         function makeCard(active) {

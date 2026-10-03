@@ -123,6 +123,44 @@ function isDbManagedName(jsonFile) {
   return DB_MANAGED_NAMES.has(path.basename(jsonFile, ".json"));
 }
 
+// db 管理列表的启动期写入（v6.3.1 修复）：dbManager.engine 由 server.js 的
+// initializeAllDatabases() 创建，晚于 cordis 装配（"装配先于库初始化"是启动
+// 硬约束，见 server.js bootstrap 注释）——启动扫描在插件 apply 内同步执行时
+// 引擎尚未就绪，P13 迁移后每次启动的扫描结果都在此静默丢失（曲库停旧值 +
+// 每次启动 2 组 ERROR 噪声）。改为有界轮询：引擎就绪后延迟写入；手动重扫
+// 路径（引擎已就绪）保持同步语义与原日志。
+function writeDbManagedList(dbName, audioFiles, jsonFile) {
+  if (dbManager.engine) {
+    try {
+      dbManager.get(dbName).setState(audioFiles).write();
+      serverLog(`已更新数据库: ${dbName}`, "info");
+      return true;
+    } catch (error) {
+      serverLog(`更新数据库失败 ${jsonFile}: ${error.message}`, "error");
+      return false;
+    }
+  }
+  const started = Date.now();
+  const attempt = () => {
+    if (dbManager.engine) {
+      try {
+        dbManager.get(dbName).setState(audioFiles).write();
+        serverLog(`已更新数据库: ${dbName}（启动扫描延迟写入）`, "info");
+      } catch (error) {
+        serverLog(`启动扫描写入数据库失败 ${jsonFile}: ${error.message}`, "error");
+      }
+      return;
+    }
+    if (Date.now() - started > 15000) {
+      serverLog(`数据库引擎 15s 未就绪，放弃写入 ${jsonFile}（本次启动扫描未入库）`, "error");
+      return;
+    }
+    setTimeout(attempt, 250);
+  };
+  setTimeout(attempt, 250);
+  return true; // 已排队等待引擎就绪，不按扫描失败上报
+}
+
 // 更新 JSON 文件或数据库
 function updateJsonFile(audioFiles, jsonFile) {
   try {
@@ -131,9 +169,7 @@ function updateJsonFile(audioFiles, jsonFile) {
     // db 管理的列表（musics_list / musics_list_ex 等）：仅写 dbManager，不生成 json 文件，
     // 消除"文件与数据库双写不一致"。
     if (isDbManagedName(jsonFile)) {
-      dbManager.get(dbName).setState(audioFiles).write();
-      serverLog(`已更新数据库: ${dbName}`, "info");
-      return true;
+      return writeDbManagedList(dbName, audioFiles, jsonFile);
     }
 
     // 非 db 的纯数据文件（musics_list_2 / games_musics / musics_free 等）：

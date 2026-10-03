@@ -2,15 +2,17 @@
  * neon-penlights —— 荧光棒人浪样式（component-neon-penlights 自带）
  *
  * 显隐守卫（全部在此，JS 侧零逻辑）：
- *   - 默认 display:none；仅 html.theme-neon 时显形（主题激活由
- *     component-theme-neon 拨 html 类）
+ *   - 默认 display:none；显形双条件 = html.theme-neon（head 启动脚本凭 localStorage
+ *     挂，防 FOUC）+ [data-theme-core]（核心插件 component-theme-neon 判定激活时
+ *     写入）——核心被禁用而本成员仍启用时类在而标记不在，人浪保持隐藏
+ *     （禁用主题 = 回落默认皮肤，AGENTS §4.5）
  *   - body.battle-mode（比赛演出：隐藏所有元素只留背景图）→ 强制隐藏
  *   - prefers-reduced-motion: reduce → 摆动/明暗动画停用，保留静态点灯
  * ============================================================ */
 
 .npl-row { display: none; }
 
-html.theme-neon .npl-row {
+html.theme-neon[data-theme-core] .npl-row {
   display: flex;
   justify-content: center;
   align-items: flex-end;
@@ -19,7 +21,7 @@ html.theme-neon .npl-row {
 }
 
 /* 常驻条：fixed 底缘观众席（不占布局） */
-html.theme-neon .npl-row--fixed {
+html.theme-neon[data-theme-core] .npl-row--fixed {
   position: fixed;
   left: 0; right: 0; bottom: 0;
   padding: 0 12px 7px;

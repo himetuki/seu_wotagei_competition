@@ -421,7 +421,7 @@ music-player 的 `play(item)` 为 P15 新增 api（`item ? setItem(item) : 不�
 
 1. 目录 `modules/component-theme-<id>/`（仅 front/{plugin,view}.js + 主题样式等静态资产，无 index.html / 后端 plugin.js），`web/front.json` 条目 `{ target, enabled, kind:"component", label?, group?, pages:[…全部生效页面…] }`；
 2. apply 内 `ctx.ui.registerComponent("theme:<id>", factory)`——factory 渲染主题管理页的主题预览卡（props.active = 是否当前主题）；
-3. 自带激活逻辑（参照 `modules/component-theme-neon/front/plugin.js`）：注入自己的样式表、给 `<html>` 挂主题类、标注 `<html data-page>`；`localStorage["ystage:theme"]` 同步初判（防首屏闪默认）+ `GET /api/theme/active` 异步对账（服务端不一致 → 按服务端翻转或整页 reload）；
+3. 自带激活逻辑（参照 `modules/component-theme-neon/front/plugin.js`）：注入自己的样式表、给 `<html>` 挂主题类、标注 `<html data-page>`；`localStorage["ystage:theme"]` 同步初判（防首屏闪默认）+ `GET /api/theme/active` 异步对账（服务端不一致 → 按服务端翻转或整页 reload）。核心激活时同时写 `<html data-theme-core="<id>">` 核心在位标记——**组成员显形规则必须「主题类 + 标记」双条件**：head 启动脚本只凭 localStorage 挂类（防 FOUC）、不感知插件启停，单凭类会在「核心禁用、成员启用」时把成员视觉残留在默认皮肤上；
 4. 比赛演出守卫：`body.battle-mode` 期间隐藏全部主题氛围层，只留背景图；`prefers-reduced-motion: reduce` 全量停用装饰动画；
 5. 主题之间互不 import（组件纪律）；禁用主题插件 = 主题从管理页消失、页面回落默认皮肤。
 

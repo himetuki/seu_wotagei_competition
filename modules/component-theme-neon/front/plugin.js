@@ -17,7 +17,10 @@
  *     web/front.json 条目 { kind:"component", pages:[…全部要生效的页面 id…] }
  *   - apply 内 ctx.ui.registerComponent("theme:<id>", factory)；
  *     factory(host, props) 渲染主题预览卡（props.active = 是否当前主题），返回 cleanup 可选
- *   - 自带激活逻辑（本文件的 ensureStylesheet/ensureAmbience/setActive 可作模板）：挂自己的类与样式并持久化
+ *   - 自带激活逻辑（本文件的 ensureStylesheet/ensureAmbience/setActive 可作模板）：挂自己的类与样式并持久化；
+ *     组成员（若有）的显形规则须「主题类 + data-theme-core 核心在位标记」双条件——
+ *     head 启动脚本只看 localStorage 挂类、不感知插件启停，单凭类会在核心禁用、
+ *     成员启用时把成员视觉残留在默认皮肤上（v6.3.1 修复，见 setActive）
  *   - 主题之间互不 import（组件纪律）；禁用本插件 = 主题从主题页消失、页面回落默认
  */
 import { createThemePreview } from "./view.js";
@@ -98,9 +101,15 @@ function ensureAmbience(page) {
   // 其显隐同样由 html.theme-neon 类驱动，此处不重复。
 }
 
-/** 激活/停用只拨类——样式与氛围层的挂载已在 apply 完成；状态以 DOM 为准（无模块级可变状态） */
+/** 激活/停用拨类与核心在位标记——样式与氛围层的挂载已在 apply 完成；状态以 DOM 为准（无模块级可变状态） */
 function setActive(on) {
   document.documentElement.classList.toggle("theme-neon", on);
+  // data-theme-core（核心在位标记，v6.3.1）：head 启动脚本只凭 localStorage 挂类
+  // （防首屏闪默认），不感知插件启停——核心被禁用而成员（荧光棒人浪等）仍启用时，
+  // 类在而核心不在，成员会悬浮在默认皮肤上。成员显形规则一律「主题类 + 本标记」
+  // 双条件：标记只可能由核心插件在位且判定激活时写入，核心禁用即整组回落默认皮肤。
+  if (on) document.documentElement.setAttribute("data-theme-core", THEME_ID);
+  else document.documentElement.removeAttribute("data-theme-core");
 }
 
 export default {
@@ -134,7 +143,10 @@ export default {
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!data || typeof data.active !== "string") return;
-        if (data.active === localStorage.getItem(THEME_STORAGE_KEY)) return;
+        // 本机无记忆（getItem 为 null）视同 "default"：与全新浏览器 + 服务端默认主题的
+        // 组合对齐，避免首访被无意义整页 reload 一次（刷新后收敛但首帧已渲染）
+        const local = localStorage.getItem(THEME_STORAGE_KEY) ?? "default";
+        if (data.active === local) return;
         localStorage.setItem(THEME_STORAGE_KEY, data.active);
         if (data.active === THEME_ID) {
           applyEnhancements(page);

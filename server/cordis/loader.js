@@ -80,9 +80,20 @@ function readPluginsJson(serverLog, overridePath) {
 // runtime.pluginsPath（deps.pluginsPath，selfcheck 注入）：装配清单写盘改道临时副本，
 // 自检的 toggle/config 持久化不落真实清单，非受控中断零残留。
 // P6b：便携模式下这里是真实文件（plugins/plugins.json），persisted:true 常态化。
+// 原子写（v6.3.1）：先写 .tmp 再 rename 覆盖，写盘中断不再截断清单
+// （清单损坏 = 后端全部 /api/* 消失或前端全站装配为空，后果与写入窗口不成比例）；
+// rename 失败退回直写并清理 tmp，成功/失败语义与原实现一致（true/false）。
 function persistJson(data, target) {
+  const payload = JSON.stringify(data, null, 2) + "\n";
   try {
-    fs.writeFileSync(target, JSON.stringify(data, null, 2) + "\n", "utf8");
+    const tmp = `${target}.tmp`;
+    fs.writeFileSync(tmp, payload, "utf8");
+    try {
+      fs.renameSync(tmp, target);
+    } catch (e) {
+      fs.writeFileSync(target, payload, "utf8");
+      try { fs.unlinkSync(tmp); } catch (_) { /* 清理失败不影响结果 */ }
+    }
     return true;
   } catch (e) {
     return false;
@@ -381,17 +392,23 @@ function createAssemblyService(deps) {
   }
 
   async function toggleFront(id, enabled) {
-    const front = readManifestFile(paths.frontManifestPath());
-    if (!front || !Array.isArray(front.plugins)) {
-      return { ok: false, error: "front.json 读取失败" };
-    }
-    const idx = front.plugins.findIndex((e) => entryIdOf(e) === id);
-    if (idx < 0) return { ok: false, error: `前端清单中不存在 ${id}` };
-    if (typeof front.plugins[idx] === "string") front.plugins[idx] = { target: `modules/${id}` };
-    front.plugins[idx].enabled = !!enabled;
-    const persisted = persistFrontManifest(front);
-    // 前端插件生命周期 = 页面生命周期（kernel 按 front.json 决定是否 import），刷新后生效
-    return { ok: true, persisted, hint: "前端插件：刷新页面后生效" };
+    // 读-改-写串行（v6.3.1，与后端 toggle 同纪律）：每次调用都是「重读 front.json →
+    // 改单条 → 整包写回」，并发提交（多标签/多机；组级整组停用的连续序列有 groupBusy
+    // 锁但锁不跨客户端）会让后写者以旧快照整包覆盖，先写者的变更静默丢失。前端清单
+    // 是单一文件，全部写入共用一把锁（专用键 "__front__"）即可。
+    return serialized("__front__", async () => {
+      const front = readManifestFile(paths.frontManifestPath());
+      if (!front || !Array.isArray(front.plugins)) {
+        return { ok: false, error: "front.json 读取失败" };
+      }
+      const idx = front.plugins.findIndex((e) => entryIdOf(e) === id);
+      if (idx < 0) return { ok: false, error: `前端清单中不存在 ${id}` };
+      if (typeof front.plugins[idx] === "string") front.plugins[idx] = { target: `modules/${id}` };
+      front.plugins[idx].enabled = !!enabled;
+      const persisted = persistFrontManifest(front);
+      // 前端插件生命周期 = 页面生命周期（kernel 按 front.json 决定是否 import），刷新后生效
+      return { ok: true, persisted, hint: "前端插件：刷新页面后生效" };
+    });
   }
 
   return { status, toggle, reload, setConfig, toggleFront };

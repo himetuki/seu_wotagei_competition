@@ -56,9 +56,13 @@ const die = (m) => {
 };
 
 // ---- 前置校验 ----
-// 防呆：OUT 不得为项目根本身或其祖先目录（后续 rmSync 会清空目标）
+// 防呆：OUT 不得为项目根本身或其祖先目录（后续 rmSync 会清空目标）。
+// Windows 文件系统大小写不敏感而 JS 字符串比较敏感——比较前统一转小写，
+// 否则 --out 传大小写不一致的路径会绕过防呆、rmSync 删除整个项目根。
 const ROOT_ABS = path.resolve(ROOT);
-if (OUT === ROOT_ABS || ROOT_ABS.startsWith(OUT + path.sep)) {
+const OUT_LC = path.resolve(OUT).toLowerCase();
+const ROOT_LC = ROOT_ABS.toLowerCase();
+if (OUT_LC === ROOT_LC || ROOT_LC.startsWith(OUT_LC + path.sep)) {
   die(`产物目录不得为项目根或其祖先目录: ${OUT}`);
 }
 const REQUIRED = [

@@ -980,6 +980,7 @@ export function createComposerView(el, ctx) {
       refresh().then(applyInitialLayoutParam);
     })
     .catch((e) => {
+      if (stopped) return; // 晚到守卫：卸载后不得覆写 el 的新内容（与 .then 同口径）
       console.error("[game-composer] 响应式视图初始化失败:", e);
       el.innerHTML =
         '<section class="gcmp-page"><p class="gcmp-props-error" role="alert">编辑器初始化失败，请刷新重试</p></section>';

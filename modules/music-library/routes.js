@@ -150,8 +150,19 @@ app.post("/api/upload_music", (req, res) => {
           }
         },
         filename: function (req, file, cb) {
-          // 保留原始文件名
-          cb(null, file.originalname);
+          // 保留原始文件名，但拒绝 Windows 危险名：busboy 已剥离目录成分，此处再
+          // 拒保留设备名（CON.mp3 等命中设备语义）与冒号（x.mp3:ads 产生 NTFS ADS
+          // 隐藏数据流）；结尾点/空格名由后续扩展名白名单兜住
+          try {
+            const base = safeBasename(file.originalname);
+            if (!base || base.includes(":") ||
+                /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i.test(base)) {
+              return cb(new Error(`不支持的文件名: ${file.originalname}`));
+            }
+            cb(null, base);
+          } catch (e) {
+            cb(e);
+          }
         },
       }),
       limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
