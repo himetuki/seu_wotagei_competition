@@ -74,14 +74,16 @@ export default {
             console.error("加载奖品数据失败:", error);
           });
 
-        // 更新选手列表
+        // 更新选手列表（li 绑定 player 下标：重名选手按引用定位，find-by-name
+        // 会恒命中首个，第二个同名者永远无法入榜/归位）
         function updatePlayersList() {
           playersList.innerHTML = "";
-          players.forEach((player) => {
+          players.forEach((player, idx) => {
             if (!player.ranked) {
               const li = document.createElement("li");
               li.textContent = player.name;
               li.dataset.name = player.name;
+              li.dataset.idx = String(idx);
               li.addEventListener("click", moveToRanking);
               playersList.appendChild(li);
             }
@@ -128,7 +130,11 @@ export default {
 
         // 将选手移动到排名位置
         function moveToRanking(event) {
-          const playerName = event.target.dataset.name;
+          const li = event.currentTarget;
+          const playerName = li.dataset.name;
+          // 按下标定位 player 对象（重名安全），绑定缺失时防御性放弃
+          const player = players[Number(li.dataset.idx)];
+          if (!player) return;
 
           // 修改：找到空排名位置，但优先选择较大的排名（从第5名开始）
           let emptyPositions = Array.from(rankPositions).filter(
@@ -155,6 +161,7 @@ export default {
           playerElement.className = "player-item";
           playerElement.textContent = playerName;
           playerElement.dataset.name = playerName;
+          playerElement.dataset.idx = li.dataset.idx;
           playerElement.addEventListener("click", moveBackToList);
 
           // 添加元素到排名位置
@@ -171,8 +178,8 @@ export default {
             playerElement.style.animation = "";
           }, 800);
 
-          // 更新选手状态并刷新列表
-          players.find((player) => player.name === playerName).ranked = true;
+          // 更新选手状态并刷新列表（按下标定位，重名不串）
+          player.ranked = true;
           updatePlayersList();
         }
 
@@ -216,8 +223,10 @@ export default {
 
         // 将选手从排名移回列表
         function moveBackToList(event) {
-          const playerName = event.target.dataset.name;
-          const rankPosition = event.target.closest(".rank-position");
+          const playerElement = event.currentTarget;
+          // 按下标定位 player 对象（重名安全），绑定缺失时仅移除节点
+          const player = players[Number(playerElement.dataset.idx)];
+          const rankPosition = playerElement.closest(".rank-position");
           const awardElement = rankPosition?.querySelector(".rank-award");
 
           // 隐藏奖品
@@ -229,14 +238,14 @@ export default {
           }
 
           // 动画效果
-          event.target.style.animation = "appear 0.5s ease-out reverse";
+          playerElement.style.animation = "appear 0.5s ease-out reverse";
 
           // 等待动画完成后移除
           schedule(() => {
-            event.target.remove();
+            playerElement.remove();
 
-            // 更新选手状态并刷新列表
-            players.find((player) => player.name === playerName).ranked = false;
+            // 更新选手状态并刷新列表（按下标定位，重名不串）
+            if (player) player.ranked = false;
             updatePlayersList();
           }, 500);
         }

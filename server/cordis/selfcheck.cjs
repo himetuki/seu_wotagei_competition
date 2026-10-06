@@ -81,7 +81,8 @@ const MANAGER_PROJECT = {
 };
 
 // P0 基线（p0-baseline.md §2）：10 内置 + 12 模块声明；P14 增补 game-composer-layouts（23）；
-// 主题改版增补 theme-store（24，theme-manager 系统级主题偏好）
+// 主题改版增补 theme-store（24，theme-manager 系统级主题偏好）；
+// D1 修复增补 group-battle-final（25，团体赛最终结果独立文档，team-rank 服务端兜底主源）
 const BASELINE_DB_NAMES = [
   "winners", "settings", "statistics", "player1", "player2", "tricks",
   "tricks_for_group2", "musics_list", "musics_list_ex", "award",
@@ -91,6 +92,7 @@ const BASELINE_DB_NAMES = [
   "game_setting",
   "game-composer-layouts", // P14 可视化编排布局存档
   "theme-store",           // 主题改版：系统级当前主题（theme-manager）
+  "group-battle-final",    // D1：团体赛最终结果独立文档（group-battle）
 ];
 
 // 与 module-routes.js:20-29 逐字段一致的投影（守门员对比基准）
@@ -262,7 +264,7 @@ async function run(options = {}) {
     const expected = [...BASELINE_DB_NAMES].sort();
     const missing = expected.filter((n) => !defNames.includes(n));
     const extra = defNames.filter((n) => !expected.includes(n) && !n.startsWith("__cordis_probe"));
-    assert("A2 数据库定义 == 基线 24 个", missing.length === 0 && extra.length === 0,
+    assert("A2 数据库定义 == 基线 25 个", missing.length === 0 && extra.length === 0,
       `缺: ${missing} 多: ${extra}`);
   }
 

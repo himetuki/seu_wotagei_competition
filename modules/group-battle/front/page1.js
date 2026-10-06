@@ -1483,6 +1483,10 @@ function handleReset() {
   // 整场重置连下游两轮的进行中存档一并清除（所有进度丢失，含第二/三大轮）
   localStorage.removeItem("groupBattleStateR2");
   localStorage.removeItem("groupBattleStateR3");
+  // 最终结果（team-rank 主数据源）与第一大轮产出（page2 恢复链输入）同属
+  // 本局进度，一并清除；服务端 final 文档由 clear 端点连带清
+  localStorage.removeItem("groupBattleFinal");
+  localStorage.removeItem("groupBattleRound1");
   fetch("/api/clear-group-battle-process", {
     method: "POST",
   }).catch(() => {});

@@ -553,6 +553,14 @@ function handleFinish() {
 
   localStorage.setItem("groupBattleFinal", JSON.stringify(finalResult));
 
+  // 最终结果独立文档双写（team-rank 服务端兜底主源，不经 currentState 包装、
+  // 不被单槽位进度文档的常规 saveState 覆盖）；失败静默，与既有存档双写一致
+  fetch("/api/group-battle-final", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(finalResult),
+  }).catch(() => {});
+
   fetch("/api/group-battle-process", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

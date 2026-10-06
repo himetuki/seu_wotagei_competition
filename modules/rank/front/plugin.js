@@ -361,8 +361,8 @@ export default {
           let html = '<div class="bracket-rounds grid-flow winner-rounds">';
 
           winnerBracket.forEach((round, roundIndex) => {
-            html += `<div class="bracket-round" data-round="${round.round}">
-              <div class="round-title">第${round.round}轮</div>
+            html += `<div class="bracket-round" data-round="${escapeHtml(round.round)}">
+              <div class="round-title">第${escapeHtml(round.round)}轮</div>
               <div class="matches-container">`;
 
             if (round.matches && Array.isArray(round.matches)) {
@@ -391,8 +391,8 @@ export default {
           let html = '<div class="bracket-rounds grid-flow loser-rounds">';
 
           loserBracket.forEach((round, roundIndex) => {
-            html += `<div class="bracket-round" data-round="${round.round}">
-              <div class="round-title">第${round.round}轮</div>
+            html += `<div class="bracket-round" data-round="${escapeHtml(round.round)}">
+              <div class="round-title">第${escapeHtml(round.round)}轮</div>
               <div class="matches-container">`;
 
             if (round.matches && Array.isArray(round.matches)) {
@@ -422,7 +422,7 @@ export default {
 
           finalBracket.forEach((round, roundIndex) => {
             let roundTitle = round.round === 1 ? "决赛" : "冠军决定战";
-            html += `<div class="bracket-round" data-round="${round.round}">
+            html += `<div class="bracket-round" data-round="${escapeHtml(round.round)}">
               <div class="round-title">${roundTitle}</div>
               <div class="matches-container">`;
 
@@ -460,9 +460,9 @@ export default {
 
           return `
             <div class="match-card ${bracketType}-match ${matchTypeClass}" data-match-index="${matchIndex}">
-              <div class="match-player ${p1Class}">${player1}</div>
+              <div class="match-player ${p1Class}">${escapeHtml(player1)}</div>
               <div class="match-vs">VS</div>
-              <div class="match-player ${p2Class}">${player2}</div>
+              <div class="match-player ${p2Class}">${escapeHtml(player2)}</div>
             </div>
           `;
         }

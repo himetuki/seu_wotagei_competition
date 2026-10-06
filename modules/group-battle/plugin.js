@@ -17,6 +17,10 @@ module.exports = {
           lastUpdate: new Date().toISOString(),
         },
       },
+      // 最终结果独立文档：POST process 会把任意 body 包进 currentState 一层，
+      // 且单槽位进度文档会被各页常规 saveState 覆盖——team-rank 服务端兜底的
+      // 主数据源须独立存放（defaultValue null：兼容层 getState() 收敛为 {}）
+      { name: "group-battle-final", defaultValue: null },
     ]);
 
     // ---- 原 modules/group-battle/server/routes.js 回调整体迁入 ----
@@ -59,6 +63,31 @@ module.exports = {
         }
       });
 
+      // 最终结果独立文档：body 即 finalResult 对象（page3 handleFinish 直写，
+      // 不经 currentState 包装层；文档根级就是 finalResult 本身）
+      app.post("/api/group-battle-final", (req, res) => {
+        try {
+          getDB("group-battle-final")
+            .setState(req.body)
+            .write();
+          serverLog("成功保存 group-battle 最终结果");
+          res.status(200).send("保存成功");
+        } catch (error) {
+          serverLog("保存 group-battle 最终结果失败: " + error.message, "error");
+          res.status(500).send("Error: " + error.message);
+        }
+      });
+
+      app.get("/api/group-battle-final", (req, res) => {
+        try {
+          const data = getDB("group-battle-final").getState();
+          res.json(data);
+        } catch (error) {
+          serverLog("获取 group-battle 最终结果失败: " + error.message, "error");
+          res.status(500).send("Error: " + error.message);
+        }
+      });
+
       app.post("/api/clear-group-battle-process", (req, res) => {
         try {
           getDB("group-battle-process")
@@ -67,6 +96,9 @@ module.exports = {
               lastUpdate: new Date().toISOString(),
             })
             .write();
+          // 整场/轮次重置连带清最终结果独立文档（team-rank 服务端兜底主源，
+          // 三页 handleReset 共用本端点，一处连带清即全覆盖）
+          getDB("group-battle-final").setState(null).write();
           serverLog("已清除 group-battle 进度数据");
           res.status(200).send("清除成功");
         } catch (error) {

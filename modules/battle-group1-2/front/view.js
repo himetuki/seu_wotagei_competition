@@ -857,10 +857,11 @@ function createMatchCard(match, bracketType, round, matchIndex) {
   // 添加特定的比赛顺序标识类
   card.classList.add(`${bracketType}-r${round}-m${matchIndex}`);
 
-  // 如果是当前比赛，添加样式
+  // 如果是当前比赛，添加样式（round 即 roundData.round，1-based；
+  // currentRound 同为 1-based——getCurrentMatch 以 currentRound-1 作轮次下标）
   if (
     BattleState.currentBracket === bracketType &&
-    BattleState.currentRound === round + 1 &&
+    BattleState.currentRound === round &&
     BattleState.currentMatchIndex === matchIndex
   ) {
     card.classList.add("current");

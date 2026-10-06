@@ -1,8 +1,9 @@
 /**
  * modules/team-rank 前端插件（P4 迁移，原 team_rank.js 逻辑整体迁入）
  *
- * 团体赛最终排名页：优先读 localStorage "groupBattleFinal"，否则请求
- * /api/group-battle-process，按胜场降序/负场升序逐项动画展示（400ms 间隔）。
+ * 团体赛最终排名页：优先读 localStorage "groupBattleFinal"，否则服务端兜底三级
+ * （/api/group-battle-final 独立文档 → /api/group-battle-process 包装档下钻），
+ * 按胜场降序/负场升序逐项动画展示（400ms 间隔）。
  *
  * 形态适配说明（逻辑逐行保留）：
  *   - 原 DOMContentLoaded 包裹已去除（kernel 装配完成后调用 component，DOM 早已就绪）
@@ -71,22 +72,43 @@ export default {
           }
 
           if (!finalResult) {
-            // 尝试从服务器加载
-            fetch("/api/group-battle-process")
+            // 服务端兜底三级：
+            //   ① GET /api/group-battle-final —— 最终结果独立文档（文档根级即
+            //      finalResult 对象，不被进度文档的常规 saveState 覆盖）；
+            //   ② GET /api/group-battle-process 下钻 currentState.finalResult ——
+            //      兼容存量包装档（POST 会把 {finalResult, currentState} 再包进
+            //      currentState 一层，根级恒无 finalResult）；
+            //   ③ 都无 → showError
+            fetch("/api/group-battle-final")
               .then((r) => r.json())
               .then((data) => {
-                if (data && data.finalResult) {
-                  displayResults(data.finalResult);
+                if (data && Array.isArray(data.groups) && data.groups.length) {
+                  displayResults(data);
                 } else {
-                  showError();
+                  loadWrappedFinal().catch(() => showError());
                 }
               })
               .catch(() => {
-                showError();
+                loadWrappedFinal().catch(() => showError());
               });
           } else {
             displayResults(finalResult);
           }
+        }
+
+        // 存量包装档兜底：进度文档根级是 currentState/lastUpdate，finalResult
+        // 在 currentState 内层（旧 handleFinish 写入形态）
+        function loadWrappedFinal() {
+          return fetch("/api/group-battle-process")
+            .then((r) => r.json())
+            .then((data) => {
+              const wrapped = data && data.currentState?.finalResult;
+              if (wrapped && Array.isArray(wrapped.groups) && wrapped.groups.length) {
+                displayResults(wrapped);
+              } else {
+                showError();
+              }
+            });
         }
 
         function displayResults(result) {
