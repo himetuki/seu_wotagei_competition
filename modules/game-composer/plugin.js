@@ -9,7 +9,8 @@
  * 校验规则（规格 .tmp/p14-layout-spec.md §1 + .tmp/p15-wiring-spec.md §1，违反 → 400 {"error":"..."}）：
  *   - name    非空字符串，trim 后 1..40 字符（存储 trim 后的值）
  *   - items   数组 0..40 项；每项普通对象
- *   - item.component 非空字符串且 /^[a-z][a-z0-9-]*$/
+ *   - item.component 非空字符串且 /^[a-z][a-z0-9-]*$/，且不得为 Object.prototype
+ *     自有属性名（如 "constructor"——全小写能过正则，但会击穿前端按名分组表）
  *   - item.id / item.title / item.props 可缺省；id 给出时须 /^[a-zA-Z][a-zA-Z0-9_-]*$/
  *     且 ≤64 字符、布局内唯一（"[data-slot=<id>]" 不加引号拼接，畸形/重复 id 会
  *     抛选择器 SyntaxError 或多实例挤同一宿主）；props 若给出必须是普通对象（非数组）
@@ -112,6 +113,12 @@ function validateBody(raw) {
       !/^[a-z][a-z0-9-]*$/.test(it.component)
     ) {
       return { error: `items[${i}].component 必须为小写 kebab-case 组件名` };
+    }
+    // 原型链属性名防线：正则放行全小写原型名（如 "constructor"），会击穿前端两镜像的
+    // 按名分组表（Object.prototype 成员 truthy → 初始化被跳过 → 对函数 .push 抛 TypeError）。
+    // 镜像侧已改 null 原型表兜底存量，此处按 Object.prototype 自有属性名直接拒绝新建。
+    if (Object.hasOwn(Object.prototype, it.component)) {
+      return { error: `items[${i}].component 不能使用 Object.prototype 属性名：${it.component}` };
     }
     if (
       it.props !== undefined &&

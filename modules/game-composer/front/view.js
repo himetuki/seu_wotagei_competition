@@ -102,7 +102,7 @@ const TEMPLATE = `
 
   <div class="gcmp-banner gcmp-banner--err" role="alert" v-if="loadError">
     <span>{{ loadError }}</span>
-    <button class="gcmp-btn gcmp-btn--sm" type="button" @click="refresh()">重试</button>
+    <button class="gcmp-btn gcmp-btn--sm" type="button" @click="retryLoad()">重试</button>
   </div>
 
   <div class="gcmp-main" v-if="!previewing">
@@ -391,6 +391,11 @@ export function createComposerView(el, ctx) {
     syncPicker();
   }
 
+  /** 加载失败重试：重放初始化链（refresh 后仍应用 ?layout= 深链预载；applyInitialLayoutParam 自身已判参数与 dirty） */
+  function retryLoad() {
+    refresh().then(applyInitialLayoutParam);
+  }
+
   /* ---------- 布局级操作 ---------- */
 
   /** 连线表单重置（新建/切换/保存回写共用） */
@@ -404,6 +409,7 @@ export function createComposerView(el, ctx) {
   }
 
   function newLayout() {
+    exitPreviewState(); // 编辑态被清空，预览不留旧布局活组件（幂等）
     state.layoutId = "";
     state.name = "";
     state.items = [];
@@ -419,7 +425,8 @@ export function createComposerView(el, ctx) {
   /** 按 id 从已加载列表载入编辑态（深拷贝，不与列表对象共享引用）；命中返回 true */
   function loadLayoutById(id) {
     const found = state.layouts.find((l) => l && l.id === id);
-    if (!found) return false;
+    if (!found) return false; // 未命中不动编辑态，预览（若有）仍与当前编辑态一致、不退出
+    exitPreviewState(); // 编辑态即将被替换，预览不留旧布局活组件
     const copy = cloneLayout(found);
     state.layoutId = copy.id;
     state.name = copy.name;
@@ -465,6 +472,7 @@ export function createComposerView(el, ctx) {
 
   /** 服务端返回的布局写回编辑态（保存成功后） */
   function applyServerLayout(layout) {
+    exitPreviewState(); // 服务端归一化副本可能改 id/补连线 id：预览组件按旧副本挂载，统一退出
     const copy = cloneLayout(layout);
     state.layoutId = copy.id;
     state.name = copy.name;
@@ -506,6 +514,11 @@ export function createComposerView(el, ctx) {
       const data = await res.json().catch(() => ({}));
       if (stopped || !state) return;
       if (!res.ok) {
+        if (res.status === 404) {
+          // 布局已被他端删除：PUT 会一直 404——明确引导另存，不改状态机、不自动转新建
+          toast("该布局已被删除（可能在其他页面操作），请点「新建布局」另存", "error");
+          return;
+        }
         toast((data && data.error) || `保存失败（HTTP ${res.status}）`, "error");
         return;
       }
@@ -524,6 +537,7 @@ export function createComposerView(el, ctx) {
     const targetId = state.layoutId;
     const targetName = state.name;
     const doDelete = async () => {
+      exitPreviewState(); // 删除即将生效（或已在他端生效），预览不留旧布局活组件
       try {
         const res = await fetch(`${API_BASE}/${encodeURIComponent(targetId)}`, { method: "DELETE" });
         if (stopped || !state) return;
@@ -857,6 +871,16 @@ export function createComposerView(el, ctx) {
   }
 
   /**
+   * 编辑态整体变更（新建/切换/保存回写/删除）前统一退出预览（幂等）：
+   * 预览台挂的是旧布局的活组件，编辑态被替换后若不退出，预览会残留旧组件继续运行。
+   */
+  function exitPreviewState() {
+    if (!state || !state.previewing) return;
+    exitPreview();
+    state.previewing = false;
+  }
+
+  /**
    * 预览条连线文案（walkthrough P3）：只统计两端实例均可解析的连线（悬挂线运行时 warn 跳过，
    * 不计入注入数），有悬挂时透明标注「N 条悬挂已跳过」。
    */
@@ -895,6 +919,8 @@ export function createComposerView(el, ctx) {
    * 初始化时按 URL ?layout=<id> 预载布局（custom-stage「编辑此布局」入口）。
    * 必须在 refresh() 完成后查（id 要在已加载列表里命中）；无参/未命中则静默忽略，
    * 留默认空编辑态（列表可能尚未包含或已被删除）。
+   * dirty 守卫：refresh 完成前用户已开始编辑（首屏窗口内）时跳过预载——
+   * 覆写会静默吞掉这些编辑；轻提示一条（console.warn），不弹确认框。
    */
   function applyInitialLayoutParam() {
     if (stopped || !state) return;
@@ -904,7 +930,12 @@ export function createComposerView(el, ctx) {
     } catch (e) {
       return;
     }
-    if (want && loadLayoutById(want)) syncPicker();
+    if (!want) return;
+    if (state.dirty) {
+      console.warn("[game-composer] 已有未保存的编辑，跳过 URL ?layout= 深链预载");
+      return;
+    }
+    if (loadLayoutById(want)) syncPicker();
   }
 
   /* ---------- 装配（响应式三件套，AGENTS §4.3） ---------- */
@@ -939,6 +970,7 @@ export function createComposerView(el, ctx) {
     selComponent,
     palette,
     refresh,
+    retryLoad,
     newLayout,
     confirmNewLayout,
     onPickLayout,

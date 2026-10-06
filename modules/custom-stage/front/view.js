@@ -94,10 +94,6 @@ function renderRun(el, list, layoutId, ctx, adoptMount) {
     return;
   }
 
-  const items = stageItems(layout); // 与 layoutToConfig 同一过滤：宿主选择器与 DOM 一一对应
-  const slotsHtml = items
-    .map((item) => `<div class="stage-slot card" data-slot="${escapeHtml(item.id)}"></div>`)
-    .join("");
   el.innerHTML = shellPage(
     `<span>${escapeHtml(layout.name || "未命名布局")}</span>`,
     `
@@ -105,28 +101,43 @@ function renderRun(el, list, layoutId, ctx, adoptMount) {
       <a class="stage-link" href="${COMPOSER_URL}?layout=${encodeURIComponent(layout.id)}">${icon("layout-grid", { size: 16 })}<span>编辑此布局</span></a>`,
   );
   const body = el.querySelector(".custom-stage-body");
-  if (!items.length) {
-    // 空布局（API 允许存盘）：不调 mountFromConfig（零装配），给引导提示
+  try {
+    const items = stageItems(layout); // 与 layoutToConfig 同一过滤：宿主选择器与 DOM 一一对应
+    if (!items.length) {
+      // 空布局（API 允许存盘）：不调 mountFromConfig（零装配），给引导提示
+      body.innerHTML = `
+        <div class="stage-empty">
+          <p class="stage-msg">${icon("info-circle", { size: 18 })}<span>此布局暂无组件。</span></p>
+          <a class="stage-link" href="${COMPOSER_URL}">${icon("layout-grid", { size: 16 })}<span>去添加组件</span></a>
+        </div>`;
+      return;
+    }
+    const slotsHtml = items
+      .map((item) => `<div class="stage-slot card" data-slot="${escapeHtml(item.id)}"></div>`)
+      .join("");
+    body.innerHTML = `<div class="grid-flow stage-run">${slotsHtml}</div>`;
+    // 连线注入（P15 规格 §3）：apis 以 item.id 为键，由注入的 onReady 在挂载期同步回填
+    //（mountFromConfig 构造内即完成 mountAll，返回时已齐）；连线函数在用户交互时才惰性查表。
+    // 晚到守卫/disposed 语义不变：连线闭包只捕获本页局部 Map，随 mounted.cleanup 一并废弃。
+    adoptMount(
+      mountFromConfig({
+        el, // 宿主查找限定页面根内（.stage-run 容器内的 .stage-slot）
+        meta: layoutToConfig(layout), // 静态 props（title + item.props）；不传 defaultSlots（P14 规格 §3）
+        runtimeProps: buildRuntimeProps(layout, new Map(), console.warn), // 连线注入，浅合并覆盖同名静态 prop
+        ctx,
+        label: "custom-stage",
+      }),
+    );
+  } catch (e) {
+    // 渲染错误与「布局列表加载失败」分类：换算/挂载抛错（如撞原型链的组件名、组件工厂抛错）
+    // 是本布局的确定性错误——给明确归因 + 返回列表出口，不误标为加载失败（重试无意义，不提供）
+    console.error("[custom-stage] 布局渲染失败:", e);
     body.innerHTML = `
       <div class="stage-empty">
-        <p class="stage-msg">${icon("info-circle", { size: 18 })}<span>此布局暂无组件。</span></p>
-        <a class="stage-link" href="${COMPOSER_URL}">${icon("layout-grid", { size: 16 })}<span>去添加组件</span></a>
+        <p class="stage-msg stage-msg--error">${icon("alert-triangle", { size: 18 })}<span>布局渲染失败（组件名非法或组件不可用）。</span></p>
+        <a class="stage-link" href="${STAGE_URL}">${icon("arrow-left", { size: 16 })}<span>返回布局列表</span></a>
       </div>`;
-    return;
   }
-  body.innerHTML = `<div class="grid-flow stage-run">${slotsHtml}</div>`;
-  // 连线注入（P15 规格 §3）：apis 以 item.id 为键，由注入的 onReady 在挂载期同步回填
-  //（mountFromConfig 构造内即完成 mountAll，返回时已齐）；连线函数在用户交互时才惰性查表。
-  // 晚到守卫/disposed 语义不变：连线闭包只捕获本页局部 Map，随 mounted.cleanup 一并废弃。
-  adoptMount(
-    mountFromConfig({
-      el, // 宿主查找限定页面根内（.stage-run 容器内的 .stage-slot）
-      meta: layoutToConfig(layout), // 静态 props（title + item.props）；不传 defaultSlots（P14 规格 §3）
-      runtimeProps: buildRuntimeProps(layout, new Map(), console.warn), // 连线注入，浅合并覆盖同名静态 prop
-      ctx,
-      label: "custom-stage",
-    }),
-  );
 }
 
 /** 加载失败：错误行 + 重试按钮（不白屏） */

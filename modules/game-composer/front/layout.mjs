@@ -126,8 +126,11 @@ function safeItemText(item) {
  */
 export function layoutToConfig(layout) {
   const compose = [];
-  const slots = {};
-  const components = {};
+  // 组表用 null 原型对象：组件名可能撞 Object.prototype 成员（如 "constructor"——后端正则
+  // 放行全小写原型名），普通对象的 `!slots[name]` 会命中原型继承值（truthy 函数）→ 初始化
+  // 被跳过 → 对函数调 .push 抛 TypeError。与 custom-stage 镜像实现同口径。
+  const slots = Object.create(null);
+  const components = Object.create(null);
   for (const item of stageItems(layout)) {
     const name = item.component;
     if (!slots[name]) {
@@ -162,10 +165,10 @@ export function buildRuntimeProps(layout, apis, warn) {
   const staged = stageItems(layout);
   const stagedById = new Map(staged.map((item) => [item.id, item]));
 
-  const groups = {}; // 组件名 → 该组 staged items（顺序 = 组内实例序，与 slots 一一对齐）
+  const groups = Object.create(null); // 组件名 → 该组 staged items（顺序 = 组内实例序，与 slots 一一对齐；null 原型防原型链名撞键，同 layoutToConfig）
   for (const item of staged) (groups[item.component] ??= []).push(item);
 
-  const rp = {}; // 组件名 → props 数组（下标 = 组内实例序）
+  const rp = Object.create(null); // 组件名 → props 数组（下标 = 组内实例序；null 原型防原型链名/"__proto__" 撞键）
   const propOf = (item) => rp[item.component][groups[item.component].indexOf(item)];
 
   for (const [name, items] of Object.entries(groups)) {
