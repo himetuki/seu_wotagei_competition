@@ -117,9 +117,11 @@ module.exports = {
 
       app.post("/api/drag-settings", (req, res) => {
         try {
-          getDB("drag-settings")
-            .setState({ ...req.body })
-            .write();
+          const db = getDB("drag-settings");
+          // 合并语义：多写方各带单字段（drag 前端只 POST {doubleElim}，setting 页
+          // POST {totalCount} / {doubleElim}），整文档替换会跨页互抹丢字段 →
+          // 读旧 state 浅合并 req.body 再写；GET 形状不变（仍是平铺字段）
+          db.setState({ ...db.getState(), ...req.body }).write();
           serverLog("成功保存 drag-settings");
           res.status(200).send("保存成功");
         } catch (error) {

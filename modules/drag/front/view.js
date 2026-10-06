@@ -355,6 +355,9 @@ export function dragComponent(el, meta, ctx, bridge) {
         }
 
         recomputeLayout();
+        // F1: 存档恢复链同样补检——恢复的存档若恰处四强（actives=4 且双败开启而未激活，
+        // 如 4 人开局未拖拽即保存的旧档），进入双败；silent 避免刷新恢复时弹切换提示
+        checkDoubleElimTransition(true);
         renderAll();
       });
     });
@@ -381,6 +384,10 @@ function cleanupDragPage(bindAbort) {
  * ================================================================= */
 function switchPlayerSource(source) {
   if (State.playerSource === source) return;
+
+  // F3 同口径：切组使 State 失效，在途抽取的迟到 onResult 会按切换后的存档键
+  // （saveState → persistFor(State.playerSource)）把旧组的抽取结果写进新组存档 → 先取消滚动
+  if (apis.draw) apis.draw.cancel();
 
   if (State.nodes.length > 0) saveState();
 
@@ -487,6 +494,10 @@ function loadSettings() {
       }
       if (data && typeof data.doubleElim === "boolean") {
         State.doubleElim = data.doubleElim;
+        // F5: 弹窗开关只按 localStorage 初始化，跨浏览器（他处已改开关）时会与
+        // 服务端实际值反向显示 → 拿到服务端值后同步 checkbox 显示
+        const modalToggle = document.getElementById("modal-double-elim-toggle");
+        if (modalToggle) modalToggle.checked = data.doubleElim;
       }
     })
     .catch(() => {});
@@ -746,6 +757,12 @@ function buildOrResetBracket() {
   buildBracket();
   processByes();
   applyDoubleElimBadges();
+
+  // F1: 开局恰 4 人（新局/重置/换源/洗牌重建）也正确进入双败——此前仅在晋级变更后
+  // 检查，4 人初始 actives 在首次拖拽后即变 3，永远见不到 4，双败赛永不触发。
+  // silent：调用方随后的提示不被覆盖；切换后 applyDoubleElimBadges 的 W 徽记随重建
+  // 自然消失，由状态栏"双败赛"徽标/轮次提示接管，两处展示保持一致。
+  checkDoubleElimTransition(true);
 }
 
 function processByes() {
@@ -795,15 +812,21 @@ function getActivePlayerCount() {
   ).length;
 }
 
-function checkDoubleElimTransition() {
+/**
+ * @param {boolean} [silent] 静默切换（不弹"四强双败淘汰赛已开启！"提示）：
+ *   新局/重置/存档恢复等非用户拖拽路径传入 true——这些路径调用方自有提示
+ *   （已重置/已切换/已随机排列），切换信息由状态栏徽标与赛制布局呈现即可；
+ *   用户拖拽晋级的正常路径（executeAdvance/executeReplace）保持提示不变。
+ */
+function checkDoubleElimTransition(silent) {
   if (!State.doubleElim) return false;
   if (State.doubleElimActive) return false;
   if (getActivePlayerCount() !== 4) return false;
-  transitionToDoubleElim();
+  transitionToDoubleElim(silent);
   return true;
 }
 
-function transitionToDoubleElim() {
+function transitionToDoubleElim(silent) {
   const activeNodes = State.nodes.filter(n =>
     n.state === "occupied" && n.playerName &&
     n.childId && State.nodeById[n.childId]?.state === "pending"
@@ -821,10 +844,14 @@ function transitionToDoubleElim() {
 
   buildDoubleElimBracket();
   recomputeDoubleElimLayout();
-  renderLines();
-  renderNodes();
+  // 布局未算（buildOrResetBracket 早于 recomputeLayout 的首次装配路径）时跳过中间渲染：
+  // 此时 boxW 未定义会产出 NaN 定位废 DOM，调用方随后的 renderAll() 会以正确尺寸重绘
+  if (boxW) {
+    renderLines();
+    renderNodes();
+  }
   updateStatus();
-  showHint("四强双败淘汰赛已开启！");
+  if (!silent) showHint("四强双败淘汰赛已开启！");
 }
 
 /* =================================================================
@@ -1507,6 +1534,44 @@ function autoPlaceLoser(loserNodeId, targetNodeId) {
 }
 
 /**
+ * F2：撤销/清除胜者时回收 autoPlaceLoser 的自动落位败者。
+ * 双败激活时 WL_1_0/WR_1_0/WF_2_0 的定局伴随败者自动进入 LL_0/LL_1/WF_DROP；
+ * 撤销该定局而不回收败者 → 败者双线并存，换拖另一方胜者时 autoPlaceLoser 因
+ * 目标 occupied 跳过 → 同一选手分身。与既有 undo 同口径**按节点现场推断**
+ * （不消费 State.undoStack）：败者仍以同名占在对应槽、败者源仍 advanced、且该槽
+ * 下游未定局（自动落位未被后续比赛消费）→ 清槽 + 败者源回 occupied。
+ * @param {string} winnerSlotId 被撤销/清除的胜者槽 id（WL_1_0 / WR_1_0 / WF_2_0）
+ * @param {string} [excludeId] 排除的败者源候选（撤销路径的主节点，防重名误还原）
+ */
+function reclaimDoubleElimLoser(winnerSlotId, excludeId) {
+  if (!State.doubleElimActive) return;
+  const loserSlotId =
+    winnerSlotId === "WL_1_0" ? "LL_0" :
+    winnerSlotId === "WR_1_0" ? "LL_1" :
+    winnerSlotId === "WF_2_0" ? "WF_DROP" : null;
+  if (!loserSlotId) return;
+
+  const slot = State.nodeById[loserSlotId];
+  if (!slot || slot.state !== "occupied" || !slot.playerName) return;
+
+  // 下游已定局 → 该自动落位已被后续比赛消费，不回收（迟到撤销维持既有部分回滚语义）
+  const child = slot.childId ? State.nodeById[slot.childId] : null;
+  if (child && child.state === "occupied") return;
+
+  const sourceIds =
+    loserSlotId === "LL_0" ? ["L_0", "L_1"] :
+    loserSlotId === "LL_1" ? ["R_0", "R_1"] :
+    ["WL_1_0", "WR_1_0"];
+  const source = sourceIds
+    .map(id => State.nodeById[id])
+    .find(n => n && n.id !== excludeId && n.state === "advanced" && n.playerName === slot.playerName);
+
+  slot.playerName = null;
+  slot.state = "pending";
+  if (source) source.state = "occupied";
+}
+
+/**
  * 双败总决赛 bracket reset:
  * 若败者组冠军战胜胜者组冠军 → 双方各1败 → 加赛
  */
@@ -1618,6 +1683,9 @@ function tryUndoAdvance(node) {
 
   if (child.playerName !== node.playerName) {
     node.state = "occupied";
+    // F2: node 是被自动落位到败者组的败者（对手已晋级）——同步回收其败者槽，
+    // 否则同名双线并存（L_1 与 LL_0 各一份）
+    reclaimDoubleElimLoser(child.id, node.id);
     State.phase = "playing";
     saveState();
     renderAll();
@@ -1630,6 +1698,8 @@ function tryUndoAdvance(node) {
   node.state = "occupied";
 
   cascadeClear(child);
+  // F2: 撤销该胜者定局 → 其自动落位进败者组的对手也一并回收（LL_0/LL_1/WF_DROP）
+  reclaimDoubleElimLoser(child.id, node.id);
   processByes();
 
   State.phase = "playing";
@@ -1648,6 +1718,9 @@ function tryClearWinner(node) {
   occupiedParents.forEach(p => { p.state = "occupied"; });
 
   cascadeClear(node);
+  // F2: 清除胜者槽（WL_1_0/WR_1_0/WF_2_0）→ 其自动落位进败者组的对手一并回收；
+  // 败者源此时仍 advanced（未被 occupiedParents 还原——名字不同），由 reclaim 还原
+  reclaimDoubleElimLoser(node.id);
   processByes();
 
   State.phase = "playing";
@@ -1672,6 +1745,10 @@ function cascadeClear(node) {
   child.playerName = null;
   child.state = "pending";
   child.autoBye = false;
+  // F2: 级联回滚清掉的胜者槽（WL_1_0/WR_1_0/WF_2_0），其 autoPlaceLoser 自动落位的
+  // 败者也一并回收——否则撤销上游晋级级联清掉 WF_2_0 时 WF_DROP 残留旧败者、
+  // 其源节点卡在 advanced 不可再拖（非双败/无对应槽时为无操作）
+  reclaimDoubleElimLoser(child.id);
   cascadeClear(child);
 }
 
@@ -1700,6 +1777,10 @@ function getTaggedMusicList() {
  * ================================================================= */
 function switchMusicSource(source) {
   if (State.musicSource === source) return;
+  // F3: 取消在途抽取滚动（2s 窗口内切库，迟到的 onResult 会把旧库曲目写回
+  // State/存档/组件实例，复活已作废曲目）——cancel 清 interval 且不再触发 onResult，
+  // 与 handleReset 同口径
+  if (apis.draw) apis.draw.cancel();
   State.musicSource = source;
 
   document.getElementById("switch-music-old-btn").classList.toggle("active", source === "old");

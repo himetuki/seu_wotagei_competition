@@ -258,26 +258,6 @@
             "[data-slot=draw-1yearplus]",
             "[data-slot=draw-1yearplus-ex]"
           ]
-        },
-        "components": {
-          "music-player": {
-            "overlay": {
-              "textContent": "BATTLE START",
-              "textMs": 130,
-              "readyMs": 4500,
-              "hintMs": 1500,
-              "hintId": null,
-              "hintText": "双击屏幕退出播放"
-            }
-          },
-          "draw-machine": {
-            "ticks": 15,
-            "tickMs": 80,
-            "colors": {
-              "rolling": "#fbbf24",
-              "result": "#10b981"
-            }
-          }
         }
       }
     },
