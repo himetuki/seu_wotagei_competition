@@ -82,6 +82,37 @@ export function makePageHelpers({ GBState, DOM, PlayerPools }) {
   }
 
   /**
+   * 恢复链瞬态相位钳制（共用，F5）：
+   * selecting_winner_anim 是 2.4s 结果动画的过渡相位——selectArenaWinner 先写入
+   * winner/loser 与败者淘汰标记、再播动画，存档若在该窗口落盘，恢复后所有交互按钮
+   * 禁用（唯一出口是整轮重置）。此处回滚为未判定状态回到 battling 让用户重点胜者：
+   * 清胜负、撤败者淘汰标记、弹掉栈顶那条已失配的 select_winner 记录（该相位下
+   * undoStack 栈顶必是它，且动画期间无其他入栈）。
+   */
+  function clampTransientPhase() {
+    if (GBState.phase !== "selecting_winner_anim") return;
+    const match = GBState.currentMatch;
+    if (match) {
+      if (match.loser) {
+        const g = GBState.groups[match.loser.groupIdx];
+        if (g) {
+          g.eliminated = g.eliminated.filter(
+            (n) => n !== match.loser.playerName,
+          );
+        }
+      }
+      match.winner = null;
+      match.loser = null;
+      const top = GBState.undoStack[GBState.undoStack.length - 1];
+      if (top && top.type === "select_winner") GBState.undoStack.pop();
+    }
+    GBState.phase =
+      match && match.defender && match.challenger
+        ? "battling"
+        : "selecting_players";
+  }
+
+  /**
    * 播放胜负结果动画（共用）
    */
   function playResultAnimations(winner, loser, onComplete) {
@@ -119,5 +150,6 @@ export function makePageHelpers({ GBState, DOM, PlayerPools }) {
     pushUndo,
     getArenaElementForPlayer,
     playResultAnimations,
+    clampTransientPhase,
   };
 }

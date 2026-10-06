@@ -86,7 +86,12 @@ const PlayerPools = { oldSet: new Set(), newSet: new Set() };
 let apis = { music: null, draw: null };
 
 // 原 gb_common.js 中依赖页面状态的共用函数（调用点写法不变）
-const { isNewPlayer, pushUndo, playResultAnimations } = makePageHelpers({
+const {
+  isNewPlayer,
+  pushUndo,
+  playResultAnimations,
+  clampTransientPhase,
+} = makePageHelpers({
   GBState,
   DOM,
   PlayerPools,
@@ -203,6 +208,9 @@ function initPage1(componentBridge) {
   Promise.all([loadPlayers(), loadTricks(), loadMusic()]).then(() => {
     loadStateFromServer().then((ok) => {
       if (!ok) loadState();
+      // 瞬态相位钳制（F5）：存档若落在 2.4s 结果动画窗口（selecting_winner_anim），
+      // 恢复后按钮全禁用成死局——回滚胜负与败者淘汰标记，回到 battling 重新点胜者
+      clampTransientPhase();
       if (
         GBState.phase === "assigning" &&
         GBState.allPlayers.length > 0 &&
@@ -938,6 +946,10 @@ function handleNextRound() {
     revivalUsed: GBState.revivalUsed,
   };
   localStorage.setItem("groupBattleRound1", JSON.stringify(round1Result));
+  // 下游轮次的进行中存档随新一轮开赛作废（否则 page2/page3 的恢复链会把上一局
+  // 旧进度复活到新赛程上）
+  localStorage.removeItem("groupBattleStateR2");
+  localStorage.removeItem("groupBattleStateR3");
   fetch("/api/group-battle-process", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -1365,6 +1377,18 @@ function handleUndo() {
         g.eliminated = g.eliminated.filter(
           (n) => n !== action.loser.playerName,
         );
+        if (
+          GBState.phase === "selecting_next_challenger" &&
+          match.duelHistory.length > 0
+        ) {
+          // selecting_next_challenger 相位点弹出的 select_winner：challenger 已被
+          // handleMatchEndCheck 收走，直接清胜负会造出无挑战者的假 battling——
+          // 按 select_next_challenger 分支同款复原弹 duelHistory 恢复该场双方，
+          // 再清胜负回到 battling 让用户重新点胜者
+          const last = match.duelHistory.pop();
+          match.defender = last.defender;
+          match.challenger = last.challenger;
+        }
         match.winner = null;
         match.loser = null;
       }
@@ -1378,7 +1402,11 @@ function handleUndo() {
       {
         const last = GBState.bracket.completedMatches.pop();
         if (last) {
-          const p = GBState.bracket.pendingMatches.find((m) => m.played);
+          // 取「最近一场 played」而非首个（与 reopenFinishedMatchAfterRevive 同款写法），
+          // 否则撤销后一场时误开前一场的 pending 标记
+          const p = [...GBState.bracket.pendingMatches]
+            .reverse()
+            .find((m) => m.played);
           if (p) p.played = false;
         }
       }
@@ -1452,6 +1480,9 @@ function handleReset() {
   GBState.revivalUsed = {};
   selectedGroupIdxs = [];
   localStorage.removeItem("groupBattleState");
+  // 整场重置连下游两轮的进行中存档一并清除（所有进度丢失，含第二/三大轮）
+  localStorage.removeItem("groupBattleStateR2");
+  localStorage.removeItem("groupBattleStateR3");
   fetch("/api/clear-group-battle-process", {
     method: "POST",
   }).catch(() => {});
@@ -1494,19 +1525,46 @@ function loadState() {
   } catch (e) {}
 }
 
+/**
+ * 服务端档的第一大轮形态识别（F4）：服务端会存多种形态——
+ *   · 明文第一大轮态（本页 saveState POST 的 persist 快照）；
+ *   · 包装 {round1Result, currentState}（本页 handleNextRound 写入，内层是第一大轮末态）；
+ *   · 包装 {finalResult, currentState}（page3 handleFinish 写入，内层是第三轮态）。
+ * 只认 round===1 且 phase/groups/bracket 特征键齐全的形态；第三轮包装对本页是无效档，
+ * 回落 localStorage，避免把别轮状态挂成本页垃圾键（显示成全新空白页）。
+ */
+function isRound1State(state) {
+  return (
+    state &&
+    typeof state === "object" &&
+    state.round === 1 &&
+    typeof state.phase === "string" &&
+    Array.isArray(state.groups) &&
+    state.bracket &&
+    typeof state.bracket === "object"
+  );
+}
+
 function loadStateFromServer() {
   return fetch("/api/group-battle-process")
     .then((r) => r.json())
     .then((data) => {
       if (!data || !data.currentState) return false;
-      const state = { ...data.currentState };
-      delete state.musicListNew;
-      delete state.musicListOld;
-      delete state.musicListEx;
-      delete state.oldPlayers;
-      delete state.newPlayers;
-      delete state.allPlayers;
-      Object.assign(GBState, state);
+      const payload = data.currentState;
+      const state = isRound1State(payload.currentState)
+        ? payload.currentState
+        : isRound1State(payload)
+          ? payload
+          : null;
+      if (!state) return false;
+      const restored = { ...state };
+      delete restored.musicListNew;
+      delete restored.musicListOld;
+      delete restored.musicListEx;
+      delete restored.oldPlayers;
+      delete restored.newPlayers;
+      delete restored.allPlayers;
+      Object.assign(GBState, restored);
       return true;
     })
     .catch(() => false);

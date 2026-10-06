@@ -47,7 +47,12 @@ const PlayerPools = { oldSet: new Set(), newSet: new Set() };
 let apis = { music: null, draw: null };
 
 // 原 gb_common.js 中依赖页面状态的共用函数（调用点写法不变）
-const { isNewPlayer, pushUndo, playResultAnimations } = makePageHelpers({
+const {
+  isNewPlayer,
+  pushUndo,
+  playResultAnimations,
+  clampTransientPhase,
+} = makePageHelpers({
   GBState,
   DOM,
   PlayerPools,
@@ -149,8 +154,25 @@ function initPage2(componentBridge) {
       DOM.systemHint.textContent = "请先完成第一大轮";
       return;
     }
-    setupRound2();
-    renderAll();
+    // setupRound2 完成资源拉取与新开局构建后接存档恢复链（handleReset 不链用，行为不变）
+    setupRound2().then(() => {
+      // 存档恢复（server → localStorage → 都无则保持 setupRound2 的新开局）
+      loadStateFromServerR2().then((ok) => {
+        if (!ok) loadStateR2();
+        // 瞬态相位钳制：存档若落在 2.4s 结果动画窗口，回滚到 battling 重新点胜者
+        clampTransientPhase();
+        // 恢复到 music_drawn/battling 时同步组件的 current 与 audio.src（镜像 page1）
+        if (
+          apis.music &&
+          GBState.currentMatch &&
+          GBState.currentMatch.drawnMusic
+        ) {
+          apis.music.setItem(GBState.currentMatch.drawnMusic);
+        }
+        renderAll();
+      });
+    })
+    .catch(() => renderAll()); // 选手/曲库拉取失败也保证渲染（加载态），且不留未处理 rejection
   });
 
   return function cleanup() {
@@ -169,6 +191,23 @@ function initPage2(componentBridge) {
 export { initPage2 };
 
 // ==================== data：数据加载 + 第二轮构建 + 曲库管理 ====================
+// 服务端档的第一大轮形态识别（F4）：服务端会存明文第一大轮态（page1 saveState）、
+// 包装 {round1Result, currentState}（page1 handleNextRound，内层是第一大轮末态）或
+// 包装 {finalResult, currentState}（page3 handleFinish，内层是第三轮态）——只认
+// round===1 且 groups/bracket 特征键齐全的形态，读不到就按「未找到第一大轮数据」
+// 处理，绝不拿第三轮状态硬拼第二轮赛程。
+function isRound1State(state) {
+  return (
+    state &&
+    typeof state === "object" &&
+    state.round === 1 &&
+    typeof state.phase === "string" &&
+    Array.isArray(state.groups) &&
+    state.bracket &&
+    typeof state.bracket === "object"
+  );
+}
+
 function loadRound1Data() {
   return new Promise((resolve) => {
     const local = localStorage.getItem("groupBattleRound1");
@@ -182,18 +221,21 @@ function loadRound1Data() {
     fetch("/api/group-battle-process")
       .then((r) => r.json())
       .then((data) => {
+        const payload = data && data.currentState;
+        const cs = isRound1State(payload && payload.currentState)
+          ? payload.currentState
+          : isRound1State(payload)
+            ? payload
+            : null;
         if (
-          data &&
-          data.currentState &&
-          data.currentState.bracket &&
-          data.currentState.bracket.completedMatches.length > 0
+          cs &&
+          Array.isArray(cs.bracket.completedMatches) &&
+          cs.bracket.completedMatches.length > 0
         ) {
-          const gs = data.currentState.groups;
-          const completed = data.currentState.bracket.completedMatches;
           GBState.round1Data = {
-            groups: gs,
-            completedMatches: completed,
-            revivalUsed: data.currentState.revivalUsed || {},
+            groups: cs.groups,
+            completedMatches: cs.bracket.completedMatches,
+            revivalUsed: cs.revivalUsed || {},
           };
         }
         resolve();
@@ -213,7 +255,8 @@ function setupRound2() {
   }));
   GBState.revivalUsed = r1.revivalUsed || {};
 
-  Promise.all([
+  // 返回 Promise 供 initPage2 在资源加载完成后接存档恢复链（F3）
+  return Promise.all([
     fetch("/resource/json/player1.json").then((r) => r.json()),
     fetch("/resource/json/player2.json").then((r) => r.json()),
     fetch("/resource/json/musics_list.json")
@@ -836,7 +879,8 @@ function handleNextMatch() {
   } else {
     showToast("第二大轮全部结束！即将自动进入第三大轮", "success");
     setTimeout(() => {
-      handleNextRound();
+      // 1.5s 窗口内用户撤销/重置等改变了相位则不再自动进轮（对齐 page1 同款守卫）
+      if (GBState.phase === "match_end") handleNextRound();
     }, 1500);
   }
 }
@@ -855,6 +899,20 @@ function handleNextRound() {
     revivalUsed: GBState.revivalUsed,
   };
   localStorage.setItem("groupBattleRound2", JSON.stringify(round2Result));
+  // 新一周期的第三大轮进行中存档作废（否则 page3 恢复链会复活上一局旧进度）
+  localStorage.removeItem("groupBattleStateR3");
+  // 镜像 page1 handleNextRound：把第二大轮结果发布到服务端——既作 page3 兜底输入的
+  // round===2 包装形态，也覆盖掉上一局 handleFinish 残留的第三轮包装态（否则 page3
+  // 的服务端恢复档会把旧总决赛状态复活到新赛程上）
+  const persisted = { ...GBState };
+  delete persisted.oldPlayers;
+  delete persisted.newPlayers;
+  delete persisted.allPlayers;
+  fetch("/api/group-battle-process", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ round2Result, currentState: persisted }),
+  }).catch((err) => console.error("保存第二轮结果失败", err));
   window.location.href = "group_battle_3.html";
 }
 
@@ -1197,6 +1255,18 @@ function handleUndo() {
         g.eliminated = g.eliminated.filter(
           (n) => n !== action.loser.playerName,
         );
+        if (
+          GBState.phase === "selecting_next_challenger" &&
+          match.duelHistory.length > 0
+        ) {
+          // selecting_next_challenger 相位点弹出的 select_winner：challenger 已被
+          // handleMatchEndCheck 收走，直接清胜负会造出无挑战者的假 battling——
+          // 按 select_next_challenger 分支同款复原弹 duelHistory 恢复该场双方，
+          // 再清胜负回到 battling 让用户重新点胜者
+          const last = match.duelHistory.pop();
+          match.defender = last.defender;
+          match.challenger = last.challenger;
+        }
         match.winner = null;
         match.loser = null;
       }
@@ -1210,7 +1280,11 @@ function handleUndo() {
       {
         const last = GBState.bracket.completedMatches.pop();
         if (last) {
-          const p = GBState.bracket.pendingMatches.find((m) => m.played);
+          // 取「最近一场 played」而非首个（与 reopenFinishedMatchAfterRevive 同款写法），
+          // 否则撤销后一场时误开前一场的 pending 标记
+          const p = [...GBState.bracket.pendingMatches]
+            .reverse()
+            .find((m) => m.played);
           if (p) p.played = false;
         }
       }
@@ -1255,7 +1329,13 @@ function handleUndo() {
 // ==================== 重置 & 持久化 ====================
 function handleReset() {
   if (!confirm("确定要重置第二大轮吗？")) return;
+  GBState.undoStack = [];
   localStorage.removeItem("groupBattleRound2");
+  // 本页进行中存档一并清除，避免刷新后被恢复链复活（对齐 page1 handleReset）
+  localStorage.removeItem("groupBattleStateR2");
+  // 服务端已发布的进度同步作废，否则刷新后服务端档（如刚完成的第二大轮末态）
+  // 会把已重置的轮次复活
+  fetch("/api/clear-group-battle-process", { method: "POST" }).catch(() => {});
   setupRound2();
   renderAll();
   showToast("已重置", "success");
@@ -1268,5 +1348,64 @@ function saveState() {
   delete persisted.allPlayers;
   try {
     localStorage.setItem("groupBattleStateR2", JSON.stringify(persisted));
+  } catch (e) {}
+}
+
+// ==================== 存档恢复（镜像 page1 的 server → localStorage 双级链）====================
+/**
+ * 第二大轮进行中存档识别：本页 saveState 只写 localStorage；服务端可能持有本页
+ * 形态的只有 handleNextRound 发布的包装 {round2Result, currentState}（内层是本页
+ * 末态，round===2）。其余形态（第一大轮明文/包装、第三轮包装）一律无效——必须
+ * round===2 且相位/分组/赛程特征键齐全才认，形态不符回落，绝不拿别轮状态硬恢复。
+ */
+function isValidRound2Save(state) {
+  return (
+    state &&
+    typeof state === "object" &&
+    state.round === 2 &&
+    typeof state.phase === "string" &&
+    state.phase !== "loading" &&
+    Array.isArray(state.groups) &&
+    state.bracket &&
+    typeof state.bracket === "object"
+  );
+}
+
+function applyRound2Save(state) {
+  const parsed = { ...state };
+  // 曲库/选手池/上游第一轮数据由本轮初始化现拉，存档里的旧副本不覆盖
+  delete parsed.musicListNew;
+  delete parsed.musicListOld;
+  delete parsed.oldPlayers;
+  delete parsed.newPlayers;
+  delete parsed.allPlayers;
+  delete parsed.round1Data;
+  Object.assign(GBState, parsed);
+}
+
+function loadStateFromServerR2() {
+  return fetch("/api/group-battle-process")
+    .then((r) => r.json())
+    .then((data) => {
+      const payload = data && data.currentState;
+      const state = isValidRound2Save(payload && payload.currentState)
+        ? payload.currentState
+        : isValidRound2Save(payload)
+          ? payload
+          : null;
+      if (!state) return false;
+      applyRound2Save(state);
+      return true;
+    })
+    .catch(() => false);
+}
+
+function loadStateR2() {
+  try {
+    const s = localStorage.getItem("groupBattleStateR2");
+    if (!s) return;
+    const parsed = JSON.parse(s);
+    if (!isValidRound2Save(parsed)) return;
+    applyRound2Save(parsed);
   } catch (e) {}
 }
