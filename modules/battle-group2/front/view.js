@@ -279,7 +279,13 @@ function loadData() {
 function getPersisted() {
   return {
     players: AppState.players,
-    currentIndex: AppState.currentPlayerIndex,
+    // ★ 修复：终局态索引（= players.length，越界）不原样落盘——钳回合法范围。
+    //   否则恢复侧的索引校验会拒收越界值、进度悄悄退回第 0 位（终局白打）；
+    //   players 为空时钳到 0（中性值）。终局存档恢复后停在末位，可再点一次进入排名页。
+    currentIndex: Math.max(
+      0,
+      Math.min(AppState.currentPlayerIndex, AppState.players.length - 1)
+    ),
     currentTrick: DOM.currentTrick.textContent,
     currentMusic: DOM.currentMusic.textContent,
     crossedTricks: Array.from(DOM.trickList.children)
@@ -348,6 +354,9 @@ function restoreFromState(data) {
       AppState.currentPlayerIndex = data.currentIndex;
       DOM.currentPlayer.textContent =
         AppState.players[AppState.currentPlayerIndex].name;
+      // ★ 修复：上面恢复选手列表时的 updatePlayerList() 执行时索引还是旧值 0
+      //   （.current 高亮打在第 0 项），索引落定后补刷一次列表，高亮与标题对齐
+      updatePlayerList();
     }
 
     // 恢复当前技能
@@ -356,16 +365,18 @@ function restoreFromState(data) {
     }
 
     // 恢复当前音乐（播放状态归 music-player 组件：setItem 同步展示并预载 audio.src）
-    // ★ 缺陷修复：优先用存档里的**真实文件名**（含扩展名）喂组件；老存档没有该字段时
-    //   沿用旧行为（拿展示文本当曲目名，与迁移前逐字一致，不破坏老档）。
+    // ★ 缺陷修复：仅当存档带**真实文件名**（含扩展名，新档才有）才把曲目喂回组件；
+    //   展示文本可能是初始占位「抽取音乐」（未抽取即离开页面时被 beforeunload 落盘），
+    //   误当曲目 setItem 会导致点播放误入比赛模式后必败——与 battle-group2-2 同款防线。
+    //   老档无该字段 → 只还原展示文本，点播放按未抽取处理（提示「请先抽取音乐」）。
     if (data.currentMusic) {
       DOM.currentMusic.textContent = data.currentMusic;
       currentMusicFile =
         typeof data.currentMusicFile === "string" && data.currentMusicFile
           ? data.currentMusicFile
           : "";
-      if (apis.music) {
-        apis.music.setItem(currentMusicFile || data.currentMusic);
+      if (currentMusicFile && apis.music) {
+        apis.music.setItem(currentMusicFile);
       }
     } else {
       currentMusicFile = ""; // 无曲目 → 不把上一份存档的文件名继续带下去
@@ -427,26 +438,32 @@ function clearCache() {
         return response.json();
       })
       .then((data) => {
+        // 链内新 fetch 的原始名单：会话早期 player2.json 加载失败时 AppState.originalPlayers
+        // 还是空数组，用它判定会跳过 UI 重置 → 界面与已重置的存档错位（与 battle-group2-2 对齐）
+        const originalPlayerList = Array.isArray(data) ? data : [];
+
         // 准备默认的初始化数据 - 只保留选手列表，其他置空
         const defaultData = {
-          players: Array.isArray(data) ? data : [],
+          players: originalPlayerList,
           currentIndex: 0,
           currentTrick: "",
           currentMusic: "",
           crossedTricks: [],
         };
-        return persist.save(defaultData);
+        return persist.save(defaultData).then(() => originalPlayerList);
       })
-      .then(() => {
+      .then((originalPlayerList) => {
         console.log("服务器数据已重置为初始状态");
 
-        // 重置页面上的显示内容
-        if (AppState.originalPlayers.length > 0) {
-          AppState.players = [...AppState.originalPlayers];
+        // 重置页面上的显示内容（用链内新名单，不用加载期快照 originalPlayers）
+        if (originalPlayerList.length > 0) {
+          AppState.players = [...originalPlayerList];
           AppState.currentPlayerIndex = 0;
           DOM.currentPlayer.textContent = AppState.players[0].name;
           updatePlayerList();
         }
+        // 索引已归零：终局后清除缓存同样要把按钮从"进入排名页面"恢复为"下一位"
+        syncNextPlayerButton();
 
         // 重置其他显示（音乐展示/播放状态归 music-player 组件）
         DOM.currentTrick.textContent = "";
@@ -560,6 +577,7 @@ function shufflePlayers() {
   AppState.currentPlayerIndex = 0;
   DOM.currentPlayer.textContent = AppState.players[0].name;
   updatePlayerList();
+  syncNextPlayerButton(); // 终局后洗牌：索引归零，按钮由"进入排名页面"恢复为"下一位"
   saveState();
 
   showToast("选手已随机排序", "success");
@@ -593,8 +611,26 @@ function drawRandomTrick() {
   }, 1000);
 }
 
-// 进入下一位选手
+/**
+ * 按当前索引同步「下一位」按钮文案（终局 → "进入排名页面"，否则 → "下一位"）。
+ * 修复：原先终局后按钮监听被摘除并改绑跳转，此后"随机排序"/"清除缓存"重置索引也无人恢复
+ * 按钮行为 → "下一位"功能整个会话永久失效。现改为单入口：监听常驻不摘（setupEventListeners
+ * 绑定一次），文案与行为全部由索引状态驱动。
+ */
+function syncNextPlayerButton() {
+  if (!DOM.nextPlayerButton) return;
+  const finished = AppState.currentPlayerIndex >= AppState.players.length;
+  DOM.nextPlayerButton.textContent = finished ? "进入排名页面" : "下一位";
+}
+
+// 进入下一位选手（单入口：终局判定在函数体内，监听常驻不摘）
 function goToNextPlayer() {
+  // 终局态（上一次推进已越过末位）：本次点击跳转排名页
+  if (AppState.currentPlayerIndex >= AppState.players.length) {
+    window.location.href = "/m/ranking";
+    return;
+  }
+
   AppState.currentPlayerIndex++;
   if (AppState.currentPlayerIndex < AppState.players.length) {
     DOM.currentPlayer.textContent =
@@ -602,16 +638,8 @@ function goToNextPlayer() {
     updatePlayerList();
     saveState();
   } else {
-    // 如果已经是最后一个选手，提供进入排名页面的选项
-    DOM.nextPlayerButton.textContent = "进入排名页面";
-    DOM.nextPlayerButton.removeEventListener("click", goToNextPlayer);
-    DOM.nextPlayerButton.addEventListener(
-      "click",
-      () => {
-        window.location.href = "/m/ranking";
-      },
-      { signal: bindSignal }
-    );
+    // 最后一位已比完：切换终局文案，等待下一次点击跳转（监听保持不动）
+    syncNextPlayerButton();
   }
 }
 

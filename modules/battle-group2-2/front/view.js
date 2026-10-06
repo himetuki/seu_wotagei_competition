@@ -150,6 +150,11 @@ const AppState = {
 let bindSignal = null;
 /** 划线恢复的延迟补写定时器 */
 let restoreCrossTimer = null;
+/** 待重放的划线集（恢复存档时写入；技名列表每次重建后在 updateTrickList 里重放并消费）。
+ *  修复：tricks.json 晚于恢复点 >100ms 到达时，原先仅有的一次 100ms 定时器到点列表为空、
+ *  划线全跳过；tricks 到达后 updateTrickList 重建出无划线列表又无重放 → beforeunload 用
+ *  空 crossedTricks 覆写回存档，原始划线被毁。闭包内集合（不读可能已被覆写的 localStorage）。 */
+let restoreCrossedTricks = null;
 /** 一次性收尾定时器（toast 自动移除、弹窗淡入、抖动移除）——
  * P12 起经 /web/lib/timers.mjs 注册表统一登记（替代原 pageTimers + later() 样板） */
 const timers = createTimerRegistry();
@@ -231,6 +236,25 @@ function updateTrickList() {
     );
     DOM.trickList.appendChild(li);
   });
+
+  // ★ 修复：列表（重）建后重放待恢复的划线——tricks 晚到时此前没有任何补写路径
+  replayCrossedTricks();
+}
+
+/**
+ * 从待重放集合同步补划线（幂等）。技名列表尚未建好（tricks 未到/加载失败）时保留集合，
+ * 等 updateTrickList 下次重建再重放；重放完成即消费清空（clearCache 重置时亦显式清空，
+ * 避免旧划线在重置后的重建中"回魂"）。
+ */
+function replayCrossedTricks() {
+  if (!restoreCrossedTricks || !DOM.trickList) return;
+  if (!AppState.tricks || AppState.tricks.length === 0) return; // 列表没建好，集合保留
+  Array.from(DOM.trickList.children).forEach((li) => {
+    if (restoreCrossedTricks.includes(li.textContent)) {
+      li.classList.add("crossed");
+    }
+  });
+  restoreCrossedTricks = null;
 }
 
 // 显示提示信息 - 修改为顶部显示
@@ -497,6 +521,18 @@ function loadTrickData() {
     });
 }
 
+/** 划线集落盘来源（与待重放集合保持一致）：技名列表已建好 → 读 DOM 现势；
+ *  尚未建好（tricks 未到/加载失败，DOM 无划线可言）→ 保住待重放集合，
+ *  避免空数组经 beforeunload 覆写毁掉存档里的原始划线 */
+function getCrossedTricksForPersist() {
+  if (AppState.tricks && AppState.tricks.length > 0 && DOM.trickList) {
+    return Array.from(DOM.trickList.children)
+      .filter((li) => li.classList.contains("crossed"))
+      .map((li) => li.textContent);
+  }
+  return restoreCrossedTricks ? [...restoreCrossedTricks] : [];
+}
+
 /** 存档载荷（原 saveState 的 stateData 字面量；字段与顺序逐字保留，`currentMusicFile` 为**追加**字段） */
 function getPersisted() {
   return {
@@ -504,11 +540,7 @@ function getPersisted() {
     currentIndex: AppState.currentPlayerIndex,
     currentTrick: DOM.currentTrick ? DOM.currentTrick.textContent : "",
     currentMusic: DOM.currentMusic ? DOM.currentMusic.textContent : "",
-    crossedTricks: DOM.trickList
-      ? Array.from(DOM.trickList.children)
-          .filter((li) => li.classList.contains("crossed"))
-          .map((li) => li.textContent)
-      : [],
+    crossedTricks: getCrossedTricksForPersist(),
     // 新增：真实文件名（含扩展名）。currentMusic 是展示文本（.mp3 被 format 去掉），
     // 恢复时若只拿它拼 audio.src 会 404；老存档无此字段 → ""（沿用旧的展示文本行为）。
     currentMusicFile: currentMusicFile || "",
@@ -588,6 +620,9 @@ function restoreFromState(data, source = "server") {
       AppState.currentPlayerIndex = data.currentIndex;
       DOM.currentPlayer.textContent =
         AppState.players[AppState.currentPlayerIndex].name;
+      // ★ 修复：前面恢复选手列表时的 updatePlayerList() 执行时索引还是旧值 0
+      //   （.current 高亮打在第 0 项），索引落定后补刷一次列表，高亮与标题对齐
+      updatePlayerList();
     }
 
     // 恢复当前技名
@@ -615,17 +650,15 @@ function restoreFromState(data, source = "server") {
 
     // 恢复已划线的技名
     if (data.crossedTricks && Array.isArray(data.crossedTricks) && data.crossedTricks.length > 0) {
-      updateTrickList();
-      // 将保存的已划线技能标记为划线（句柄登记，cleanup 清理）
+      // 存档划线先进待重放集合：tricks 早到/晚到两种时序下，updateTrickList 每次重建都会重放，
+      // 不再依赖单次定时器撞运气（晚到时定时器到点列表为空、划线全丢）
+      restoreCrossedTricks = [...data.crossedTricks];
+      updateTrickList(); // tricks 已到 → 同步重建 + 重放（重放即消费集合）
+      // 首屏兜底定时器（重建路径通常已完成重放，此处幂等空跑；句柄登记，cleanup 清理）
       if (restoreCrossTimer) clearTimeout(restoreCrossTimer);
       restoreCrossTimer = setTimeout(() => {
         restoreCrossTimer = null;
-        if (!DOM.trickList) return;
-        Array.from(DOM.trickList.children).forEach((li) => {
-          if (data.crossedTricks.includes(li.textContent)) {
-            li.classList.add("crossed");
-          }
-        });
+        replayCrossedTricks();
       }, 100);
     }
 
@@ -697,7 +730,8 @@ function clearCache() {
         // 显示成功提示
         showToast("比赛数据已初始化", "success", 2000);
 
-        // 更新技名列表，清除所有交叉状态
+        // 更新技名列表，清除所有交叉状态（待重放集合一并丢弃，防旧划线在重建后"回魂"）
+        restoreCrossedTricks = null;
         updateTrickList();
       })
       .catch((error) => {
@@ -867,6 +901,8 @@ function cleanupBattleGroup22Page(bindAbort) {
     clearTimeout(restoreCrossTimer);
     restoreCrossTimer = null;
   }
+  // 待重放划线集（防重渲染后旧实例的集合串到新实例；新实例的恢复链会按存档重新写入）
+  restoreCrossedTricks = null;
 
   // 一次性收尾定时器（toast 自动移除、弹窗淡入、抖动移除）：清空在飞任务，
   // 否则 teardown 后回调仍在飞、提示/弹窗节点会永久留在 body
