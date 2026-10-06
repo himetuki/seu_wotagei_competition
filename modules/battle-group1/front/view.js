@@ -59,6 +59,11 @@ const later = (fn, ms) => timers.later(fn, ms);
 let persist = null;
 /* 组件实例 API 桥（front/plugin.js 传入、组件 onReady 回填；组件缺失时保持 null） */
 let apis = { music: null, draw: null };
+/* 技池重试计数：loadTricks 失败路径不置 tricksLoaded，updateTrickPools 的 500ms
+ * 延迟重试需上限（20 次 ≈ 10 秒），否则数据源持续失败时无限自旋；
+ * 到限告警后清零，后续手动触发（抽选手等）仍可重新起一轮重试 */
+let trickPoolRetries = 0;
+const TRICK_POOL_MAX_RETRIES = 20;
 
 /**
  * 抖动兜底清理：摘除 .shake 类（body + 遮罩文字节点）。
@@ -1053,7 +1058,17 @@ function generateRandomTricks(count) {
 // 更新技池
 function updateTrickPools() {
   if (!BattleState.tricksLoaded) {
-    // 如果技能数据未加载，延迟更新（重试定时器同样登记，cleanup 后不再空转）
+    // 如果技能数据未加载，延迟更新（重试定时器同样登记，cleanup 后不再空转）；
+    // 达到重试上限则停止并告警——loadTricks 失败路径不置 tricksLoaded，
+    // 不设上限会 500ms 无限自旋（成功路径不进此分支，语义不变）
+    if (trickPoolRetries >= TRICK_POOL_MAX_RETRIES) {
+      console.warn(
+        `[battle-group1] 技能数据未加载，技池重试 ${TRICK_POOL_MAX_RETRIES} 次后停止`
+      );
+      trickPoolRetries = 0;
+      return;
+    }
+    trickPoolRetries++;
     later(updateTrickPools, 500);
     return;
   }

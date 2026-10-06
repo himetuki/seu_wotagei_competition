@@ -221,6 +221,15 @@ function playersFromWinners(winners) {
   return winners.map((name) => ({ name, wins: 0, losses: 0 }));
 }
 
+/** 不足 4 名时补默认选手（winners.json 路径的原内联补位逻辑，提取为两条加载路径共用） */
+function padDefaultPlayers(winners) {
+  const padded = [...winners];
+  while (padded.length < 4) {
+    padded.push(`默认选手${padded.length + 1}`);
+  }
+  return padded;
+}
+
 /**
  * 一级数据源：localStorage `chapter1Winners`（键逐字保留）。
  * @returns {string[]|null} 合法获胜者名单；无记录 / JSON 损坏 / 空数组 → null（不抛错）
@@ -281,7 +290,15 @@ function loadPlayers() {
   // 一级：上一章节遗留的获胜者名单
   const localWinners = readChapter1Winners();
   if (localWinners) {
-    const players = playersFromWinners(localWinners);
+    // 与 winners.json 路径对称：第一章提前收章（不足 4 人）时补默认选手，
+    // 否则 initializeNewGame 会因「选手数据不足」卡死、需清缓存自救
+    const padded = padDefaultPlayers(localWinners);
+    if (padded.length !== localWinners.length) {
+      console.warn(
+        `localStorage 获胜者仅 ${localWinners.length} 名，已补默认选手至 4 名`
+      );
+    }
+    const players = playersFromWinners(padded);
     BattleState.players = players;
     BattleState.playersLoaded = true;
     console.log("成功从localStorage加载第一章节获胜者作为选手:", players);
@@ -314,11 +331,8 @@ function loadPlayers() {
         );
       }
 
-      // 不足 4 名时补默认选手（原实现行为逐字保留）
-      const padded = [...winners];
-      while (padded.length < 4) {
-        padded.push(`默认选手${padded.length + 1}`);
-      }
+      // 不足 4 名时补默认选手（原内联逻辑提取为 padDefaultPlayers，行为逐字保留）
+      const padded = padDefaultPlayers(winners);
       console.log("添加默认选手后的列表:", padded);
 
       // 转换为选手对象数组
@@ -532,6 +546,15 @@ function initializeNewGame() {
     showToast("选手数据不足，请检查上一章节获胜者数据", "error");
     return;
   }
+
+  // 清除上一局的终局标志与排名（终局后重置再开局时不清，会让 handleNextMatch
+  // 因 tournamentCompleted 恒真而每次早退报「比赛已完成，但无法确定获胜者」；
+  // resetGame 亦经此处重置，不必重复清）
+  BattleState.tournamentCompleted = false;
+  BattleState.champion = null;
+  BattleState.runnerUp = null;
+  BattleState.thirdPlace = null;
+  BattleState.fourthPlace = null;
 
   // 初始化选手统计
   BattleState.playerStats = {};
@@ -1050,11 +1073,42 @@ function updateTournamentProgress() {
     BattleState.currentBracket === "final" &&
     BattleState.currentRound === 1
   ) {
-    // 决赛结束，记录冠军和亚军
+    // 双败赛制 bracket-reset：胜者组晋级选手（决赛 player1，进入决赛时 0 败）输掉
+    // 决赛第一轮仅一败，须打冠军决定战（决赛第二轮）而非直接定亚军
+    if (currentMatch.loser === currentMatch.player1) {
+      // 决赛第二轮 = 决赛第一轮的同样两位选手再战一场（轮次对象结构对齐 final[0]）
+      BattleState.bracket.final[1] = {
+        round: 2,
+        matches: [
+          {
+            player1: currentMatch.player1,
+            player2: currentMatch.player2,
+            winner: null,
+            loser: null,
+            isFinal: true,
+          },
+        ],
+      };
+
+      // 移至冠军决定战（不置 tournamentCompleted、不定排名；对局显示与存档由调用方
+      // handleNextMatch 在本函数返回后统一刷新，与其它推进分支一致）
+      BattleState.currentRound = 2;
+      BattleState.currentMatchIndex = 0;
+    } else {
+      // 败者组选手输掉决赛第一轮（两败淘汰），决赛结束，记录冠军和亚军
+      BattleState.champion = currentMatch.winner;
+      BattleState.runnerUp = currentMatch.loser;
+
+      // 比赛完全结束
+      BattleState.tournamentCompleted = true;
+    }
+  } else if (
+    BattleState.currentBracket === "final" &&
+    BattleState.currentRound === 2
+  ) {
+    // 冠军决定战结束（决赛第二轮），胜者为冠军、败者为亚军，比赛完全结束
     BattleState.champion = currentMatch.winner;
     BattleState.runnerUp = currentMatch.loser;
-
-    // 比赛完全结束
     BattleState.tournamentCompleted = true;
   }
 }
@@ -1274,6 +1328,27 @@ function randomizeMatches() {
     return;
   }
 
+  // 比赛开始前判定：除轮次/索引外，当前场次已定胜负（winner 已写入、战绩已计）时
+  // 不得重建赛程——重建会静默抹掉赛果，再定胜者会把战绩双计。守卫须在改写
+  // BattleState.players 之前：拒绝时不留任何状态变更
+  const currentMatch = getCurrentMatch();
+  if (
+    !(
+      BattleState.currentRound === 1 &&
+      BattleState.currentBracket === "winner" &&
+      BattleState.currentMatchIndex === 0
+    ) ||
+    currentMatch?.winner
+  ) {
+    showToast(
+      currentMatch?.winner
+        ? "当前场次已定胜负，无法重新随机匹配"
+        : "只能在比赛开始前随机匹配选手",
+      "warning"
+    );
+    return;
+  }
+
   // 获取当前的四名选手
   const currentPlayers = BattleState.players.slice(0, 4);
 
@@ -1286,23 +1361,14 @@ function randomizeMatches() {
     BattleState.players[i] = shuffledPlayers[i];
   }
 
-  // 如果在第一轮且胜者组第一轮第一场，重新初始化比赛
-  if (
-    BattleState.currentRound === 1 &&
-    BattleState.currentBracket === "winner" &&
-    BattleState.currentMatchIndex === 0
-  ) {
-    // 重新初始化比赛安排
-    initializeTournamentBracket();
+  // 走到这里必然是胜者组第一轮第一场且未定胜负，重新初始化比赛安排
+  initializeTournamentBracket();
 
-    // 刷新比赛显示
-    displayCurrentMatch();
-    updateBracketDisplay();
+  // 刷新比赛显示
+  displayCurrentMatch();
+  updateBracketDisplay();
 
-    showToast("选手已随机匹配", "success");
-  } else {
-    showToast("只能在比赛开始前随机匹配选手", "warning");
-  }
+  showToast("选手已随机匹配", "success");
 }
 
 // 处理下一场比赛
@@ -1357,10 +1423,11 @@ function handleNextMatch() {
   DOM.player2.classList.remove("winner", "loser");
   BattleState.currentWinner = null;
 
-  // 显示新的比赛
-  displayCurrentMatch();
+  // 显示新的比赛（displayCurrentMatch 必须最后调用：#tournament-status 有两个写入者，
+  // updateRoundDisplay 的笼统轮次徽标不得覆盖 updateMatchDescription 的比赛说明文案）
   updateBracketDisplay();
   updateRoundDisplay();
+  displayCurrentMatch();
 
   // 保存状态
   saveGameState();
@@ -1374,19 +1441,27 @@ function resetGame() {
   // 清除本地存档（key "battleGroup1-2State" 逐字保留；随后 saveGameState 会写回新状态）
   localStorage.removeItem("battleGroup1-2State");
 
+  // 清上一局残留的当前胜者标记（须在 initializeNewGame 之前：其内部的
+  // saveGameState 会把 currentWinner 一并落盘）
+  BattleState.currentWinner = null;
+
   // 初始化新游戏
   initializeNewGame();
 
-  // 更新UI
-  updateBracketDisplay();
-  updateRoundDisplay();
-
-  // 重置选手区域
+  // 重置选手区域（旧值先清空兜底；正常路径由随后的 displayCurrentMatch 重写当前场次
+  // 选手名——对齐 bg1 的 resetGame 重置后立即重显选手，否则选手卡空白、
+  // setWinner 会把空名写进赛果与战绩）
   DOM.player1Name.innerText = "";
   DOM.player2Name.innerText = "";
   DOM.player1.classList.remove("winner", "loser");
   DOM.player2.classList.remove("winner", "loser");
   updatePlayerStatsDisplay();
+
+  // 更新UI（displayCurrentMatch 最后调用：比赛说明须晚于 updateRoundDisplay 写入，
+  // 否则轮次徽标会覆盖说明文案，同 handleNextMatch）
+  updateBracketDisplay();
+  updateRoundDisplay();
+  displayCurrentMatch();
 
   // 重置音乐（音乐展示/播放状态归 music-player 组件）
   if (apis.music) apis.music.clearItem();
@@ -1477,6 +1552,13 @@ function setWinner(playerId) {
   // 获取胜者和败者名称
   const winnerName = playerId === "player1" ? player1Name : player2Name;
   const loserName = playerId === "player1" ? player2Name : player1Name;
+
+  // 空名守卫：选手卡尚未显示有效名字（空串/纯空白）时不得记录——
+  // 否则空名会写进 currentMatch.winner 与 playerStats
+  if (!winnerName || !winnerName.trim() || !loserName || !loserName.trim()) {
+    showToast("选手名称无效，无法记录比赛结果", "error");
+    return;
+  }
 
   // 保存结果到当前比赛
   currentMatch.winner = winnerName;
