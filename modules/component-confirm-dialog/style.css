@@ -7,7 +7,9 @@
  * 类名在接入页（setting / music-import）的页面 CSS 中已被占用，复用会撞车。
  */
 
-/* 全屏遮罩：透明 → 半透明（visible 过渡） */
+/* 全屏遮罩：透明 → 半透明（visible 过渡）。
+ * 基态 pointer-events:none——显形前/出场中（含滞留兜底场景）的不可见遮罩
+ * 不得拦截页面点击；可见态恢复 auto，遮罩点击取消语义不变。 */
 .cmp-confirm {
   position: fixed;
   top: 0;
@@ -22,11 +24,13 @@
   backdrop-filter: blur(3px);
   z-index: 2000;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.3s ease;
 }
 
 .cmp-confirm--visible {
   opacity: 1;
+  pointer-events: auto;
 }
 
 /* 对话框面板：setting 版深色玻璃拟态（缩放入场 + 常驻浮动） */

@@ -485,6 +485,9 @@ export function createMusicPlayer(hostEl, props = {}, ctx) {
       const played = audio.play();
       if (played && typeof played.then === "function") {
         played.catch((err) => {
+          // 主动打断（起播极窄窗口内 stop/pause 使 pending play 以 AbortError 拒绝）
+          // 不是播放失败：静默返回，不触发 onError（用户主动停止不应报错）
+          if (err && err.name === "AbortError") return;
           call(p.onError, err);
           stop("error");
         });

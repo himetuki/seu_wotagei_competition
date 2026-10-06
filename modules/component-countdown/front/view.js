@@ -95,6 +95,10 @@ export function createCountdown(host, props = {}, ctx) {
     timeEl.textContent = formatTime(remainingMs);
     timeEl.classList.toggle("countdown__time--done", done);
     setBtn("toggle", running ? "player-pause" : "player-play", "开始", running ? "暂停" : "开始");
+    // 到点死态（done && remainingMs<=0）：start() 被门禁拒绝，toggle 置 disabled
+    // （与 minus/plus 的 running-disable 同款属性直写）——用户经 +1 分钟/重置恢复
+    const toggleBtn = footerEl.querySelector('[data-act="toggle"]');
+    if (toggleBtn) toggleBtn.disabled = done && remainingMs <= 0;
     // 调整按钮仅未运行时可用（规格：未开始时可 ±1 分调整）
     for (const act of ["minus", "plus"]) {
       const btn = footerEl.querySelector(`[data-act="${act}"]`);

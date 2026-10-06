@@ -7,6 +7,7 @@
  *           历史自含实现的公共语义（textContent 写消息 / 确认回调 / 取消与遮罩点击回调 /
  *           10ms visible 显形 / 300ms 后移除节点）；onConfirm/onCancel 均可选
  *   cleanup 幂等：移除任何在开对话框 + 定时器注册表 dispose
+ *           （出场 300ms 窗口内的节点经实例级登记表兜底移除，不滞留 DOM）
  *
  * 单弹窗语义：confirm() 先**同步**移除现存对话框节点再建新（不等 300ms 出场动画）——
  * 与三套历史实现"先关旧的"行为一致。遮罩点击 = onCancel（取消语义）。
@@ -24,13 +25,31 @@ export function createConfirmDialog(hostEl, props = {}, ctx) {
   const timers = createTimerRegistry();
   const ctrl = new AbortController(); // 当前对话框节点上的监听（cleanup 统一解绑）
   const { signal } = ctrl;
+  const overlays = []; // 本实例仍在场的遮罩节点（含正在出场的）；cleanup 兜底全移除
   let current = null; // 在开（或正在出场）对话框的根节点；null = 无
+
+  /** 移除节点并出登记表（已摘离 DOM 的节点 remove 为安全空操作） */
+  function dropOverlay(node) {
+    node.remove();
+    const i = overlays.indexOf(node);
+    if (i !== -1) overlays.splice(i, 1);
+  }
 
   /** 同步移除现存对话框（单弹窗语义；已移除/已在出场中的节点 remove 为安全空操作） */
   function removeCurrent() {
     if (!current) return;
-    current.remove();
+    dropOverlay(current);
     current = null;
+  }
+
+  /** 回调错误隔离：抛错不外泄成未捕获异常（对齐 draw-machine/music-player 的 call() 包装） */
+  function call(fn) {
+    if (typeof fn !== "function") return;
+    try {
+      fn();
+    } catch (e) {
+      console.error("[component-confirm-dialog] 回调抛错:", e);
+    }
   }
 
   /**
@@ -69,6 +88,7 @@ export function createConfirmDialog(hostEl, props = {}, ctx) {
     box.append(messageEl, actions);
     overlay.append(box);
     document.body.appendChild(overlay);
+    overlays.push(overlay); // 登记后 cleanup 兜底可移除（含出场窗口内的）
     current = overlay;
 
     // 关闭：同步置空 current（300ms 窗口内再点不二次触发）→ 摘 visible → 300ms 后移除节点
@@ -76,8 +96,8 @@ export function createConfirmDialog(hostEl, props = {}, ctx) {
       if (current !== overlay) return;
       current = null; // 同步置空：双击确认/取消不会重复回调（审查 P2-1 修复）
       overlay.classList.remove("cmp-confirm--visible");
-      timers.later(() => overlay.remove(), 300);
-      if (typeof cb === "function") cb();
+      timers.later(() => dropOverlay(overlay), 300);
+      call(cb);
     };
 
     confirmBtn.addEventListener("click", () => close(onConfirm), { signal });
@@ -107,6 +127,9 @@ export function createConfirmDialog(hostEl, props = {}, ctx) {
   // cleanup：移除在开对话框（含正在出场的）+ 在飞定时器与监听一次清空
   return () => {
     removeCurrent();
+    // 兜底：close() 置空 current 后 300ms 出场窗口内的节点，其移除定时器被下方
+    // dispose 取消——按本实例登记表全量移除，防不可见遮罩滞留 DOM 拦截点击
+    for (const node of overlays.splice(0)) node.remove();
     ctrl.abort();
     timers.dispose();
   };
