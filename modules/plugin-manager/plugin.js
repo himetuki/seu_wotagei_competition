@@ -21,7 +21,7 @@
  *   POST /api/plugins/front/:id/toggle { enabled } 前端清单开关（刷新页面后生效）
  *
  * 每次变更成功后 ctx.emit("plugins.updated", snapshot)。
- * 自保护：manager 自身的 fiber 承载着请求所在 route scope，禁用/热重载/热改 config
+ * 自保护：manager 自身的 fiber 承载着请求所在 route scope，启停/热重载/热改 config
  * 都意味着"先卸后挂"自己在途请求的 scope（K2/K6 竞态），一律 400 拒绝。
  */
 const fs = require("fs");
@@ -116,10 +116,19 @@ module.exports = {
 
       app.post("/api/plugins/:id/toggle", (req, res) => {
         const id = req.params.id;
-        if (id === SELF && !(req.body && req.body.enabled)) {
-          return res.status(400).json({ ok: false, error: "不能禁用插件管理器自身（自保护）" });
+        // F3：自保护全方向拦截（与 reload/setConfig 对称）——enable 方向同样要重挂
+        // 自身 scope（排空会锁死当前在途请求直至超时），不再只拦禁用方向
+        if (id === SELF) {
+          return res.status(400).json({
+            ok: false,
+            error: "不能对插件管理器自身执行启停（自保护，会拆除请求所在的 scope）",
+          });
         }
-        respond(res, ctx.assembly.toggle(id, !!(req.body && req.body.enabled)));
+        // enabled 必须为显式布尔：缺 body / 非布尔值不再被静默折算成禁用
+        if (!req.body || typeof req.body.enabled !== "boolean") {
+          return res.status(400).json({ ok: false, error: "enabled 必须为布尔值" });
+        }
+        respond(res, ctx.assembly.toggle(id, req.body.enabled));
       });
 
       app.post("/api/plugins/:id/reload", (req, res) => {

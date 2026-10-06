@@ -53,8 +53,16 @@ const databases = [
   { name: "musics_list", defaultValue: [] },
   { name: "musics_list_ex", defaultValue: [] },
   {
+    // F2：数组形态（元素字段 = 设置页奖项编辑器与 ranking 消费的 rank/name/description）。
+    // 旧默认值为对象形态 { 1: "冠军奖品", ... }，消费方（setting 页 / ranking 页）均按
+    // 数组消费（awards.find / Array.isArray 收敛），新库/重建库默认值与消费形态对齐；
+    // 存量旧对象档由 /api/award 出口收敛（modules/setting/plugin.js）
     name: "award",
-    defaultValue: { 1: "冠军奖品", 2: "亚军奖品", 3: "季军奖品" },
+    defaultValue: [
+      { rank: 1, name: "冠军奖品", description: "" },
+      { rank: 2, name: "亚军奖品", description: "" },
+      { rank: 3, name: "季军奖品", description: "" },
+    ],
   },
 ];
 
@@ -63,7 +71,7 @@ const moduleDatabases = [];
 
 /**
  * 注册模块声明的数据库定义（各模块 server/db.js 导出的数组）
- * 与内置 databases 去重合并：内置优先，同名模块定义被忽略
+ * 与内置 databases 去重合并：同名模块定义覆盖内置条目（见 getAllDatabaseDefs）
  */
 function registerModuleDatabases(list) {
   if (!Array.isArray(list)) return;
@@ -74,6 +82,7 @@ function registerModuleDatabases(list) {
 function getAllDatabaseDefs() {
   const map = new Map();
   databases.forEach((d) => map.set(d.name, d));
+  // 同名时后写入的模块定义覆盖内置条目（F2：原注释与实现相反，改注释不动逻辑）
   moduleDatabases.forEach((d) => map.set(d.name, d));
   return [...map.values()];
 }

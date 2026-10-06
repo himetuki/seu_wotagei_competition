@@ -36,7 +36,7 @@ module.exports = {
         });
       }
 
-      /** 通用 POST：校验数组后整包写入（award 为对象形态，单独注册） */
+      /** 通用 POST：校验数组后整包写入（award 形态不同，单独注册） */
       function postConfigArray(name) {
         app.post(`/api/${name}`, (req, res) => {
           try {
@@ -59,8 +59,28 @@ module.exports = {
         postConfigArray(name);
       });
 
-      // Award（对象形态）
-      getConfig("award");
+      // Award GET（出口形态收敛，F2）：响应顶层恒为数组。新库默认值已是数组形态；
+      // 存量旧档可能仍是对象形态 { 1: "冠军奖品", ... }（键=名次、值=奖品名），
+      // 就地映射为 [{ rank, name }]（字段名与设置页奖项编辑器一致），消费方
+      // （setting 页 / ranking 页）均按数组消费，不再依赖各自兜底
+      app.get("/api/award", (req, res) => {
+        try {
+          const data = dbManager.get("award").getState();
+          const list = Array.isArray(data)
+            ? data
+            : data && typeof data === "object"
+              ? Object.entries(data)
+                  .filter(([k]) => Number.isFinite(Number(k)))
+                  .map(([k, v]) => ({ rank: Number(k), name: String(v) }))
+              : [];
+          res.json(list);
+        } catch (error) {
+          console.error("获取award数据失败:", error);
+          res.status(500).send(`Error: ${error.message}`);
+        }
+      });
+
+      // Award POST：沿用历史宽松校验（对象即可，数组也是对象）——设置页提交数组形态
       app.post("/api/award", (req, res) => {
         try {
           if (!req.body || typeof req.body !== "object") {

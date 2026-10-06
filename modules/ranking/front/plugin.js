@@ -92,9 +92,12 @@ export default {
         function displayAward(rankPosition, playerName) {
           const rank = parseInt(rankPosition.dataset.rank);
           if (rank <= 3) {
-            // 只有前三名显示奖品
+            // 只有前三名显示奖品（纵深防御：数据源若为旧库存量对象形态，
+            // 非数组时不查奖直接跳过，避免 find 之前抛 TypeError）
             const awardElement = rankPosition.querySelector(".rank-award");
-            const award = awards.find((a) => a.rank === rank);
+            const award = Array.isArray(awards)
+              ? awards.find((a) => a.rank === rank)
+              : null;
 
             if (award && awardElement) {
               const awardContainer = document.createElement("div");

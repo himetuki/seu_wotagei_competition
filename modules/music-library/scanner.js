@@ -182,8 +182,25 @@ function updateJsonFile(audioFiles, jsonFile) {
       fs.mkdirSync(jsonDir, { recursive: true });
     }
 
-    // 写入JSON文件
-    fs.writeFileSync(jsonPath, JSON.stringify(audioFiles, null, 2), "utf8");
+    // 写入JSON文件（F5 原子写，对齐 cordis loader persistJson 的既有纪律）：
+    // 先写同目录临时文件再 rename 覆盖，写盘/改名中断不再留下截断的半份曲库列表
+    // （这些 json 被前端直接 fetch，半份文件 = 页面加载即脏数据）。临时名带 pid
+    // 防多进程互踩；任一环节失败兜底直写并 console.error 留痕，成功/失败语义不变。
+    const payload = JSON.stringify(audioFiles, null, 2);
+    const tmpPath = path.join(jsonDir, `.tmp-${jsonFile}-${process.pid}`);
+    try {
+      fs.writeFileSync(tmpPath, payload, "utf8");
+      try {
+        fs.renameSync(tmpPath, jsonPath);
+      } catch (renameErr) {
+        console.error(`JSON 原子改名失败，兜底直写 ${jsonFile}: ${renameErr.message}`);
+        fs.writeFileSync(jsonPath, payload, "utf8");
+        try { fs.unlinkSync(tmpPath); } catch (_) { /* 清理失败不影响结果 */ }
+      }
+    } catch (writeErr) {
+      console.error(`JSON 临时文件写入失败，兜底直写 ${jsonFile}: ${writeErr.message}`);
+      fs.writeFileSync(jsonPath, payload, "utf8"); // 直写也失败则上抛，由外层 catch 记失败
+    }
     serverLog(`已更新JSON文件: ${jsonFile}`, "info");
 
     return true;

@@ -23,6 +23,7 @@
  *   6. 任何错误只收集进 errors，不 throw —— 绝不阻止服务器启动
  */
 const fs = require("fs");
+const path = require("path");
 const { joinPath, APP_ROOT, dataDir } = require("../utils");
 const paths = require("../paths.cjs");
 
@@ -100,8 +101,34 @@ function persistJson(data, target) {
   }
 }
 
-function persistBackendManifest(data) {
-  return persistJson(data, runtime.pluginsPath || paths.backendManifestPath());
+// F7：后端清单持久化 = 读-改-写（与 toggleFront 同纪律）。旧实现把启动内存快照
+// runtime.manifest 整包写回——运行期手改 plugins/plugins.json（便携热替换工作流）后
+// 任一 toggle/config 会整包回滚手工编辑。改为：写前重读磁盘清单（解析失败退回内存
+// 快照兜底并留痕，行为不劣于旧实现）、只对目标条目应用字段变更、整包写回（未知字段
+// 与其他条目保留）。全程同步 IO，事件循环内不可交错，无需额外锁。
+// 成功后 runtime.manifest 刷新为刚写盘的副本（status/findEntry 后续读它，内存与磁盘同源）。
+function mutateBackendManifest(id, mutateEntry) {
+  const file = runtime.pluginsPath || paths.backendManifestPath();
+  let manifest = readManifestFile(file);
+  if (!manifest || !Array.isArray(manifest.plugins)) {
+    console.error("[cordis] 后端清单磁盘重读失败，退回内存快照整包写（手改可能被覆盖）");
+    manifest = runtime.manifest;
+  }
+  if (!manifest || !Array.isArray(manifest.plugins)) {
+    return { ok: false, error: "装配清单不可用（读取失败且无内存快照）" };
+  }
+  const idx = manifest.plugins.findIndex((e) => entryIdOf(e) === id);
+  if (idx < 0) {
+    return { ok: false, error: `清单中不存在插件 ${id}` };
+  }
+  // 字符串条目升级为对象（原始 string 上写属性会静默丢失）
+  if (typeof manifest.plugins[idx] === "string") {
+    manifest.plugins[idx] = { target: `modules/${id}` };
+  }
+  mutateEntry(manifest.plugins[idx]);
+  const persisted = persistJson(manifest, file);
+  runtime.manifest = manifest;
+  return { ok: true, persisted };
 }
 
 function persistFrontManifest(data) {
@@ -132,12 +159,31 @@ function loadPluginExport(id) {
   return require(p);
 }
 
-// K11：重挂前逐出 require 缓存（P6b：dev 与便携皆为真实文件，逐出后重读即新代码）
+// K11：重挂前逐出 require 缓存（P6b：dev 与便携皆为真实文件，逐出后重读即新代码）。
+// F4：逐出范围 = 该插件目录内的全部模块——plugin.js 的兄弟模块（如 music-library
+// require 的 ./scanner、./routes）与主文件同享 require.cache，只逐出 plugin.js 会让
+// "热重载成功"后仍命中兄弟模块旧缓存跑旧代码。遍历缓存键，resolved 路径落在插件
+// 目录内（path.relative 不以 ".." 开头且非绝对——绝对值出现在跨盘符场景，同时规避
+// Windows 盘符大小写差异下字符串前缀比较的误判）即逐出；相邻插件目录的条目相对路径
+// 以 ".." 开头，天然不越界误删。plugin.js 本身位于目录内，原逐出逻辑被天然覆盖。
 function evictPluginCache(id) {
   try {
-    const p = joinPath(paths.modulesDir(), id, "plugin.js");
-    delete require.cache[require.resolve(p)];
-  } catch (e) { /* 未缓存/解析失败 → 无需逐出 */ }
+    const pluginDir = path.dirname(joinPath(paths.modulesDir(), id, "plugin.js"));
+    for (const key of Object.keys(require.cache)) {
+      // 缓存键非绝对路径（Node 内置模块名等）不参与目录归属判定
+      if (!path.isAbsolute(key)) continue;
+      let rel;
+      try {
+        rel = path.relative(pluginDir, key);
+      } catch (e) {
+        continue;
+      }
+      if (rel === "" || rel === ".." || rel.startsWith(".." + path.sep) || path.isAbsolute(rel)) {
+        continue;
+      }
+      delete require.cache[key];
+    }
+  } catch (e) { /* 目录推导失败 → 无需逐出 */ }
 }
 
 // P4 装配运行时：assembly 控制面的操作对象。单进程单装配为常态（selfcheck 末段的
@@ -271,15 +317,6 @@ function createAssemblyService(deps) {
   const pluginsOf = () => (runtime.manifest && runtime.manifest.plugins) || [];
   const findEntry = (id) => pluginsOf().find((e) => entryIdOf(e) === id) || null;
 
-  // 字符串条目升级为对象（原始 string 上写属性会静默丢失）
-  const ensureEntryObject = (id) => {
-    const plugins = pluginsOf();
-    const idx = plugins.findIndex((e) => entryIdOf(e) === id);
-    if (idx < 0) return null;
-    if (typeof plugins[idx] === "string") plugins[idx] = { target: `modules/${id}` };
-    return plugins[idx];
-  };
-
   const metaOf = (id) => {
     const page = runtime.ctx && runtime.ctx.modules.get(id);
     if (page) return { name: page.name, icon: page.icon || "puzzle" };
@@ -321,10 +358,13 @@ function createAssemblyService(deps) {
   }
 
   async function toggle(id, enabled) {
-    const entry = ensureEntryObject(id);
-    if (!entry) return { ok: false, error: `清单中不存在插件 ${id}` };
-    entry.enabled = !!enabled;
-    const persisted = persistBackendManifest(runtime.manifest);
+    // F7：读-改-写——重读磁盘清单，只改本条 enabled 后整包写回（手改的其他条目/字段不被回滚）
+    const mut = mutateBackendManifest(id, (entry) => {
+      entry.enabled = !!enabled;
+    });
+    if (!mut.ok) return { ok: false, error: mut.error };
+    const persisted = mut.persisted;
+    const entry = findEntry(id); // 读-改-写后与磁盘同源的条目（成功路径必存在）
 
     if (runtime.legacyIds.has(id)) {
       // legacy：无 fiber 可卸；页面元数据即时增删，静态注册的路由重启后才彻底消失
@@ -341,7 +381,7 @@ function createAssemblyService(deps) {
       // P6b 终审：挂/卸段经 per-id 串行（见 serialized 注释）
       const result = await serialized(id, async () => {
         if (enabled) {
-          await mountPlugin(id, entry.config, { evict: true }); // 内部先排空卸旧 fiber（K2 防叠加）+ 层序/投影序修正
+          await mountPlugin(id, entry && entry.config, { evict: true }); // 内部先排空卸旧 fiber（K2 防叠加）+ 层序/投影序修正
         } else {
           await unmountPlugin(id, { drain: "clear" }); // P6a 排空 + K6 await dispose：路由物理 404 + effect 清理
         }
@@ -375,14 +415,17 @@ function createAssemblyService(deps) {
   }
 
   async function setConfig(id, config) {
-    const entry = ensureEntryObject(id);
-    if (!entry) return { ok: false, error: `清单中不存在插件 ${id}` };
-    if (config === undefined || config === null) delete entry.config;
-    else entry.config = config;
-    const persisted = persistBackendManifest(runtime.manifest);
-    if (runtime.legacyIds.has(id) || entry.enabled === false) return { ok: true, persisted };
+    // F7：读-改-写——重读磁盘清单，只改本条 config 后整包写回（手改的其他条目/字段不被回滚）
+    const mut = mutateBackendManifest(id, (entry) => {
+      if (config === undefined || config === null) delete entry.config;
+      else entry.config = config;
+    });
+    if (!mut.ok) return { ok: false, error: mut.error };
+    const persisted = mut.persisted;
+    const entry = findEntry(id); // 读-改-写后与磁盘同源的条目（成功路径必存在）
+    if (runtime.legacyIds.has(id) || (entry && entry.enabled === false)) return { ok: true, persisted };
     try {
-      await serialized(id, () => mountPlugin(id, entry.config, { evict: true })); // 写后热重装该插件
+      await serialized(id, () => mountPlugin(id, entry && entry.config, { evict: true })); // 写后热重装该插件
       return { ok: true, persisted };
     } catch (e) {
       runtime.errors.set(id, e.message);

@@ -150,11 +150,23 @@ app.post("/api/upload_music", (req, res) => {
           }
         },
         filename: function (req, file, cb) {
-          // 保留原始文件名，但拒绝 Windows 危险名：busboy 已剥离目录成分，此处再
-          // 拒保留设备名（CON.mp3 等命中设备语义）与冒号（x.mp3:ads 产生 NTFS ADS
-          // 隐藏数据流）；结尾点/空格名由后续扩展名白名单兜住
+          // F1：multer 1.4.5-lts 的 busboy 未传 defParamCharset:"utf8"，非 ASCII 文件名
+          // 按 latin1 码元解码成乱码（「测试音乐.mp3」→「æµ‹è¯•éŸ³ä¹.mp3」）。这里做
+          // latin1→utf8 还原，并以往返校验自证：仅当 restored 重新编码回 latin1 与
+          // 原名逐字节一致时才采用（已是正确 utf8 的名字往返不闭合，保持原文不动）。
+          // 回写 file.originalname 使响应 file 字段与扩展名校验同样拿到还原后的名字
+          // （multer 的 req.file 即本 file 对象的浅拷贝，回调内改动会传导）。
           try {
-            const base = safeBasename(file.originalname);
+            let name = file.originalname;
+            const restored = Buffer.from(name, "latin1").toString("utf8");
+            if (Buffer.from(restored, "utf8").toString("latin1") === name) {
+              name = restored;
+              file.originalname = name;
+            }
+            // 保留原始文件名，但拒绝 Windows 危险名：busboy 已剥离目录成分，此处再
+            // 拒保留设备名（CON.mp3 等命中设备语义）与冒号（x.mp3:ads 产生 NTFS ADS
+            // 隐藏数据流）；结尾点/空格名由后续扩展名白名单兜住
+            const base = safeBasename(name);
             if (!base || base.includes(":") ||
                 /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i.test(base)) {
               return cb(new Error(`不支持的文件名: ${file.originalname}`));
@@ -462,9 +474,21 @@ app.post("/api/move_to_recycle", (req, res) => {
     const timestamp = new Date().getTime();
     const targetPath = safeJoin(recycleDir, `${timestamp}_${safeName}`);
 
-    // 移动文件 (先复制后删除)
+    // 移动文件 (先复制后删除；F8：unlink 失败——如 Windows 句柄占用——时补偿删除
+    // 刚复制出的目标副本再上抛 500，避免回收站残留孤儿副本、客户端重试再叠加)
     fs.copyFileSync(sourcePath, targetPath);
-    fs.unlinkSync(sourcePath);
+    try {
+      fs.unlinkSync(sourcePath);
+    } catch (unlinkErr) {
+      try {
+        fs.unlinkSync(targetPath);
+      } catch (cleanupErr) {
+        console.error(
+          `回收站副本补偿删除失败（孤儿文件保留）: ${targetPath}: ${cleanupErr.message}`
+        );
+      }
+      throw unlinkErr;
+    }
 
     // 更新JSON文件
     const result = musicScanner.scanMusicDir(group);
