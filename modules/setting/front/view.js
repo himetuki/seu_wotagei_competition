@@ -61,12 +61,16 @@ export function component(el, meta, ctx) {
   let listsDisposed = false;
 
   // 全局状态
+  // 编辑态按列表拆分（player/trick/award 各自独立）：三列表共用一对 isEditing/
+  // editingItemId 时，A 列表点编辑后切到 B 列表提交，会把输入写进 B 列表同下标条目
+  //（覆盖既有项而非新增），保存即落库丢数据
   const State = {
     currentTab: "players",
     currentPlayerFile: "player1",
     currentTrickFile: "tricks",
-    editingItemId: null,
-    isEditing: false,
+    playerEditing: { active: false, id: null },
+    trickEditing: { active: false, id: null },
+    awardEditing: { active: false, id: null },
     hasChanges: false,
   };
 
@@ -520,8 +524,7 @@ export function component(el, meta, ctx) {
   function editPlayer(index) {
     const player = R.playerData[index];
     if (player) {
-      State.isEditing = true;
-      State.editingItemId = index;
+      State.playerEditing = { active: true, id: index };
 
       DOM.playerName.value = player.name || "";
     }
@@ -545,9 +548,9 @@ export function component(el, meta, ctx) {
       return;
     }
 
-    if (State.isEditing && State.editingItemId !== null) {
+    if (State.playerEditing.active && State.playerEditing.id !== null) {
       // 更新已有选手
-      R.playerData[State.editingItemId].name = name;
+      R.playerData[State.playerEditing.id].name = name;
       showStatusMessage("选手已更新，点击保存更改以提交", "success");
     } else {
       // 添加新选手
@@ -562,8 +565,7 @@ export function component(el, meta, ctx) {
   // 重置选手表单
   function resetPlayerForm() {
     DOM.playerForm.reset();
-    State.isEditing = false;
-    State.editingItemId = null;
+    State.playerEditing = { active: false, id: null };
   }
 
   // 保存选手数据
@@ -829,8 +831,7 @@ export function component(el, meta, ctx) {
   function editTrick(index) {
     const trick = R.trickData[index];
     if (trick) {
-      State.isEditing = true;
-      State.editingItemId = index;
+      State.trickEditing = { active: true, id: index };
 
       DOM.trickName.value = trick.name || "";
     }
@@ -854,9 +855,9 @@ export function component(el, meta, ctx) {
       return;
     }
 
-    if (State.isEditing && State.editingItemId !== null) {
+    if (State.trickEditing.active && State.trickEditing.id !== null) {
       // 更新已有技能
-      R.trickData[State.editingItemId].name = name;
+      R.trickData[State.trickEditing.id].name = name;
       showStatusMessage("技能已更新，点击保存更改以提交", "success");
     } else {
       // 添加新技能
@@ -871,8 +872,7 @@ export function component(el, meta, ctx) {
   // 重置技能表单
   function resetTrickForm() {
     DOM.trickForm.reset();
-    State.isEditing = false;
-    State.editingItemId = null;
+    State.trickEditing = { active: false, id: null };
   }
 
   // 保存技能数据
@@ -1053,8 +1053,6 @@ export function component(el, meta, ctx) {
     // 添加奖励按钮
     DOM.addAwardBtn.addEventListener("click", function () {
       resetAwardForm();
-      State.isEditing = false;
-      State.editingItemId = null;
     }, { signal });
 
     // 保存奖励按钮
@@ -1115,8 +1113,7 @@ export function component(el, meta, ctx) {
   function editAward(index) {
     const award = R.awardData[index];
     if (award) {
-      State.isEditing = true;
-      State.editingItemId = index;
+      State.awardEditing = { active: true, id: index };
 
       DOM.awardRank.value = award.rank || "";
       DOM.awardName.value = award.name || "";
@@ -1156,7 +1153,7 @@ export function component(el, meta, ctx) {
     }
 
     // 检查是否有相同排名的奖励
-    if (!State.isEditing) {
+    if (!State.awardEditing.active) {
       const existingAwardIndex = R.awardData.findIndex(
         (award) => award.rank === rank
       );
@@ -1169,11 +1166,11 @@ export function component(el, meta, ctx) {
       }
     }
 
-    if (State.isEditing && State.editingItemId !== null) {
+    if (State.awardEditing.active && State.awardEditing.id !== null) {
       // 更新已有奖励
-      R.awardData[State.editingItemId].rank = rank;
-      R.awardData[State.editingItemId].name = name;
-      R.awardData[State.editingItemId].description = description;
+      R.awardData[State.awardEditing.id].rank = rank;
+      R.awardData[State.awardEditing.id].name = name;
+      R.awardData[State.awardEditing.id].description = description;
     } else {
       // 添加新奖励
       R.awardData.push({ rank, name, description });
@@ -1190,8 +1187,7 @@ export function component(el, meta, ctx) {
   // 重置奖励表单
   function resetAwardForm() {
     DOM.awardForm.reset();
-    State.isEditing = false;
-    State.editingItemId = null;
+    State.awardEditing = { active: false, id: null };
   }
 
   // 保存奖励数据

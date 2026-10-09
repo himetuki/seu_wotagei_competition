@@ -39,6 +39,19 @@ import {
 } from "./game-data.js";
 import { icon } from "/web/icons.mjs";
 
+// HTML 转义：技能名可经 POST /api/tricks_for_game 被任意局域网客户端写入，
+// 凡插入 innerHTML 的业务字段必须经过这里（与 settings.js 同款实现）
+const HTML_ESCAPES = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (ch) => HTML_ESCAPES[ch]);
+}
+
 /* -----------------------------------------------------------------
  * 抽技名动画（P11-B6：改由 L2 组件 draw-machine 接管）
  *
@@ -1007,7 +1020,7 @@ async function saveGameRecord() {
     // 创建并显示错误消息
     const feedbackMsg = document.createElement("div");
     feedbackMsg.className = "record-feedback error";
-    feedbackMsg.innerHTML = `<span class="icon">${icon("x", { size: 16 })}</span> 保存失败: ${error.message}`;
+    feedbackMsg.innerHTML = `<span class="icon">${icon("x", { size: 16 })}</span> 保存失败: ${escapeHtml(error.message)}`;
 
     // 在表单内显示反馈消息
     const formActions = document.querySelector(".form-actions");
@@ -1114,7 +1127,7 @@ function revealTrick() {
   trickReveal.innerHTML = `
     <div class="reveal-content">
       <h3>本次游戏技能</h3>
-      <p class="trick-name">${GameData.currentTrick}</p>
+      <p class="trick-name">${escapeHtml(GameData.currentTrick)}</p>
       <button id="close-reveal-btn" class="primary-btn">关闭</button>
     </div>
   `;

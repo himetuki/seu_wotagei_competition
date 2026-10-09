@@ -61,14 +61,19 @@ export default {
                 card.style.transform = "translateY(-5px)";
               });
 
-              card.innerHTML = `
-                <div class="game-icon">${icon(
-                  ICON_NAMES.includes(m.icon) ? m.icon : "device-gamepad-2",
-                  { size: 48 }
-                )}</div>
-                <h2>${m.name}</h2>
-                <p>${m.description || ""}</p>
-              `;
+              // 模块名/描述虽来自仓库清单（modules.json），仍按外部输入对待：
+              // 一律 DOM 构建 + textContent（与 home/select 渲染同纪律），icon 为受控 SVG 除外
+              const iconWrap = document.createElement("div");
+              iconWrap.className = "game-icon";
+              iconWrap.innerHTML = icon(
+                ICON_NAMES.includes(m.icon) ? m.icon : "device-gamepad-2",
+                { size: 48 }
+              );
+              const nameEl = document.createElement("h2");
+              nameEl.textContent = m.name;
+              const descEl = document.createElement("p");
+              descEl.textContent = m.description || "";
+              card.append(iconWrap, nameEl, descEl);
               grid.appendChild(card);
             });
           })

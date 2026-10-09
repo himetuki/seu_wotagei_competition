@@ -305,8 +305,9 @@ function changeGroup(group) {
   // 更新组别信息显示
   updateGroupInfo();
 
-  // 加载新组别的音乐文件列表
-  loadMusicFiles();
+  // 加载新组别的音乐文件列表（force：上一组请求仍在飞时守卫会吞掉本次加载，
+  // 过期结果由 loadMusicFiles 内的组别快照校验丢弃）
+  loadMusicFiles(true);
 
   // 同时更新上传目标选择
   const targetSelect = document.getElementById("upload-target-group");
@@ -346,6 +347,9 @@ async function loadGroupMusicCounts() {
 async function loadMusicFiles(forceRefresh = false) {
   if (AppState.loadingMusicFiles && !forceRefresh) return;
 
+  // 组别快照：响应回来时用户可能已切到别的组别（force 绕过在飞守卫后新旧请求可并发），
+  // 过期结果不得写回 musicFiles / 渲染，否则界面残留旧组文件（组名却已是新组）
+  const requestedGroup = AppState.currentGroup;
   AppState.loadingMusicFiles = true;
   AppState.musicFiles = [];
 
@@ -353,7 +357,9 @@ async function loadMusicFiles(forceRefresh = false) {
   updateMusicFilesList();
 
   try {
-    const result = await getMusicFiles(AppState.currentGroup);
+    const result = await getMusicFiles(requestedGroup);
+
+    if (requestedGroup !== AppState.currentGroup) return;
 
     if (result.success) {
       AppState.musicFiles = result.files || [];
@@ -363,11 +369,13 @@ async function loadMusicFiles(forceRefresh = false) {
       showStatusMessage(`加载音乐文件列表失败: ${result.error}`, "error");
     }
   } catch (error) {
+    if (requestedGroup !== AppState.currentGroup) return;
     console.error("加载音乐文件列表异常:", error);
     showStatusMessage(`加载音乐文件列表异常: ${error.message}`, "error");
   } finally {
     AppState.loadingMusicFiles = false;
-    updateMusicFilesList();
+    // 仅本组请求落地时刷新列表；过期请求静默丢弃（切组后的 force 请求负责渲染）
+    if (requestedGroup === AppState.currentGroup) updateMusicFilesList();
   }
 }
 
@@ -571,23 +579,33 @@ function updateMusicFilesList() {
     return;
   }
 
-  // 渲染音乐文件列表（按钮点击经 setupEventListeners 的容器级委托分发，
-  // 文件名从 tr[data-filename] 读取，不再 inline onclick 拼接）
-  container.innerHTML = AppState.musicFiles
-    .map(
-      (file, index) => `
-    <tr data-filename="${file.name}">
-      <td>${index + 1}</td>
-      <td title="${file.name}">${file.name}</td>
-      <td>
-        <button class="move-to-recycle-btn">
-          移到回收文件夹
-        </button>
-      </td>
-    </tr>
-  `
-    )
-    .join("");
+  // 渲染音乐文件列表（文件名是上传者可控的外部输入——服务端仅拒绝目录成分/冒号/
+  // 设备名，不拒绝 <>"'&，拼 innerHTML 即存储型 XSS）→ 一律 DOM 构建 + textContent/
+  // dataset 赋值（按钮点击仍走 setupEventListeners 的容器级委托，tr[data-filename] 不变）
+  container.textContent = "";
+  const frag = document.createDocumentFragment();
+  AppState.musicFiles.forEach((file, index) => {
+    const tr = document.createElement("tr");
+    tr.dataset.filename = file.name;
+
+    const tdIndex = document.createElement("td");
+    tdIndex.textContent = index + 1;
+
+    const tdName = document.createElement("td");
+    tdName.title = file.name;
+    tdName.textContent = file.name;
+
+    const tdAction = document.createElement("td");
+    const btn = document.createElement("button");
+    btn.className = "move-to-recycle-btn";
+    btn.type = "button";
+    btn.textContent = "移到回收文件夹";
+    tdAction.appendChild(btn);
+
+    tr.append(tdIndex, tdName, tdAction);
+    frag.appendChild(tr);
+  });
+  container.appendChild(frag);
 }
 
 // 移动文件到回收文件夹
